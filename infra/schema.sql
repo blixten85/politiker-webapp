@@ -69,6 +69,19 @@ CREATE TABLE letters (
   created_at INTEGER NOT NULL
 );
 
+-- mode: 'attach' (skickas som bilaga) | 'extract' (innehållet konverterades
+-- till HTML och lades in i letters.html_body — raden behålls bara för spårbarhet)
+CREATE TABLE letter_attachments (
+  id TEXT PRIMARY KEY,
+  letter_id TEXT NOT NULL REFERENCES letters(id),
+  filename TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  r2_key TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  mode TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 -- En rad per sändningsomgång (för statusvy: "243 av 500 skickade")
 CREATE TABLE send_jobs (
   id TEXT PRIMARY KEY,
