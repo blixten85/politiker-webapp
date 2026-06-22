@@ -265,6 +265,7 @@ document.getElementById("send-btn").addEventListener("click", async () => {
     return;
   }
   const html = document.getElementById("letter-body").value;
+  const subject = document.getElementById("letter-subject").value;
   if (!html.trim()) {
     msg.textContent = "Skriv ett brev först.";
     return;
@@ -272,7 +273,7 @@ document.getElementById("send-btn").addEventListener("click", async () => {
   try {
     const result = await api("/api/send", {
       method: "POST",
-      body: JSON.stringify({ letterHtml: html, mailCredentialId: credentials[0].id, areaNames: [...selectedAreas] }),
+      body: JSON.stringify({ letterHtml: html, subject: subject || undefined, mailCredentialId: credentials[0].id, areaNames: [...selectedAreas] }),
     });
     msg.textContent = `Skickar till ${result.totalRecipients} mottagare — se status nedan.`;
     loadSendJobs();

@@ -214,7 +214,7 @@ export default {
       }
 
       if (url.pathname === "/api/send" && req.method === "POST") {
-        const input = await req.json<{ letterHtml: string; mailCredentialId: string; areaNames: string[] }>();
+        const input = await req.json<{ letterHtml: string; subject?: string; mailCredentialId: string; areaNames: string[] }>();
         const letterId = randomId();
         await env.DB.prepare("INSERT INTO letters (id, account_id, html_body, created_at) VALUES (?, ?, ?, ?)")
           .bind(letterId, accountId, input.letterHtml, Date.now())
@@ -222,6 +222,7 @@ export default {
         const result = await createAndEnqueueSendJob(env, accountId, {
           letterId,
           htmlBody: input.letterHtml,
+          subject: input.subject,
           mailCredentialId: input.mailCredentialId,
           areaNames: input.areaNames,
         });

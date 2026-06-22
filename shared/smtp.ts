@@ -114,7 +114,7 @@ export async function sendSmtpMail(
     const headers = [
       `From: ${config.fromAddress}`,
       `To: ${opts.to}`,
-      opts.subject ? `Subject: ${opts.subject}` : null,
+      opts.subject ? `Subject: ${encodeHeaderValue(opts.subject)}` : null,
       "MIME-Version: 1.0",
       "Content-Type: text/html; charset=UTF-8",
       "",
@@ -160,4 +160,16 @@ async function expect(resp: SmtpResponse, expectedCode: number, errorMessage: st
   if (resp.code !== expectedCode) {
     throw new SmtpError(`${errorMessage} (fick ${resp.code}: ${resp.text})`);
   }
+}
+
+// RFC 2047 "encoded-word" — krävs för att åäö (eller annan icke-ASCII text)
+// i header-fält som Subject ska visas rätt, eftersom rå SMTP-headers är
+// ASCII-only. Body-texten behöver inte detta (den har sin egen
+// Content-Type/charset), bara header-rader som Subject/From-visningsnamn.
+export function encodeHeaderValue(value: string): string {
+  if (/^[\x20-\x7e]*$/.test(value)) return value; // redan rent ASCII, ingen kodning behövs
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return `=?UTF-8?B?${btoa(binary)}?=`;
 }

@@ -6,7 +6,7 @@ import type { SendJobMessage } from "../../shared/types";
 export async function createAndEnqueueSendJob(
   env: Env,
   accountId: string,
-  input: { letterId: string; htmlBody: string; mailCredentialId: string; areaNames: string[] },
+  input: { letterId: string; htmlBody: string; subject?: string; mailCredentialId: string; areaNames: string[] },
 ): Promise<{ sendJobId: string; totalRecipients: number }> {
   const account = await env.DB.prepare("SELECT daily_send_cap FROM accounts WHERE id = ?").bind(accountId).first<{ daily_send_cap: number }>();
   if (!account) throw new Error("Konto saknas");
@@ -57,6 +57,7 @@ export async function createAndEnqueueSendJob(
       recipientEmail: r.email,
       recipientName: r.name,
       htmlBody: input.htmlBody,
+      subject: input.subject,
     };
     await env.SEND_QUEUE.send(message);
   }
