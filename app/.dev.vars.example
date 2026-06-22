@@ -1,0 +1,15 @@
+# Kopiera till .dev.vars för lokal utveckling (wrangler dev --remote läser denna).
+# I produktion sätts dessa med `wrangler secret put <NAMN>` istället.
+
+MAIL_CRED_KEY=<32 random bytes, base64 — generera med: openssl rand -base64 32>
+
+# Systemmail (verifieringskoder, feedback-notiser) — återanvänder Anders'
+# redan fungerande iCloud-relä (samma uppgifter som /etc/msmtprc på mp100).
+SYSTEM_SMTP_HOST=smtp.mail.me.com
+SYSTEM_SMTP_PORT=587
+SYSTEM_SMTP_USER=nils.anders.eriksson@icloud.com
+SYSTEM_SMTP_PASSWORD=<app-specifikt lösenord>
+SYSTEM_FROM_ADDRESS=anders.eriksson@denied.se
+
+GITHUB_FEEDBACK_TOKEN=<fine-grained PAT med Issues:Write på blixten85/politiker-webapp>
+FEEDBACK_NOTIFY_EMAIL=anders.eriksson@denied.se

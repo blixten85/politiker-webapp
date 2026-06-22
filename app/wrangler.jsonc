@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "politiker-webapp-app",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    {
+      "pattern": "politiker.denied.se",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "politiker_webapp",
+      "database_id": "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "23255cc6e67a4a19b19e5ea67a676b40"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "queue": "politiker-send-jobs",
+        "binding": "SEND_QUEUE"
+      }
+    ]
+  }
+}

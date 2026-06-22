@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Politiker-kontakt — skriv till dina folkvalda</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Politiker-kontakt</h1>
+  <p>Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
+  <button id="feedback-btn" class="link-btn">Ge feedback / rapportera fel</button>
+  <a href="https://www.paypal.com/donate/?hosted_button_id=TODO_PAYPAL_BUTTON_ID" target="_blank" rel="noopener" class="link-btn">Stötta tjänsten (valfri donation)</a>
+</header>
+
+<main>
+  <section id="auth-view">
+    <div class="card">
+      <h2>Skapa konto</h2>
+      <form id="signup-form">
+        <input type="email" name="email" placeholder="E-post" required>
+        <input type="password" name="password" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit">Skapa konto</button>
+      </form>
+      <p id="signup-msg"></p>
+    </div>
+
+    <div class="card" id="verify-card" hidden>
+      <h2>Bekräfta din e-post</h2>
+      <form id="verify-form">
+        <input type="text" name="code" placeholder="6-siffrig kod" required>
+        <button type="submit">Bekräfta</button>
+      </form>
+      <p id="verify-msg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Logga in</h2>
+      <form id="login-form">
+        <input type="email" name="email" placeholder="E-post" required>
+        <input type="password" name="password" placeholder="Lösenord" required>
+        <button type="submit">Logga in</button>
+      </form>
+      <p id="login-msg"></p>
+    </div>
+  </section>
+
+  <section id="app-view" hidden>
+    <div class="card">
+      <h2>Ditt mailkonto</h2>
+      <p class="hint">Du loggar in mot ditt EGET mailkonto (Gmail/Outlook/iCloud/annat) — brevet skickas från din egen adress, vi rör aldrig dina inloggningsuppgifter eller svaren du får.</p>
+      <ul id="mail-credentials-list"></ul>
+      <form id="add-credential-form">
+        <select name="provider" id="provider-select">
+          <option value="gmail">Gmail</option>
+          <option value="outlook">Outlook / Microsoft 365</option>
+          <option value="icloud">iCloud</option>
+          <option value="generic">Annan (generisk SMTP)</option>
+        </select>
+        <div id="generic-fields" hidden>
+          <input type="text" name="host" placeholder="SMTP-server">
+          <input type="number" name="port" placeholder="Port" value="587">
+        </div>
+        <input type="email" name="fromAddress" placeholder="Din e-postadress" required>
+        <input type="text" name="user" placeholder="Användarnamn (oftast samma som e-post)" required>
+        <input type="password" name="password" placeholder="Lösenord / app-lösenord" required>
+        <p class="hint" id="provider-help"></p>
+        <button type="submit">Koppla mailkonto</button>
+      </form>
+      <p id="credential-msg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Välj mottagare</h2>
+      <input type="text" id="area-filter" placeholder="Sök kommun/region...">
+      <div id="area-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Skriv brevet</h2>
+      <p class="hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
+      <textarea id="letter-body" rows="12" placeholder="<p>Mitt brev...</p>"></textarea>
+      <button id="send-btn">Skicka till valda mottagare</button>
+      <p id="send-msg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Status på dina utskick</h2>
+      <ul id="send-jobs-list"></ul>
+    </div>
+  </section>
+</main>
+
+<dialog id="feedback-dialog">
+  <form id="feedback-form">
+    <h3>Feedback / felrapport</h3>
+    <textarea name="message" rows="6" placeholder="Vad hände? Vad förväntade du dig?" required></textarea>
+    <menu>
+      <button type="submit">Skicka</button>
+      <button type="button" id="feedback-cancel">Avbryt</button>
+    </menu>
+  </form>
+</dialog>
+
+<script src="/app.js"></script>
+</body>
+</html>

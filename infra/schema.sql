@@ -1,0 +1,78 @@
+-- Politiker-webapp D1-schema
+
+CREATE TABLE accounts (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  password_salt TEXT NOT NULL,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  verification_code TEXT,
+  verification_expires_at INTEGER,
+  daily_send_cap INTEGER NOT NULL DEFAULT 200,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE mail_credentials (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  provider TEXT NOT NULL, -- gmail | outlook | icloud | generic
+  smtp_host TEXT NOT NULL,
+  smtp_port INTEGER NOT NULL,
+  smtp_user TEXT NOT NULL,
+  encrypted_password TEXT NOT NULL, -- AES-GCM, nyckel = Wrangler secret MAIL_CRED_KEY
+  from_address TEXT NOT NULL,
+  verified_at INTEGER, -- sätts efter lyckad SMTP AUTH-testhandskakning
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE politicians (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  area_name TEXT NOT NULL,   -- t.ex. "Lysekils kommun", "Region Halland", "Sveriges riksdag"
+  area_type TEXT NOT NULL,   -- kommun | region | riksdag | regering
+  last_scraped_at INTEGER NOT NULL,
+  UNIQUE(email, area_name)
+);
+CREATE INDEX idx_politicians_area ON politicians(area_type, area_name);
+
+CREATE TABLE letters (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  html_body TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+-- En rad per sändningsomgång (för statusvy: "243 av 500 skickade")
+CREATE TABLE send_jobs (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  letter_id TEXT NOT NULL REFERENCES letters(id),
+  mail_credential_id TEXT NOT NULL REFERENCES mail_credentials(id),
+  total_recipients INTEGER NOT NULL,
+  sent_count INTEGER NOT NULL DEFAULT 0,
+  bounce_count INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | sending | done | aborted
+  created_at INTEGER NOT NULL,
+  finished_at INTEGER
+);
+
+-- En rad per mottagare, facit för rate-limit och bounce-cirkelbrytare
+CREATE TABLE send_log (
+  id TEXT PRIMARY KEY,
+  send_job_id TEXT NOT NULL REFERENCES send_jobs(id),
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  recipient_email TEXT NOT NULL,
+  status TEXT NOT NULL, -- ok | bounce
+  error TEXT,
+  sent_at INTEGER NOT NULL
+);
+CREATE INDEX idx_send_log_account_date ON send_log(account_id, sent_at);
+
+CREATE TABLE feedback (
+  id TEXT PRIMARY KEY,
+  account_id TEXT,
+  message TEXT NOT NULL,
+  github_issue_url TEXT,
+  created_at INTEGER NOT NULL
+);

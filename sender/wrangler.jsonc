@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "politiker-webapp-sender",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "politiker_webapp",
+      "database_id": "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
+    }
+  ],
+  "queues": {
+    "consumers": [
+      {
+        "queue": "politiker-send-jobs",
+        "max_batch_size": 10,
+        "max_retries": 3,
+        "max_concurrency": 5
+      }
+    ]
+  }
+}

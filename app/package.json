@@ -1,0 +1,15 @@
+{
+  "name": "politiker-webapp-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "secret:set-mail-key": "wrangler secret put MAIL_CRED_KEY"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "typescript": "^5.5.0",
+    "@cloudflare/workers-types": "^4.0.0"
+  }
+}
