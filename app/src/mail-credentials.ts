@@ -1,6 +1,14 @@
 import { encryptSecret, randomId } from "../../shared/crypto";
 import { testSmtpAuth } from "../../shared/smtp";
+import { exchangeMicrosoftMailCode } from "../../shared/graph-mail";
 import type { Env } from "./db";
+
+// Microsoft Graph har egen throttling, separat från SMTP-gränsen för
+// Outlook.com — vi har inga verifierade Graph-specifika siffror, så vi
+// återanvänder samma konservativa nivå som outlook-SMTP-presetet tills
+// vidare.
+const MICROSOFT_GRAPH_DAILY_LIMIT = 300;
+const MICROSOFT_GRAPH_SAFETY_MARGIN = 0.6;
 
 // providerDailyLimit = leverantörens kända verkliga gräns (mottagare/dygn) per
 // juni 2026 — kan ändras av leverantören utan att vi får besked, se README
@@ -73,6 +81,25 @@ export async function addMailCredential(
     .run();
 
   return { id, dailyCap };
+}
+
+export async function addMicrosoftGraphMailCredential(env: Env, accountId: string, code: string): Promise<{ id: string }> {
+  const tokens = await exchangeMicrosoftMailCode(env.OAUTH_MICROSOFT_CLIENT_ID!, env.OAUTH_MICROSOFT_CLIENT_SECRET!, code);
+
+  const id = randomId();
+  const encryptedAccessToken = await encryptSecret(tokens.accessToken, env.MAIL_CRED_KEY);
+  const encryptedRefreshToken = await encryptSecret(tokens.refreshToken, env.MAIL_CRED_KEY);
+  const dailyCap = Math.floor(MICROSOFT_GRAPH_DAILY_LIMIT * MICROSOFT_GRAPH_SAFETY_MARGIN);
+
+  await env.DB.prepare(
+    `INSERT INTO mail_credentials
+       (id, account_id, provider, smtp_host, smtp_port, smtp_user, encrypted_password, from_address, verified_at, daily_cap, oauth_access_token, oauth_refresh_token, oauth_token_expires_at, created_at)
+     VALUES (?, ?, 'microsoft_graph', 'oauth', 0, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(id, accountId, tokens.email, tokens.email, Date.now(), dailyCap, encryptedAccessToken, encryptedRefreshToken, tokens.expiresAt, Date.now())
+    .run();
+
+  return { id };
 }
 
 export async function listMailCredentials(env: Env, accountId: string) {

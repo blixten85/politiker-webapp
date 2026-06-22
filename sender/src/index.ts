@@ -1,10 +1,25 @@
-import { decryptSecret, randomId } from "../../shared/crypto";
+import { decryptSecret, encryptSecret, randomId } from "../../shared/crypto";
 import { sendSmtpMail, SmtpError } from "../../shared/smtp";
+import { sendGraphMail, refreshMicrosoftToken } from "../../shared/graph-mail";
 import type { SendJobMessage } from "../../shared/types";
 
 interface Env {
   DB: D1Database;
   MAIL_CRED_KEY: string;
+  OAUTH_MICROSOFT_CLIENT_ID?: string;
+  OAUTH_MICROSOFT_CLIENT_SECRET?: string;
+}
+
+interface CredentialRow {
+  provider: string;
+  smtp_host: string;
+  smtp_port: number;
+  smtp_user: string;
+  encrypted_password: string;
+  from_address: string;
+  oauth_access_token: string | null;
+  oauth_refresh_token: string | null;
+  oauth_token_expires_at: number | null;
 }
 
 const BOUNCE_ABORT_RATE = 25; // % — samma typ av kretsbrytare som send_daily_batch.sh
@@ -32,11 +47,14 @@ async function processJobMessages(
   messages: SendJobMessage[],
   batch: MessageBatch<SendJobMessage>,
 ): Promise<void> {
-  const credentialRow = await env.DB.prepare(
-    "SELECT smtp_host, smtp_port, smtp_user, encrypted_password, from_address FROM mail_credentials WHERE id = ?",
+  const credentialId = messages[0].mailCredentialId;
+  let credentialRow = await env.DB.prepare(
+    `SELECT provider, smtp_host, smtp_port, smtp_user, encrypted_password, from_address,
+            oauth_access_token, oauth_refresh_token, oauth_token_expires_at
+     FROM mail_credentials WHERE id = ?`,
   )
-    .bind(messages[0].mailCredentialId)
-    .first<{ smtp_host: string; smtp_port: number; smtp_user: string; encrypted_password: string; from_address: string }>();
+    .bind(credentialId)
+    .first<CredentialRow>();
 
   if (!credentialRow) {
     for (const m of batch.messages) m.ack(); // mailkonto borttaget — kan inte skickas, släpp jobbet
@@ -44,7 +62,10 @@ async function processJobMessages(
     return;
   }
 
-  const password = await decryptSecret(credentialRow.encrypted_password, env.MAIL_CRED_KEY);
+  // Förnya Microsoft-token i förväg om den snart går ut (inom 5 min) — undvik att göra det per mottagare.
+  if (credentialRow.provider === "microsoft_graph" && credentialRow.oauth_token_expires_at! < Date.now() + 5 * 60 * 1000) {
+    credentialRow = await refreshAndPersistMicrosoftToken(env, credentialId, credentialRow);
+  }
 
   let bounceCount = 0;
   let attempted = 0;
@@ -61,16 +82,7 @@ async function processJobMessages(
     try {
       const greeting = firstName(m.recipientName) ? `Hej ${firstName(m.recipientName)}!` : "Hej!";
       const html = `<p>${greeting}</p>\n${m.htmlBody}`;
-      await sendSmtpMail(
-        {
-          host: credentialRow.smtp_host,
-          port: credentialRow.smtp_port,
-          user: credentialRow.smtp_user,
-          password,
-          fromAddress: credentialRow.from_address,
-        },
-        { to: m.recipientEmail, html },
-      );
+      await sendOneMail(env, credentialRow, m.recipientEmail, html);
       await logSend(env, m, "ok", null);
       queueMsg.ack();
     } catch (err) {
@@ -97,6 +109,41 @@ async function processJobMessages(
     .run();
 
   await maybeFinishJob(env, sendJobId);
+}
+
+async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, html: string): Promise<void> {
+  if (credentialRow.provider === "microsoft_graph") {
+    const accessToken = await decryptSecret(credentialRow.oauth_access_token!, env.MAIL_CRED_KEY);
+    await sendGraphMail(accessToken, { to, html });
+    return;
+  }
+
+  const password = await decryptSecret(credentialRow.encrypted_password, env.MAIL_CRED_KEY);
+  await sendSmtpMail(
+    {
+      host: credentialRow.smtp_host,
+      port: credentialRow.smtp_port,
+      user: credentialRow.smtp_user,
+      password,
+      fromAddress: credentialRow.from_address,
+    },
+    { to, html },
+  );
+}
+
+async function refreshAndPersistMicrosoftToken(env: Env, credentialId: string, credentialRow: CredentialRow): Promise<CredentialRow> {
+  const refreshToken = await decryptSecret(credentialRow.oauth_refresh_token!, env.MAIL_CRED_KEY);
+  const fresh = await refreshMicrosoftToken(env.OAUTH_MICROSOFT_CLIENT_ID!, env.OAUTH_MICROSOFT_CLIENT_SECRET!, refreshToken);
+
+  const encryptedAccessToken = await encryptSecret(fresh.accessToken, env.MAIL_CRED_KEY);
+  const encryptedRefreshToken = await encryptSecret(fresh.refreshToken, env.MAIL_CRED_KEY);
+  await env.DB.prepare(
+    "UPDATE mail_credentials SET oauth_access_token = ?, oauth_refresh_token = ?, oauth_token_expires_at = ? WHERE id = ?",
+  )
+    .bind(encryptedAccessToken, encryptedRefreshToken, fresh.expiresAt, credentialId)
+    .run();
+
+  return { ...credentialRow, oauth_access_token: encryptedAccessToken, oauth_refresh_token: encryptedRefreshToken, oauth_token_expires_at: fresh.expiresAt };
 }
 
 async function logSend(env: Env, m: SendJobMessage, status: "ok" | "bounce", error: string | null): Promise<void> {
