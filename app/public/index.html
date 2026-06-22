@@ -12,84 +12,84 @@
   <div class="brand">
     <span class="se-flag" aria-hidden="true"></span>
     <div>
-      <h1>Politiker-kontakt</h1>
-      <p>Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
+      <h1 data-i18n="brand_title">Politiker-kontakt</h1>
+      <p data-i18n="brand_tagline">Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
     </div>
   </div>
   <nav class="header-links">
-    <button id="faq-btn" class="link-btn">FAQ</button>
-    <button id="contact-btn" class="link-btn">Kontakt</button>
-    <button id="feedback-btn" class="link-btn">Rapportera fel</button>
-    <a href="https://www.paypal.com/donate?business=anders.eriksson@denied.se&currency_code=SEK&item_name=Politiker-kontakt" target="_blank" rel="noopener" class="link-btn">Stötta tjänsten</a>
+    <button id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
+    <button id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
+    <button id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
+    <a href="https://www.paypal.com/donate?business=anders.eriksson@denied.se&currency_code=SEK&item_name=Politiker-kontakt" target="_blank" rel="noopener" class="link-btn" data-i18n="nav_donate">Stötta tjänsten</a>
     <select id="lang-select" aria-label="Språk"></select>
     <button id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
-    <button id="logout-btn" class="link-btn" hidden>Logga ut</button>
+    <button id="logout-btn" class="link-btn" hidden data-i18n="nav_logout">Logga ut</button>
   </nav>
 </header>
 
 <main>
   <section id="auth-view">
     <div class="card">
-      <h2>Logga in</h2>
+      <h2 data-i18n="login_title">Logga in</h2>
       <div class="oauth-buttons">
         <a href="/api/oauth/google/start" class="btn-oauth btn-google">
           <svg class="provider-icon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.71c-.18-.54-.28-1.11-.28-1.71s.1-1.17.28-1.71V4.96H.96A8.99 8.99 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-          Logga in med Google
+          <span data-i18n="oauth_google">Logga in med Google</span>
         </a>
         <a href="/api/oauth/github/start" class="btn-oauth btn-github">
           <svg class="provider-icon" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-          Logga in med GitHub
+          <span data-i18n="oauth_github">Logga in med GitHub</span>
         </a>
         <a href="/api/oauth/microsoft/start" class="btn-oauth btn-microsoft">
           <svg class="provider-icon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="0" y="0" width="8.5" height="8.5" fill="#F25022"/><rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00"/><rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF"/><rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900"/></svg>
-          Logga in med Microsoft
+          <span data-i18n="oauth_microsoft">Logga in med Microsoft</span>
         </a>
       </div>
-      <p class="hint">Apple-inloggning kommer snart.</p>
-      <div class="divider">eller</div>
+      <p class="hint" data-i18n="apple_soon">Apple-inloggning kommer snart.</p>
+      <div class="divider" data-i18n="divider_or">eller</div>
       <form id="login-form">
-        <input type="email" name="email" placeholder="E-post" required>
-        <input type="password" name="password" placeholder="Lösenord" required>
-        <input type="text" name="totpCode" id="login-totp" placeholder="6-siffrig 2FA-kod" hidden>
-        <button type="submit">Logga in</button>
+        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <input type="password" name="password" data-i18n-placeholder="placeholder_password" placeholder="Lösenord" required>
+        <input type="text" name="totpCode" id="login-totp" data-i18n-placeholder="placeholder_totp_code" placeholder="6-siffrig 2FA-kod" hidden>
+        <button type="submit" data-i18n="btn_login">Logga in</button>
       </form>
-      <button id="forgot-password-btn" class="link-btn">Glömt lösenord?</button>
+      <button id="forgot-password-btn" class="link-btn" data-i18n="forgot_password_link">Glömt lösenord?</button>
       <p id="login-msg"></p>
     </div>
 
     <div class="card" id="forgot-password-card" hidden>
-      <h2>Återställ lösenord</h2>
+      <h2 data-i18n="forgot_password_title">Återställ lösenord</h2>
       <form id="forgot-password-form">
-        <input type="email" name="email" placeholder="E-post" required>
-        <button type="submit">Skicka återställningslänk</button>
+        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <button type="submit" data-i18n="btn_send_reset_link">Skicka återställningslänk</button>
       </form>
       <p id="forgot-password-msg"></p>
     </div>
 
     <div class="card" id="reset-password-card" hidden>
-      <h2>Sätt nytt lösenord</h2>
+      <h2 data-i18n="reset_password_title">Sätt nytt lösenord</h2>
       <form id="reset-password-form">
-        <input type="password" name="newPassword" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
-        <button type="submit">Spara nytt lösenord</button>
+        <input type="password" name="newPassword" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit" data-i18n="btn_save_new_password">Spara nytt lösenord</button>
       </form>
       <p id="reset-password-msg"></p>
     </div>
 
     <div class="card">
-      <h2>Skapa konto</h2>
+      <h2 data-i18n="signup_title">Skapa konto</h2>
       <form id="signup-form">
-        <input type="email" name="email" placeholder="E-post" required>
-        <input type="password" name="password" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
-        <button type="submit">Skapa konto</button>
+        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <input type="password" name="password" data-i18n-placeholder="placeholder_password_min" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit" data-i18n="btn_signup">Skapa konto</button>
       </form>
       <p id="signup-msg"></p>
     </div>
 
     <div class="card" id="verify-card" hidden>
-      <h2>Bekräfta din e-post</h2>
+      <h2 data-i18n="verify_title">Bekräfta din e-post</h2>
       <form id="verify-form">
-        <input type="text" name="code" placeholder="6-siffrig kod" required>
-        <button type="submit">Bekräfta</button>
+        <input type="text" name="code" data-i18n-placeholder="placeholder_6digit_code" placeholder="6-siffrig kod" required>
+        <button type="submit" data-i18n="btn_confirm">Bekräfta</button>
       </form>
       <p id="verify-msg"></p>
     </div>
@@ -97,109 +97,109 @@
 
   <section id="app-view" hidden>
     <div class="card">
-      <h2>Ditt mailkonto</h2>
-      <p class="hint">Du loggar in mot ditt EGET mailkonto (Gmail/Outlook/iCloud/annat) — brevet skickas från din egen adress, vi rör aldrig dina inloggningsuppgifter eller svaren du får.</p>
+      <h2 data-i18n="mailaccount_title">Ditt mailkonto</h2>
+      <p class="hint" data-i18n="mailaccount_hint">Du loggar in mot ditt EGET mailkonto (Gmail/Outlook/iCloud/annat) — brevet skickas från din egen adress, vi rör aldrig dina inloggningsuppgifter eller svaren du får.</p>
       <ul id="mail-credentials-list"></ul>
       <a href="/api/oauth-mail/microsoft/start" class="btn-oauth btn-microsoft">
         <svg class="provider-icon" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="0" y="0" width="8.5" height="8.5" fill="#F25022"/><rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00"/><rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF"/><rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900"/></svg>
-        Anslut Outlook/Microsoft 365 utan lösenord
+        <span data-i18n="ms_connect_btn">Anslut Outlook/Microsoft 365 utan lösenord</span>
       </a>
-      <p class="hint">Inget app-lösenord behövs — du loggar in via Microsoft och godkänner att skicka mail, klart.</p>
-      <div class="divider">eller manuellt</div>
+      <p class="hint" data-i18n="ms_connect_hint">Inget app-lösenord behövs — du loggar in via Microsoft och godkänner att skicka mail, klart.</p>
+      <div class="divider" data-i18n="divider_or_manual">eller manuellt</div>
       <form id="add-credential-form">
         <select name="provider" id="provider-select">
-          <option value="gmail">📧 Gmail</option>
-          <option value="outlook">📨 Outlook / Microsoft 365</option>
-          <option value="icloud">☁️ iCloud</option>
-          <option value="yahoo">💌 Yahoo Mail</option>
-          <option value="generic">⚙️ Annan (generisk SMTP)</option>
+          <option value="gmail" data-i18n="provider_gmail">📧 Gmail</option>
+          <option value="outlook" data-i18n="provider_outlook">📨 Outlook / Microsoft 365</option>
+          <option value="icloud" data-i18n="provider_icloud">☁️ iCloud</option>
+          <option value="yahoo" data-i18n="provider_yahoo">💌 Yahoo Mail</option>
+          <option value="generic" data-i18n="provider_generic">⚙️ Annan (generisk SMTP)</option>
         </select>
         <div id="generic-fields" hidden>
-          <input type="text" name="host" placeholder="SMTP-server">
-          <input type="number" name="port" placeholder="Port" value="587">
+          <input type="text" name="host" data-i18n-placeholder="placeholder_smtp_host" placeholder="SMTP-server">
+          <input type="number" name="port" data-i18n-placeholder="placeholder_smtp_port" placeholder="Port" value="587">
         </div>
-        <input type="email" name="fromAddress" placeholder="Din e-postadress" required>
-        <input type="text" name="user" placeholder="Användarnamn (oftast samma som e-post)" required>
-        <input type="password" name="password" placeholder="Lösenord / app-lösenord" required>
+        <input type="email" name="fromAddress" data-i18n-placeholder="placeholder_from_address" placeholder="Din e-postadress" required>
+        <input type="text" name="user" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
+        <input type="password" name="password" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
         <p class="hint" id="provider-help"></p>
-        <button type="submit">Koppla mailkonto</button>
+        <button type="submit" data-i18n="btn_connect_mail">Koppla mailkonto</button>
       </form>
       <p id="credential-msg"></p>
     </div>
 
     <div class="card">
-      <h2>Sätt/byt lösenord</h2>
-      <p class="hint">Skapade du kontot via Google/GitHub/Microsoft? Här kan du sätta ett lösenord också, så du kan logga in på fler sätt.</p>
+      <h2 data-i18n="setpw_title">Sätt/byt lösenord</h2>
+      <p class="hint" data-i18n="setpw_hint">Skapade du kontot via Google/GitHub/Microsoft? Här kan du sätta ett lösenord också, så du kan logga in på fler sätt.</p>
       <form id="set-password-form">
-        <input type="password" name="newPassword" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
-        <button type="submit">Spara lösenord</button>
+        <input type="password" name="newPassword" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit" data-i18n="btn_save_password">Spara lösenord</button>
       </form>
       <p id="set-password-msg"></p>
     </div>
 
     <div class="card">
-      <h2>Tvåfaktorsinloggning (2FA)</h2>
+      <h2 data-i18n="totp_title">Tvåfaktorsinloggning (2FA)</h2>
       <div id="totp-disabled-view">
-        <p class="hint">Inte aktiverat.</p>
-        <button id="totp-setup-btn">Aktivera 2FA</button>
+        <p class="hint" data-i18n="totp_not_enabled">Inte aktiverat.</p>
+        <button id="totp-setup-btn" data-i18n="btn_enable_totp">Aktivera 2FA</button>
       </div>
       <div id="totp-setup-view" hidden>
-        <p class="hint">Lägg till denna hemlighet manuellt i din autentiseringsapp (Google Authenticator, Authy, m.fl.):</p>
+        <p class="hint" data-i18n="totp_setup_hint">Lägg till denna hemlighet manuellt i din autentiseringsapp (Google Authenticator, Authy, m.fl.):</p>
         <code id="totp-secret"></code>
         <form id="totp-confirm-form">
-          <input type="text" name="code" placeholder="6-siffrig kod från appen" required>
-          <button type="submit">Bekräfta och aktivera</button>
+          <input type="text" name="code" data-i18n-placeholder="placeholder_app_code" placeholder="6-siffrig kod från appen" required>
+          <button type="submit" data-i18n="btn_confirm_enable">Bekräfta och aktivera</button>
         </form>
       </div>
       <div id="totp-enabled-view" hidden>
-        <p class="hint">2FA är aktiverat på ditt konto.</p>
-        <button id="totp-disable-btn">Inaktivera 2FA</button>
+        <p class="hint" data-i18n="totp_enabled_hint">2FA är aktiverat på ditt konto.</p>
+        <button id="totp-disable-btn" data-i18n="btn_disable_totp">Inaktivera 2FA</button>
       </div>
       <p id="totp-msg"></p>
     </div>
 
     <div class="card">
-      <h2>Välj mottagare</h2>
-      <input type="text" id="area-filter" placeholder="Sök kommun/region...">
+      <h2 data-i18n="recipients_title">Välj mottagare</h2>
+      <input type="text" id="area-filter" data-i18n-placeholder="placeholder_search_area" placeholder="Sök kommun/region...">
       <div id="area-list"></div>
     </div>
 
     <div class="card">
-      <h2>Skriv brevet</h2>
-      <p class="hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
-      <input type="text" id="letter-subject" placeholder="Ämne (valfritt — åäö fungerar)">
+      <h2 data-i18n="letter_title">Skriv brevet</h2>
+      <p class="hint" data-i18n="letter_hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
+      <input type="text" id="letter-subject" data-i18n-placeholder="placeholder_subject" placeholder="Ämne (valfritt — åäö fungerar)">
       <textarea id="letter-body" rows="12" placeholder="<p>Mitt brev...</p>"></textarea>
 
-      <p class="hint">Bifoga filer (PDF, txt, doc, docx) — max 10 MB per fil. ".doc" kan bara bifogas, inte användas som brevtext.</p>
+      <p class="hint" data-i18n="attachments_hint">Bifoga filer (PDF, txt, doc, docx) — max 10 MB per fil. ".doc" kan bara bifogas, inte användas som brevtext.</p>
       <input type="file" id="letter-files" multiple accept=".pdf,.txt,.doc,.docx">
       <div id="file-mode-list"></div>
 
-      <button id="send-btn">Skicka till valda mottagare</button>
+      <button id="send-btn" data-i18n="btn_send">Skicka till valda mottagare</button>
       <div class="progress-bar" id="send-progress" hidden><div class="progress-bar-fill" id="send-progress-fill"></div></div>
       <p id="send-msg"></p>
     </div>
 
     <div class="card">
-      <h2>Status på dina utskick</h2>
+      <h2 data-i18n="sendstatus_title">Status på dina utskick</h2>
       <ul id="send-jobs-list"></ul>
     </div>
 
     <div class="card">
-      <h2>API-nycklar</h2>
-      <p class="hint">För programmatisk åtkomst — skicka med <code>Authorization: Bearer &lt;nyckel&gt;</code> istället för att logga in i webbläsaren.</p>
+      <h2 data-i18n="apikeys_title">API-nycklar</h2>
+      <p class="hint" data-i18n="apikeys_hint">För programmatisk åtkomst — skicka med Authorization: Bearer &lt;nyckel&gt; istället för att logga in i webbläsaren.</p>
       <ul id="api-keys-list"></ul>
       <form id="create-api-key-form">
-        <input type="text" name="name" placeholder="Namn på nyckeln (t.ex. 'mitt script')" required>
-        <button type="submit">Skapa ny nyckel</button>
+        <input type="text" name="name" data-i18n-placeholder="placeholder_apikey_name" placeholder="Namn på nyckeln (t.ex. 'mitt script')" required>
+        <button type="submit" data-i18n="btn_create_apikey">Skapa ny nyckel</button>
       </form>
       <p id="api-key-msg"></p>
     </div>
 
     <div class="card" id="admin-card" hidden>
-      <h2>Admin</h2>
-      <h3>Konton</h3>
+      <h2 data-i18n="admin_title">Admin</h2>
+      <h3 data-i18n="admin_accounts">Konton</h3>
       <ul id="admin-accounts-list"></ul>
-      <h3>Feedback</h3>
+      <h3 data-i18n="admin_feedback">Feedback</h3>
       <ul id="admin-feedback-list"></ul>
     </div>
   </section>
@@ -209,44 +209,45 @@
   <form id="feedback-form">
     <h3 id="feedback-dialog-title">Feedback / felrapport</h3>
     <input type="hidden" name="type" id="feedback-type" value="bug">
-    <input type="email" name="replyTo" id="feedback-replyto" placeholder="Din e-post (om du vill ha svar)" hidden>
-    <textarea name="message" rows="6" placeholder="Vad hände? Vad förväntade du dig?" required></textarea>
+    <input type="email" name="replyTo" id="feedback-replyto" data-i18n-placeholder="placeholder_replyto" placeholder="Din e-post (om du vill ha svar)" hidden>
+    <textarea name="message" rows="6" data-i18n-placeholder="placeholder_feedback_message" placeholder="Vad hände? Vad förväntade du dig?" required></textarea>
     <menu>
-      <button type="submit">Skicka</button>
-      <button type="button" id="feedback-cancel">Avbryt</button>
+      <button type="submit" data-i18n="btn_send_feedback">Skicka</button>
+      <button type="button" id="feedback-cancel" data-i18n="btn_cancel">Avbryt</button>
     </menu>
   </form>
 </dialog>
 
 <dialog id="faq-dialog">
-  <h3>Vanliga frågor</h3>
+  <h3 data-i18n="faq_title">Vanliga frågor</h3>
   <dl class="faq-list">
-    <dt>Vad är Politiker-kontakt?</dt>
-    <dd>Ett fristående, gratis verktyg som gör det enklare att skriva till kommun-, region- och riksdagspolitiker. Vi har samlat officiella kontaktuppgifter så du inte behöver leta dig fram själv.</dd>
+    <dt data-i18n="faq_q1">Vad är Politiker-kontakt?</dt>
+    <dd data-i18n="faq_a1">Ett fristående, gratis verktyg som gör det enklare att skriva till kommun-, region- och riksdagspolitiker. Vi har samlat officiella kontaktuppgifter så du inte behöver leta dig fram själv.</dd>
 
-    <dt>Varför måste jag koppla mitt eget mailkonto?</dt>
-    <dd>Brevet skickas alltid från <strong>din egen</strong> adress, aldrig från oss. Det gör att mottagaren kan svara direkt till dig, och att vi aldrig hanterar eller läser dina mottagna svar. Vi sparar bara dina mailuppgifter krypterat för att kunna skicka åt dig.</dd>
+    <dt data-i18n="faq_q2">Varför måste jag koppla mitt eget mailkonto?</dt>
+    <dd data-i18n="faq_a2">Brevet skickas alltid från din egen adress, aldrig från oss. Det gör att mottagaren kan svara direkt till dig, och att vi aldrig hanterar eller läser dina mottagna svar.</dd>
 
-    <dt>Kostar det något?</dt>
-    <dd>Nej, helt gratis. Tjänsten finansieras av frivilliga donationer (se "Stötta tjänsten" i menyn) — det finns ingen betalvägg och ingen reklam.</dd>
+    <dt data-i18n="faq_q3">Kostar det något?</dt>
+    <dd data-i18n="faq_a3">Nej, helt gratis. Tjänsten finansieras av frivilliga donationer — det finns ingen betalvägg och ingen reklam.</dd>
 
-    <dt>Är det här lagligt / GDPR-godkänt?</dt>
-    <dd>Kontaktuppgifterna vi visar är offentliga tjänsteadresser till folkvalda, vilket räknas som ett av de starkare fallen av "legitimt intresse" enligt GDPR. Du skickar via ditt eget konto, vilket gör dig till avsändare av ditt eget brev — precis som om du skrivit det själv för hand.</dd>
+    <dt data-i18n="faq_q4">Är det här lagligt / GDPR-godkänt?</dt>
+    <dd data-i18n="faq_a4">Kontaktuppgifterna vi visar är offentliga tjänsteadresser till folkvalda, ett av de starkare fallen av "legitimt intresse" enligt GDPR. Du skickar via ditt eget konto, som om du skrivit brevet själv för hand.</dd>
 
-    <dt>Sparar ni mina mailuppgifter säkert?</dt>
-    <dd>Lösenord/app-lösenord krypteras (AES-GCM) innan de sparas, och används bara av systemet för att skicka dina brev — vi loggar eller visar dem aldrig i klartext.</dd>
+    <dt data-i18n="faq_q5">Sparar ni mina mailuppgifter säkert?</dt>
+    <dd data-i18n="faq_a5">Lösenord/app-lösenord krypteras (AES-GCM) innan de sparas, och används bara för att skicka dina brev — vi loggar eller visar dem aldrig i klartext.</dd>
 
-    <dt>Kan jag bifoga filer?</dt>
-    <dd>Ja — PDF, txt, doc och docx, upp till 10 MB per fil. docx och PDF kan även omvandlas automatiskt till brevtext om du vill använda innehållet direkt istället för att bifoga.</dd>
+    <dt data-i18n="faq_q6">Kan jag bifoga filer?</dt>
+    <dd data-i18n="faq_a6">Ja — PDF, txt, doc och docx, upp till 10 MB per fil. docx och PDF kan även omvandlas automatiskt till brevtext.</dd>
 
-    <dt>Vem ligger bakom det här?</dt>
-    <dd>Ett privat, ideellt initiativ — inte en myndighet eller ett företag. Kontakta oss gärna om du har frågor.</dd>
+    <dt data-i18n="faq_q7">Vem ligger bakom det här?</dt>
+    <dd data-i18n="faq_a7">Ett privat, ideellt initiativ — inte en myndighet eller ett företag. Kontakta oss gärna om du har frågor.</dd>
   </dl>
   <menu>
-    <button type="button" id="faq-close">Stäng</button>
+    <button type="button" id="faq-close" data-i18n="btn_close">Stäng</button>
   </menu>
 </dialog>
 
+<script src="/i18n.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

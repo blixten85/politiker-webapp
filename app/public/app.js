@@ -12,11 +12,10 @@ let allAreas = [];
 
 // Tema: mörkt som standard, växlingsbart till ljust/system, sparas lokalt.
 const THEME_ORDER = ["dark", "light", "system"];
-const THEME_LABELS = { dark: "🌙 Mörkt", light: "☀️ Ljust", system: "🖥️ System" };
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  document.getElementById("theme-toggle").textContent = THEME_LABELS[theme];
+  document.getElementById("theme-toggle").textContent = t(`theme_${theme}`);
 }
 
 function initTheme() {
@@ -31,6 +30,7 @@ document.getElementById("theme-toggle").addEventListener("click", () => {
   applyTheme(next);
 });
 
+initI18n();
 initTheme();
 
 // Automatisk felrapportering: riktiga JS-fel (buggar) skickas till
