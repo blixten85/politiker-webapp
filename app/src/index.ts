@@ -15,6 +15,7 @@ import { listAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
+import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
 import { getAuthorizeUrl, handleOAuthCallback } from "./oauth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
@@ -107,7 +108,16 @@ export default {
 
     try {
       const sessionToken = getCookie(req, "session");
-      const account = await getAccountFromSession(env, sessionToken);
+      let account = await getAccountFromSession(env, sessionToken);
+
+      // Alternativ till sessionskaka: Authorization: Bearer <api-nyckel> —
+      // för programmatisk åtkomst utan webbläsare/inloggning.
+      if (!account) {
+        const authHeader = req.headers.get("Authorization");
+        if (authHeader?.startsWith("Bearer ")) {
+          account = await getAccountFromApiKey(env, authHeader.slice("Bearer ".length));
+        }
+      }
 
       if (url.pathname === "/api/signup" && req.method === "POST") {
         const { email, password } = await req.json<{ email: string; password: string }>();
@@ -191,6 +201,21 @@ export default {
       if (url.pathname === "/api/set-password" && req.method === "POST") {
         const { newPassword } = await req.json<{ newPassword: string }>();
         await setPassword(env, accountId, newPassword);
+        return json({ ok: true });
+      }
+
+      if (url.pathname === "/api/api-keys" && req.method === "GET") {
+        return json(await listApiKeys(env, accountId));
+      }
+
+      if (url.pathname === "/api/api-keys" && req.method === "POST") {
+        const { name } = await req.json<{ name: string }>();
+        return json(await createApiKey(env, accountId, name));
+      }
+
+      if (url.pathname.startsWith("/api/api-keys/") && req.method === "DELETE") {
+        const id = url.pathname.split("/").pop()!;
+        await revokeApiKey(env, accountId, id);
         return json({ ok: true });
       }
 

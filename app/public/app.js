@@ -369,6 +369,39 @@ document.getElementById("totp-disable-btn").addEventListener("click", async () =
   document.getElementById("totp-disabled-view").hidden = false;
 });
 
+async function loadApiKeys() {
+  const keys = await api("/api/api-keys");
+  const ul = document.getElementById("api-keys-list");
+  ul.innerHTML = "";
+  for (const k of keys) {
+    const li = document.createElement("li");
+    const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString("sv-SE") : "aldrig";
+    li.textContent = `${k.name} — skapad ${new Date(k.created_at).toLocaleDateString("sv-SE")}, senast använd: ${lastUsed} `;
+    const del = document.createElement("button");
+    del.textContent = "Återkalla";
+    del.onclick = async () => {
+      await api(`/api/api-keys/${k.id}`, { method: "DELETE" });
+      loadApiKeys();
+    };
+    li.appendChild(del);
+    ul.appendChild(li);
+  }
+}
+
+document.getElementById("create-api-key-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("api-key-msg");
+  try {
+    const result = await api("/api/api-keys", { method: "POST", body: JSON.stringify({ name: fd.get("name") }) });
+    msg.textContent = `Ny nyckel (visas bara nu, spara den!): ${result.key}`;
+    e.target.reset();
+    loadApiKeys();
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
 async function loadAdminPanel() {
   const accounts = await api("/api/admin/accounts");
   const accUl = document.getElementById("admin-accounts-list");
@@ -408,7 +441,7 @@ async function showApp() {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
   }
-  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs()];
+  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys()];
   if (me.isAdmin) {
     document.getElementById("admin-card").hidden = false;
     tasks.push(loadAdminPanel());
