@@ -277,8 +277,33 @@ function fileToBase64(file) {
   });
 }
 
+// Skydd mot förlorat brev: varna innan sidan stängs/laddas om så länge
+// brevtexten inte är tom och inte just skickades iväg.
+let letterUnsaved = false;
+document.getElementById("letter-body").addEventListener("input", (e) => {
+  letterUnsaved = e.target.value.trim().length > 0;
+});
+window.addEventListener("beforeunload", (e) => {
+  if (letterUnsaved) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+function setSendProgress(fraction) {
+  const bar = document.getElementById("send-progress");
+  const fill = document.getElementById("send-progress-fill");
+  if (fraction === null) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  fill.style.width = `${Math.round(fraction * 100)}%`;
+}
+
 document.getElementById("send-btn").addEventListener("click", async () => {
   const msg = document.getElementById("send-msg");
+  const sendBtn = document.getElementById("send-btn");
   const credentials = await loadMailCredentials();
   if (credentials.length === 0) {
     msg.textContent = "Koppla ett mailkonto först.";
@@ -295,18 +320,24 @@ document.getElementById("send-btn").addEventListener("click", async () => {
     return;
   }
 
-  const files = [...document.getElementById("letter-files").files];
-  const attachments = [];
-  if (files.length > 0) {
-    msg.textContent = "Bearbetar bifogade filer...";
-    for (const file of files) {
-      const mode = document.querySelector(`input[name="mode-${file.name}"]:checked`).value;
-      const base64Data = await fileToBase64(file);
-      attachments.push({ filename: file.name, contentType: file.type || "application/octet-stream", mode, base64Data });
-    }
-  }
-
+  sendBtn.disabled = true;
+  setSendProgress(0.02);
   try {
+    const files = [...document.getElementById("letter-files").files];
+    const attachments = [];
+    if (files.length > 0) {
+      msg.textContent = "Bearbetar bifogade filer...";
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const mode = document.querySelector(`input[name="mode-${file.name}"]:checked`).value;
+        const base64Data = await fileToBase64(file);
+        attachments.push({ filename: file.name, contentType: file.type || "application/octet-stream", mode, base64Data });
+        setSendProgress(0.1 + 0.4 * ((i + 1) / files.length));
+      }
+    }
+
+    msg.textContent = "Skickar...";
+    setSendProgress(0.7);
     const result = await api("/api/send", {
       method: "POST",
       body: JSON.stringify({
@@ -317,10 +348,15 @@ document.getElementById("send-btn").addEventListener("click", async () => {
         attachments: attachments.length > 0 ? attachments : undefined,
       }),
     });
+    setSendProgress(1);
+    letterUnsaved = false;
     msg.textContent = `Skickar till ${result.totalRecipients} mottagare — se status nedan.`;
     loadSendJobs();
   } catch (err) {
     msg.textContent = "Misslyckades: " + err.message;
+  } finally {
+    sendBtn.disabled = false;
+    setTimeout(() => setSendProgress(null), 800);
   }
 });
 
@@ -422,15 +458,33 @@ async function loadAdminPanel() {
   }
 }
 
-document.getElementById("feedback-btn").addEventListener("click", () => document.getElementById("feedback-dialog").showModal());
+function openFeedbackDialog(type) {
+  document.getElementById("feedback-type").value = type;
+  document.getElementById("feedback-dialog-title").textContent = type === "contact" ? "Kontakta oss" : "Rapportera fel";
+  document.getElementById("feedback-replyto").hidden = type !== "contact";
+  document.getElementById("feedback-dialog").showModal();
+}
+document.getElementById("feedback-btn").addEventListener("click", () => openFeedbackDialog("bug"));
+document.getElementById("contact-btn").addEventListener("click", () => openFeedbackDialog("contact"));
 document.getElementById("feedback-cancel").addEventListener("click", () => document.getElementById("feedback-dialog").close());
 document.getElementById("feedback-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await api("/api/feedback", { method: "POST", body: JSON.stringify({ message: fd.get("message"), context: { url: location.href } }) });
+  await api("/api/feedback", {
+    method: "POST",
+    body: JSON.stringify({
+      message: fd.get("message"),
+      type: fd.get("type"),
+      replyTo: fd.get("replyTo") || undefined,
+      context: { url: location.href },
+    }),
+  });
   document.getElementById("feedback-dialog").close();
   e.target.reset();
 });
+
+document.getElementById("faq-btn").addEventListener("click", () => document.getElementById("faq-dialog").showModal());
+document.getElementById("faq-close").addEventListener("click", () => document.getElementById("faq-dialog").close());
 
 async function showApp() {
   document.getElementById("auth-view").hidden = true;

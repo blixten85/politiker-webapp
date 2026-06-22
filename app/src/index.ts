@@ -173,8 +173,13 @@ export default {
       // innan ett konto finns (t.ex. under signup), och vi vill aldrig
       // tvinga en bugg-rapportör att först logga in.
       if (url.pathname === "/api/feedback" && req.method === "POST") {
-        const { message, context } = await req.json<{ message: string; context?: Record<string, unknown> }>();
-        const result = await submitFeedback(env, { accountId: account ? (account.id as string) : null, message, context });
+        const { message, context, type, replyTo } = await req.json<{
+          message: string;
+          context?: Record<string, unknown>;
+          type?: "bug" | "contact";
+          replyTo?: string;
+        }>();
+        const result = await submitFeedback(env, { accountId: account ? (account.id as string) : null, message, context, type, replyTo });
         return json(result);
       }
 

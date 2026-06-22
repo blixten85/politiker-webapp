@@ -6,36 +6,47 @@ const FEEDBACK_REPO = "blixten85/politiker-webapp";
 
 export async function submitFeedback(
   env: Env,
-  input: { accountId: string | null; message: string; context?: Record<string, unknown> },
+  input: {
+    accountId: string | null;
+    message: string;
+    context?: Record<string, unknown>;
+    type?: "bug" | "contact";
+    replyTo?: string;
+  },
 ): Promise<{ githubIssueUrl: string | null }> {
+  const isContact = input.type === "contact";
   let githubIssueUrl: string | null = null;
 
-  try {
-    const resp = await fetch(`https://api.github.com/repos/${FEEDBACK_REPO}/issues`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.GITHUB_FEEDBACK_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "User-Agent": "politiker-webapp-feedback",
-      },
-      body: JSON.stringify({
-        title: `Feedback: ${input.message.slice(0, 60)}${input.message.length > 60 ? "…" : ""}`,
-        body: [
-          input.message,
-          "",
-          "---",
-          `Konto: ${input.accountId ?? "ej inloggad"}`,
-          input.context ? `Kontext: \`\`\`json\n${JSON.stringify(input.context, null, 2)}\n\`\`\`` : "",
-        ].join("\n"),
-        labels: ["feedback", "user-reported"],
-      }),
-    });
-    if (resp.ok) {
-      const issue = (await resp.json()) as { html_url: string };
-      githubIssueUrl = issue.html_url;
+  // Allmänna kontaktfrågor skapar inte en GitHub-issue (är inte buggar/buggrapporter
+  // som hör hemma i kodspårningen) — bara felrapporter gör det.
+  if (!isContact) {
+    try {
+      const resp = await fetch(`https://api.github.com/repos/${FEEDBACK_REPO}/issues`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.GITHUB_FEEDBACK_TOKEN}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "politiker-webapp-feedback",
+        },
+        body: JSON.stringify({
+          title: `Feedback: ${input.message.slice(0, 60)}${input.message.length > 60 ? "…" : ""}`,
+          body: [
+            input.message,
+            "",
+            "---",
+            `Konto: ${input.accountId ?? "ej inloggad"}`,
+            input.context ? `Kontext: \`\`\`json\n${JSON.stringify(input.context, null, 2)}\n\`\`\`` : "",
+          ].join("\n"),
+          labels: ["feedback", "user-reported"],
+        }),
+      });
+      if (resp.ok) {
+        const issue = (await resp.json()) as { html_url: string };
+        githubIssueUrl = issue.html_url;
+      }
+    } catch {
+      // GitHub-issue är "best effort" — mejlkopian nedan är huvudvägen för att felet inte ska gå förlorat.
     }
-  } catch {
-    // GitHub-issue är "best effort" — mejlkopian nedan är huvudvägen för att felet inte ska gå förlorat.
   }
 
   await env.DB.prepare(
@@ -47,8 +58,12 @@ export async function submitFeedback(
   await sendSystemMail(
     env,
     env.FEEDBACK_NOTIFY_EMAIL,
-    "Ny feedback — politiker.denied.se",
-    `<p>${escapeHtml(input.message)}</p><p>GitHub-issue: ${githubIssueUrl ? `<a href="${githubIssueUrl}">${githubIssueUrl}</a>` : "kunde inte skapas"}</p>`,
+    isContact ? "Ny kontaktfråga — politiker.denied.se" : "Ny feedback — politiker.denied.se",
+    [
+      input.replyTo ? `<p>Svar önskas till: ${escapeHtml(input.replyTo)}</p>` : "",
+      `<p>${escapeHtml(input.message)}</p>`,
+      !isContact ? `<p>GitHub-issue: ${githubIssueUrl ? `<a href="${githubIssueUrl}">${githubIssueUrl}</a>` : "kunde inte skapas"}</p>` : "",
+    ].join(""),
   );
 
   return { githubIssueUrl };
