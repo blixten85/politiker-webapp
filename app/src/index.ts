@@ -10,11 +10,12 @@ import {
   disableTotp,
   setPassword,
 } from "./auth";
-import { addMailCredential, listMailCredentials, deleteMailCredential } from "./mail-credentials";
+import { addMailCredential, listMailCredentials, deleteMailCredential, addMicrosoftGraphMailCredential } from "./mail-credentials";
 import { listAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { getAuthorizeUrl, handleOAuthCallback } from "./oauth";
+import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
 import type { Env } from "./db";
 
@@ -61,6 +62,39 @@ export default {
         const headers = new Headers(resp.headers);
         headers.set("Set-Cookie", setSessionCookie(sessionToken));
         return new Response(null, { status: 302, headers });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
+      }
+    }
+
+    // --- OAuth-koppling för MAILSÄNDNING (Microsoft Graph) — kräver att man
+    // redan är inloggad på politiker-webapp (kopplar credential till befintligt konto). ---
+    const oauthMailMatch = url.pathname.match(/^\/api\/oauth-mail\/microsoft\/(start|callback)$/);
+    if (oauthMailMatch) {
+      const [, step] = oauthMailMatch;
+      try {
+        const sessionToken = getCookie(req, "session");
+        const account = await getAccountFromSession(env, sessionToken);
+        if (!account) return json({ error: "Inte inloggad" }, 401);
+
+        if (step === "start") {
+          if (!env.OAUTH_MICROSOFT_CLIENT_ID) {
+            return json({ error: "Microsoft-koppling för mailsändning är inte konfigurerad än" }, 400);
+          }
+          const state = randomId();
+          await env.SESSIONS.put(`oauthmailstate:${state}`, account.id as string, { expirationTtl: 600 });
+          return Response.redirect(getMicrosoftMailAuthorizeUrl(env.OAUTH_MICROSOFT_CLIENT_ID, state), 302);
+        }
+
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        if (!code || !state) return json({ error: "Saknar code/state" }, 400);
+        const stateAccountId = await env.SESSIONS.get(`oauthmailstate:${state}`);
+        if (!stateAccountId) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
+        await env.SESSIONS.delete(`oauthmailstate:${state}`);
+
+        await addMicrosoftGraphMailCredential(env, stateAccountId, code);
+        return new Response(null, { status: 302, headers: { Location: "https://politiker.denied.se/" } });
       } catch (err) {
         return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
       }

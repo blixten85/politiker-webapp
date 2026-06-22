@@ -55,3 +55,13 @@ Kända Workers-specifika fallgropar som hittades och fixades under verifiering:
 - Kontot har Cloudflare Access (Zero Trust) med default-deny — en egen
   Access-app med "bypass"-policy (`everyone`) krävdes för att göra
   politiker.denied.se publik, utan att röra de andra apparnas privata policies.
+
+## Väntar på manuella steg (kräver inloggning hos tredjepartstjänster)
+
+Koden är klar för dessa, men inaktiv tills riktiga Client ID/Secret finns:
+
+- **Google-inloggning** (`/api/oauth/google/start`) — skapa OAuth-app i Google Cloud Console, redirect URI `https://politiker.denied.se/api/oauth/google/callback`. `OAUTH_GOOGLE_CLIENT_ID` (var) + `OAUTH_GOOGLE_CLIENT_SECRET` (secret) i `app`.
+- **GitHub-inloggning** (`/api/oauth/github/start`) — github.com/settings/developers, redirect URI `.../api/oauth/github/callback`. Samma var/secret-mönster.
+- **Microsoft-inloggning + mailsändning** (`/api/oauth/microsoft/start` samt `/api/oauth-mail/microsoft/start`) — portal.azure.com → App registrations. Behöver **två** redirect URIs registrerade på samma app: `.../api/oauth/microsoft/callback` (inloggning) och `.../api/oauth-mail/microsoft/callback` (mailsändning via Graph, kräver `Mail.Send` + `offline_access`-behörighet). `OAUTH_MICROSOFT_CLIENT_ID` behövs i **både** `app` (var) och `sender` (var, för tokenförnyelse) — `OAUTH_MICROSOFT_CLIENT_SECRET` som secret i båda.
+- **Apple-inloggning** — avsiktligt inte byggd än. Kräver betalt Apple Developer-konto (99 USD/år) + JWT-signerad client secret. Görs när det finns donationsintäkter att täcka kostnaden med.
+- **Gmail-OAuth för mailsändning** (motsvarande Microsoft Graph-flödet, men för Gmail) — avsiktligt inte byggd. Kräver Googles CASA-säkerhetsgranskning (några hundra till tusentals USD, återkommande årligen) för `gmail.send`-scopet. Görs när det finns donationsintäkter, om alls.
