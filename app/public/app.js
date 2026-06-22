@@ -256,10 +256,11 @@ document.getElementById("area-filter").addEventListener("input", renderAreas);
 document.getElementById("letter-files").addEventListener("change", (e) => {
   const container = document.getElementById("file-mode-list");
   container.innerHTML = "";
-  for (const file of e.target.files) {
+  for (let i = 0; i < e.target.files.length; i++) {
+    const file = e.target.files[i];
     const row = document.createElement("div");
     const isDoc = file.name.toLowerCase().endsWith(".doc");
-    const modeName = `mode-${file.name}`;
+    const modeName = `mode-${i}-${file.name}`;
 
     const span = document.createElement("span");
     span.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
