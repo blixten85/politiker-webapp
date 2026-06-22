@@ -84,3 +84,24 @@ export async function countSentToday(db: D1Database, accountId: string): Promise
     .first<{ n: number }>();
   return row?.n ?? 0;
 }
+
+// Räknar sänt per SPECIFIK mailkoppling, inte hela kontot — skyddar
+// leverantörskontot (t.ex. Gmail) från att bli av-rate-limitat/bannat,
+// oberoende av kontots övergripande dygnsgräns mot platiker-webapp.
+export async function countSentTodayForCredential(db: D1Database, mailCredentialId: string): Promise<number> {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) as n FROM send_log sl
+       JOIN send_jobs sj ON sj.id = sl.send_job_id
+       WHERE sj.mail_credential_id = ? AND sl.sent_at >= ? AND sl.status = 'ok'`,
+    )
+    .bind(mailCredentialId, startOfDay.getTime())
+    .first<{ n: number }>();
+  return row?.n ?? 0;
+}
+
+export async function getMailCredential(db: D1Database, id: string) {
+  return db.prepare("SELECT * FROM mail_credentials WHERE id = ?").bind(id).first();
+}

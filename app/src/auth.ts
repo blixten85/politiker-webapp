@@ -108,6 +108,12 @@ export async function confirmTotpSetup(env: Env, accountId: string, code: string
   await env.DB.prepare("UPDATE accounts SET totp_enabled = 1 WHERE id = ?").bind(accountId).run();
 }
 
+export async function setPassword(env: Env, accountId: string, newPassword: string): Promise<void> {
+  if (newPassword.length < 10) throw new Error("Lösenordet måste vara minst 10 tecken");
+  const { hash, salt } = await hashPassword(newPassword);
+  await env.DB.prepare("UPDATE accounts SET password_hash = ?, password_salt = ? WHERE id = ?").bind(hash, salt, accountId).run();
+}
+
 export async function disableTotp(env: Env, accountId: string): Promise<void> {
   await env.DB.prepare("UPDATE accounts SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").bind(accountId).run();
 }

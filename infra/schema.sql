@@ -39,6 +39,7 @@ CREATE TABLE mail_credentials (
   encrypted_password TEXT NOT NULL, -- AES-GCM, nyckel = Wrangler secret MAIL_CRED_KEY
   from_address TEXT NOT NULL,
   verified_at INTEGER, -- sätts efter lyckad SMTP AUTH-testhandskakning
+  daily_cap INTEGER, -- leverantörsspecifik dygnsgräns med säkerhetsmarginal, satt vid tillägg
   created_at INTEGER NOT NULL
 );
 

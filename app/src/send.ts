@@ -1,5 +1,5 @@
 import { randomId } from "../../shared/crypto";
-import { getRecipientsForAreas, countSentToday } from "./db";
+import { getRecipientsForAreas, countSentToday, countSentTodayForCredential, getMailCredential } from "./db";
 import type { Env } from "./db";
 import type { SendJobMessage } from "../../shared/types";
 
@@ -11,17 +11,33 @@ export async function createAndEnqueueSendJob(
   const account = await env.DB.prepare("SELECT daily_send_cap FROM accounts WHERE id = ?").bind(accountId).first<{ daily_send_cap: number }>();
   if (!account) throw new Error("Konto saknas");
 
+  const credential = await getMailCredential(env.DB, input.mailCredentialId);
+  if (!credential || credential.account_id !== accountId) throw new Error("Mailkoppling saknas");
+
   const recipients = await getRecipientsForAreas(env.DB, input.areaNames);
   if (recipients.length === 0) throw new Error("Inga mottagare matchar valda områden");
 
   const alreadySentToday = await countSentToday(env.DB, accountId);
-  const remainingQuota = account.daily_send_cap - alreadySentToday;
+  const accountRemaining = account.daily_send_cap - alreadySentToday;
+
+  let remainingQuota = accountRemaining;
+  let limitLabel = `kontots dygnsgräns (${account.daily_send_cap}/dygn)`;
+
+  if (credential.daily_cap != null) {
+    const sentViaCredentialToday = await countSentTodayForCredential(env.DB, input.mailCredentialId);
+    const credentialRemaining = (credential.daily_cap as number) - sentViaCredentialToday;
+    if (credentialRemaining < remainingQuota) {
+      remainingQuota = credentialRemaining;
+      limitLabel = `dygnsgränsen för detta mailkonto (${credential.daily_cap}/dygn, satt för att skydda ditt ${credential.provider}-konto från att bli av-rate-limitat)`;
+    }
+  }
+
   if (remainingQuota <= 0) {
-    throw new Error(`Dygnsgränsen (${account.daily_send_cap} mottagare/dygn) är nådd för idag — försök igen imorgon.`);
+    throw new Error(`${limitLabel} är nådd för idag — försök igen imorgon.`);
   }
   if (recipients.length > remainingQuota) {
     throw new Error(
-      `Valda områden ger ${recipients.length} mottagare, men du har bara ${remainingQuota} kvar av dagens gräns (${account.daily_send_cap}/dygn). Välj färre områden eller vänta till imorgon.`,
+      `Valda områden ger ${recipients.length} mottagare, men du har bara ${remainingQuota} kvar av ${limitLabel}. Välj färre områden eller vänta till imorgon.`,
     );
   }
 
