@@ -256,14 +256,36 @@ document.getElementById("area-filter").addEventListener("input", renderAreas);
 document.getElementById("letter-files").addEventListener("change", (e) => {
   const container = document.getElementById("file-mode-list");
   container.innerHTML = "";
-  for (const file of e.target.files) {
+  for (let i = 0; i < e.target.files.length; i++) {
+    const file = e.target.files[i];
     const row = document.createElement("div");
     const isDoc = file.name.toLowerCase().endsWith(".doc");
-    row.innerHTML = `
-      <span>${file.name} (${(file.size / 1024).toFixed(0)} KB)</span>
-      <label><input type="radio" name="mode-${file.name}" value="attach" checked> Bifoga</label>
-      <label><input type="radio" name="mode-${file.name}" value="extract" ${isDoc ? "disabled" : ""}> Använd som brevtext${isDoc ? " (ej möjligt för .doc)" : ""}</label>
-    `;
+    const modeName = `mode-${i}-${file.name}`;
+
+    const span = document.createElement("span");
+    span.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+
+    const attachLabel = document.createElement("label");
+    const attachInput = document.createElement("input");
+    attachInput.type = "radio";
+    attachInput.name = modeName;
+    attachInput.value = "attach";
+    attachInput.checked = true;
+    attachLabel.appendChild(attachInput);
+    attachLabel.append(" Bifoga");
+
+    const extractLabel = document.createElement("label");
+    const extractInput = document.createElement("input");
+    extractInput.type = "radio";
+    extractInput.name = modeName;
+    extractInput.value = "extract";
+    extractInput.disabled = isDoc;
+    extractLabel.appendChild(extractInput);
+    extractLabel.append(` Använd som brevtext${isDoc ? " (ej möjligt för .doc)" : ""}`);
+
+    row.appendChild(span);
+    row.appendChild(attachLabel);
+    row.appendChild(extractLabel);
     container.appendChild(row);
   }
 });
