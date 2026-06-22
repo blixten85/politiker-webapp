@@ -8,6 +8,7 @@ import {
   startTotpSetup,
   confirmTotpSetup,
   disableTotp,
+  setPassword,
 } from "./auth";
 import { addMailCredential, listMailCredentials, deleteMailCredential } from "./mail-credentials";
 import { listAreas } from "./db";
@@ -149,6 +150,12 @@ export default {
 
       if (url.pathname === "/api/totp/disable" && req.method === "POST") {
         await disableTotp(env, accountId);
+        return json({ ok: true });
+      }
+
+      if (url.pathname === "/api/set-password" && req.method === "POST") {
+        const { newPassword } = await req.json<{ newPassword: string }>();
+        await setPassword(env, accountId, newPassword);
         return json({ ok: true });
       }
 

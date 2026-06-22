@@ -2,6 +2,7 @@ const PROVIDER_HELP = {
   gmail: "Gmail kräver ett app-lösenord (kräver 2-stegsverifiering): myaccount.google.com/apppasswords",
   outlook: "Outlook/Microsoft 365 kräver ett app-lösenord: account.live.com/proofs/AppPassword",
   icloud: "iCloud kräver ett app-specifikt lösenord: appleid.apple.com → Säkerhet",
+  yahoo: "Yahoo kräver ett app-lösenord: login.yahoo.com/account/security",
   generic: "Ange din leverantörs SMTP-server, port, användarnamn och lösenord.",
 };
 
@@ -164,6 +165,19 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   location.reload();
 });
 
+document.getElementById("set-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("set-password-msg");
+  try {
+    await api("/api/set-password", { method: "POST", body: JSON.stringify({ newPassword: fd.get("newPassword") }) });
+    msg.textContent = "Lösenord sparat — du kan nu logga in med e-post + lösenord också.";
+    e.target.reset();
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
 document.getElementById("provider-select").addEventListener("change", (e) => {
   document.getElementById("generic-fields").hidden = e.target.value !== "generic";
   document.getElementById("provider-help").textContent = PROVIDER_HELP[e.target.value] ?? "";
@@ -200,7 +214,8 @@ async function loadMailCredentials() {
   ul.innerHTML = "";
   for (const c of list) {
     const li = document.createElement("li");
-    li.textContent = `${c.from_address} (${c.provider}) `;
+    const capText = c.daily_cap ? `, max ${c.daily_cap}/dygn` : "";
+    li.textContent = `${c.from_address} (${c.provider}${capText}) `;
     const del = document.createElement("button");
     del.textContent = "Ta bort";
     del.onclick = async () => {

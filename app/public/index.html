@@ -89,6 +89,7 @@
           <option value="gmail">Gmail</option>
           <option value="outlook">Outlook / Microsoft 365</option>
           <option value="icloud">iCloud</option>
+          <option value="yahoo">Yahoo Mail</option>
           <option value="generic">Annan (generisk SMTP)</option>
         </select>
         <div id="generic-fields" hidden>
@@ -102,6 +103,16 @@
         <button type="submit">Koppla mailkonto</button>
       </form>
       <p id="credential-msg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Sätt/byt lösenord</h2>
+      <p class="hint">Skapade du kontot via Google/GitHub/Microsoft? Här kan du sätta ett lösenord också, så du kan logga in på fler sätt.</p>
+      <form id="set-password-form">
+        <input type="password" name="newPassword" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit">Spara lösenord</button>
+      </form>
+      <p id="set-password-msg"></p>
     </div>
 
     <div class="card">
