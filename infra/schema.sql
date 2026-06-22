@@ -29,17 +29,25 @@ CREATE TABLE oauth_identities (
   UNIQUE(provider, provider_user_id)
 );
 
+-- Två typer av mailkoppling i samma tabell:
+-- 1) SMTP (gmail/outlook/icloud/yahoo/generic): smtp_*/encrypted_password ifyllda, oauth_*-kolumner NULL.
+-- 2) OAuth/Graph (microsoft_graph): oauth_*-kolumner ifyllda (krypterade), smtp_*/encrypted_password
+--    får platshållarvärden ("oauth"/0) eftersom kolumnerna är NOT NULL och SQLite inte
+--    enkelt stödjer att släppa det villkoret i efterhand.
 CREATE TABLE mail_credentials (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES accounts(id),
-  provider TEXT NOT NULL, -- gmail | outlook | icloud | generic
+  provider TEXT NOT NULL, -- gmail | outlook | icloud | yahoo | generic | microsoft_graph
   smtp_host TEXT NOT NULL,
   smtp_port INTEGER NOT NULL,
   smtp_user TEXT NOT NULL,
   encrypted_password TEXT NOT NULL, -- AES-GCM, nyckel = Wrangler secret MAIL_CRED_KEY
   from_address TEXT NOT NULL,
-  verified_at INTEGER, -- sätts efter lyckad SMTP AUTH-testhandskakning
+  verified_at INTEGER, -- sätts efter lyckad SMTP AUTH-testhandskakning / OAuth-koppling
   daily_cap INTEGER, -- leverantörsspecifik dygnsgräns med säkerhetsmarginal, satt vid tillägg
+  oauth_access_token TEXT, -- krypterad, endast för provider = microsoft_graph
+  oauth_refresh_token TEXT, -- krypterad, används för att förnya access_token
+  oauth_token_expires_at INTEGER,
   created_at INTEGER NOT NULL
 );
 
