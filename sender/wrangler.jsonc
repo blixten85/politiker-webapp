@@ -26,5 +26,8 @@
       "binding": "ATTACHMENTS",
       "bucket_name": "politiker-webapp-attachments"
     }
-  ]
+  ],
+  "vars": {
+    "OAUTH_MICROSOFT_CLIENT_ID": "dd6d7bb1-3a2d-46ad-8d4f-12fe09691414"
+  }
 }
