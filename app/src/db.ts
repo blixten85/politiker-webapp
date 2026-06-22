@@ -5,6 +5,7 @@ export interface Env {
   SESSIONS: KVNamespace;
   SEND_QUEUE: Queue;
   ASSETS: Fetcher;
+  ATTACHMENTS: R2Bucket;
   MAIL_CRED_KEY: string;
   SYSTEM_SMTP_HOST: string;
   SYSTEM_SMTP_PORT: string;

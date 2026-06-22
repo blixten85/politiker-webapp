@@ -14,6 +14,7 @@ import { addMailCredential, listMailCredentials, deleteMailCredential, addMicros
 import { listAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
+import { processAttachments, type AttachmentInput } from "./attachments";
 import { getAuthorizeUrl, handleOAuthCallback } from "./oauth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
@@ -214,14 +215,27 @@ export default {
       }
 
       if (url.pathname === "/api/send" && req.method === "POST") {
-        const input = await req.json<{ letterHtml: string; subject?: string; mailCredentialId: string; areaNames: string[] }>();
+        const input = await req.json<{
+          letterHtml: string;
+          subject?: string;
+          mailCredentialId: string;
+          areaNames: string[];
+          attachments?: AttachmentInput[];
+        }>();
         const letterId = randomId();
         await env.DB.prepare("INSERT INTO letters (id, account_id, html_body, created_at) VALUES (?, ?, ?, ?)")
           .bind(letterId, accountId, input.letterHtml, Date.now())
           .run();
+
+        let htmlBody = input.letterHtml;
+        if (input.attachments && input.attachments.length > 0) {
+          const { extractedHtml } = await processAttachments(env, letterId, input.attachments);
+          htmlBody += extractedHtml;
+          await env.DB.prepare("UPDATE letters SET html_body = ? WHERE id = ?").bind(htmlBody, letterId).run();
+        }
         const result = await createAndEnqueueSendJob(env, accountId, {
           letterId,
-          htmlBody: input.letterHtml,
+          htmlBody,
           subject: input.subject,
           mailCredentialId: input.mailCredentialId,
           areaNames: input.areaNames,

@@ -91,9 +91,15 @@ async function authenticate(conn: Connection, config: SmtpConfig): Promise<void>
   }
 }
 
+export interface MailAttachment {
+  filename: string;
+  contentType: string;
+  bytes: ArrayBuffer;
+}
+
 export async function sendSmtpMail(
   config: SmtpConfig,
-  opts: { to: string; subject?: string; html: string },
+  opts: { to: string; subject?: string; html: string; attachments?: MailAttachment[] },
 ): Promise<void> {
   const conn = await openConnection(config.host, config.port);
   try {
@@ -111,21 +117,61 @@ export async function sendSmtpMail(
     await conn.write("DATA");
     await expect(await conn.read(), 354, "Servern accepterade inte DATA");
 
-    const headers = [
-      `From: ${config.fromAddress}`,
-      `To: ${opts.to}`,
-      opts.subject ? `Subject: ${encodeHeaderValue(opts.subject)}` : null,
-      "MIME-Version: 1.0",
-      "Content-Type: text/html; charset=UTF-8",
-      "",
-    ].filter((l): l is string => l !== null);
-
-    const body = opts.html.replace(/\r?\n\./g, "\n.."); // dot-stuffing
-    await conn.write([...headers, body, "."].join("\r\n"));
+    const message = buildMimeMessage(config.fromAddress, opts.to, opts.subject, opts.html, opts.attachments ?? []);
+    const stuffed = message.replace(/\r?\n\./g, "\n.."); // dot-stuffing på hela meddelandet, en gång
+    await conn.write(`${stuffed}\r\n.`);
     await expect(await conn.read(), 250, "Mejlet accepterades inte av servern");
   } finally {
     await conn.quit();
   }
+}
+
+function buildMimeMessage(
+  from: string,
+  to: string,
+  subject: string | undefined,
+  html: string,
+  attachments: MailAttachment[],
+): string {
+  const baseHeaders = [
+    `From: ${from}`,
+    `To: ${to}`,
+    subject ? `Subject: ${encodeHeaderValue(subject)}` : null,
+    "MIME-Version: 1.0",
+  ].filter((l): l is string => l !== null);
+
+  if (attachments.length === 0) {
+    return [...baseHeaders, "Content-Type: text/html; charset=UTF-8", "", html].join("\r\n");
+  }
+
+  const boundary = `----politiker-${crypto.randomUUID()}`;
+  const parts = [
+    [`Content-Type: text/html; charset=UTF-8`, "", html].join("\r\n"),
+    ...attachments.map((att) =>
+      [
+        `Content-Type: ${att.contentType}; name="${att.filename}"`,
+        `Content-Disposition: attachment; filename="${att.filename}"`,
+        "Content-Transfer-Encoding: base64",
+        "",
+        wrapBase64(bytesToBase64(att.bytes)),
+      ].join("\r\n"),
+    ),
+  ];
+
+  const body = parts.map((p) => `--${boundary}\r\n${p}`).join("\r\n") + `\r\n--${boundary}--`;
+  return [...baseHeaders, `Content-Type: multipart/mixed; boundary="${boundary}"`, "", body].join("\r\n");
+}
+
+function bytesToBase64(bytes: ArrayBuffer): string {
+  let binary = "";
+  for (const b of new Uint8Array(bytes)) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function wrapBase64(b64: string): string {
+  const lines = [];
+  for (let i = 0; i < b64.length; i += 76) lines.push(b64.slice(i, i + 76));
+  return lines.join("\r\n");
 }
 
 // Testar bara att AUTH lyckas (ingen DATA/sändning) — används när

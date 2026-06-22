@@ -150,6 +150,11 @@
       <p class="hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
       <input type="text" id="letter-subject" placeholder="Ämne (valfritt — åäö fungerar)">
       <textarea id="letter-body" rows="12" placeholder="<p>Mitt brev...</p>"></textarea>
+
+      <p class="hint">Bifoga filer (PDF, txt, doc, docx) — max 10 MB per fil. ".doc" kan bara bifogas, inte användas som brevtext.</p>
+      <input type="file" id="letter-files" multiple accept=".pdf,.txt,.doc,.docx">
+      <div id="file-mode-list"></div>
+
       <button id="send-btn">Skicka till valda mottagare</button>
       <p id="send-msg"></p>
     </div>

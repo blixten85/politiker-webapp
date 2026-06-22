@@ -20,5 +20,11 @@
         "max_concurrency": 5
       }
     ]
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "politiker-webapp-attachments"
+    }
+  ]
 }

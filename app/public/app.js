@@ -253,6 +253,30 @@ function renderAreas() {
 }
 document.getElementById("area-filter").addEventListener("input", renderAreas);
 
+document.getElementById("letter-files").addEventListener("change", (e) => {
+  const container = document.getElementById("file-mode-list");
+  container.innerHTML = "";
+  for (const file of e.target.files) {
+    const row = document.createElement("div");
+    const isDoc = file.name.toLowerCase().endsWith(".doc");
+    row.innerHTML = `
+      <span>${file.name} (${(file.size / 1024).toFixed(0)} KB)</span>
+      <label><input type="radio" name="mode-${file.name}" value="attach" checked> Bifoga</label>
+      <label><input type="radio" name="mode-${file.name}" value="extract" ${isDoc ? "disabled" : ""}> Använd som brevtext${isDoc ? " (ej möjligt för .doc)" : ""}</label>
+    `;
+    container.appendChild(row);
+  }
+});
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 document.getElementById("send-btn").addEventListener("click", async () => {
   const msg = document.getElementById("send-msg");
   const credentials = await loadMailCredentials();
@@ -270,10 +294,28 @@ document.getElementById("send-btn").addEventListener("click", async () => {
     msg.textContent = "Skriv ett brev först.";
     return;
   }
+
+  const files = [...document.getElementById("letter-files").files];
+  const attachments = [];
+  if (files.length > 0) {
+    msg.textContent = "Bearbetar bifogade filer...";
+    for (const file of files) {
+      const mode = document.querySelector(`input[name="mode-${file.name}"]:checked`).value;
+      const base64Data = await fileToBase64(file);
+      attachments.push({ filename: file.name, contentType: file.type || "application/octet-stream", mode, base64Data });
+    }
+  }
+
   try {
     const result = await api("/api/send", {
       method: "POST",
-      body: JSON.stringify({ letterHtml: html, subject: subject || undefined, mailCredentialId: credentials[0].id, areaNames: [...selectedAreas] }),
+      body: JSON.stringify({
+        letterHtml: html,
+        subject: subject || undefined,
+        mailCredentialId: credentials[0].id,
+        areaNames: [...selectedAreas],
+        attachments: attachments.length > 0 ? attachments : undefined,
+      }),
     });
     msg.textContent = `Skickar till ${result.totalRecipients} mottagare — se status nedan.`;
     loadSendJobs();
