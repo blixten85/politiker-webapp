@@ -39,9 +39,19 @@ cd ../sender && npx wrangler secret put MAIL_CRED_KEY   # samma värde som ovan
 npx wrangler deploy
 ```
 
-## Kvarstående TODO innan skarp lansering
+## Status
 
-- [ ] **PayPal-donationsknapp**: `app/public/index.html` har en platshållare (`TODO_PAYPAL_BUTTON_ID`) — skapa en riktig Donate-knapp på paypal.com/donate/buttons och ersätt.
-- [ ] **GitHub-repo för feedback**: `blixten85/politiker-webapp` måste skapas, och en fine-grained PAT (endast `Issues:Write` på detta repo) genereras till `GITHUB_FEEDBACK_TOKEN`.
-- [ ] **Scraper→D1-synk**: körs separat, se `politiker-kontakter`-repot.
-- [ ] **cloudflare:sockets-detaljer**: `shared/smtp.ts` är skriven mot dokumenterat beteende men inte körd live än — testa noggrant mot `wrangler dev --remote` innan skarpt bruk (se planens verifieringssteg).
+Live på politiker.denied.se. Signup/verifiering/login/mailkoppling/D1-synk
+verifierat end-to-end 2026-06-22 (16 073 politiker, 257 områden synkade).
+
+Kända Workers-specifika fallgropar som hittades och fixades under verifiering:
+- PBKDF2 i Workers' WebCrypto stödjer max 100 000 iterationer (inte t.ex. 210 000).
+- `socket.startTls()` kräver att writer/reader släpps med `.releaseLock()`
+  innan anropet — `.close()` håller kvar låset och TLS-uppgraderingen kastar fel.
+- Cloudflares scoped API-tokens stödjer inte `/accounts/{id}/workers/domains`
+  (kräver Global API Key) — custom domain kopplas istället via
+  `/accounts/{id}/workers/domains/records/{id}` (PUT, fungerar med scoped token)
+  efter att posten finns, eller manuellt i dashboarden första gången.
+- Kontot har Cloudflare Access (Zero Trust) med default-deny — en egen
+  Access-app med "bypass"-policy (`everyone`) krävdes för att göra
+  politiker.denied.se publik, utan att röra de andra apparnas privata policies.

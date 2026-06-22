@@ -13,6 +13,12 @@ export interface Env {
   SYSTEM_FROM_ADDRESS: string;
   GITHUB_FEEDBACK_TOKEN: string;
   FEEDBACK_NOTIFY_EMAIL: string;
+  OAUTH_GOOGLE_CLIENT_ID?: string;
+  OAUTH_GOOGLE_CLIENT_SECRET?: string;
+  OAUTH_GITHUB_CLIENT_ID?: string;
+  OAUTH_GITHUB_CLIENT_SECRET?: string;
+  OAUTH_MICROSOFT_CLIENT_ID?: string;
+  OAUTH_MICROSOFT_CLIENT_SECRET?: string;
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

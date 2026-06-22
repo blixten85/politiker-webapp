@@ -2,10 +2,13 @@
 // Skriven själv (inte en extern dependency) eftersom den hanterar
 // användarnas riktiga mail-lösenord — ska vara enkel att granska.
 //
-// Stödjer: STARTTLS (port 587) och direkt TLS (port 465), AUTH LOGIN,
-// ett mejl per anrop. Testas mot `wrangler dev --remote` innan skarp drift
-// (se planens verifieringssteg) — cloudflare:sockets-detaljer (startTls-
-// signatur m.m.) kan skilja sig något mot vad som antagits här.
+// Stödjer: STARTTLS (port 587) och direkt TLS (port 465), AUTH LOGIN.
+//
+// VIKTIGT (hittat i produktion 2026-06-22): innan `socket.startTls()`
+// anropas måste den ursprungliga writer/reader-låset släppas med
+// `.releaseLock()` — ett `.close()`-anrop håller kvar låset och
+// startTls() kastar då "This WritableStream is currently locked to a
+// writer". releaseLock(), inte close(), är rätt väg in i TLS-uppgraderingen.
 
 import { connect } from "cloudflare:sockets";
 
@@ -19,159 +22,121 @@ export interface SmtpConfig {
 
 export class SmtpError extends Error {}
 
+interface SmtpResponse {
+  code: number;
+  text: string;
+}
+
+interface Connection {
+  write: (line: string) => Promise<void>;
+  read: () => Promise<SmtpResponse>;
+  quit: () => Promise<void>;
+}
+
+async function openConnection(host: string, port: number): Promise<Connection> {
+  const useDirectTls = port === 465;
+  let socket = connect({ hostname: host, port }, { secureTransport: useDirectTls ? "on" : "starttls", allowHalfOpen: false });
+
+  let writer = socket.writable.getWriter();
+  let reader = socket.readable.getReader();
+
+  const read = () => readSmtpResponse(reader);
+  const write = (line: string) => writer.write(new TextEncoder().encode(line + "\r\n"));
+
+  await expect(await read(), 220, "Servern svarade inte med 220 vid anslutning");
+  await write(`EHLO politiker.denied.se`);
+  await read();
+
+  if (!useDirectTls) {
+    await write("STARTTLS");
+    await expect(await read(), 220, "STARTTLS nekades av servern");
+
+    // Släpp låset (inte close!) innan TLS-uppgraderingen.
+    writer.releaseLock();
+    reader.releaseLock();
+
+    socket = await socket.startTls();
+    writer = socket.writable.getWriter();
+    reader = socket.readable.getReader();
+
+    await write(`EHLO politiker.denied.se`);
+    await read();
+  }
+
+  const quit = async () => {
+    try {
+      await write("QUIT");
+    } catch {
+      /* anslutningen kan redan vara på väg ner */
+    }
+    try {
+      writer.releaseLock();
+    } catch {
+      /* redan släppt */
+    }
+  };
+
+  return { write, read, quit };
+}
+
+async function authenticate(conn: Connection, config: SmtpConfig): Promise<void> {
+  await conn.write("AUTH LOGIN");
+  await expect(await conn.read(), 334, "Servern accepterade inte AUTH LOGIN");
+  await conn.write(btoa(config.user));
+  await expect(await conn.read(), 334, "Användarnamn accepterades inte");
+  await conn.write(btoa(config.password));
+  const authResp = await conn.read();
+  if (authResp.code !== 235) {
+    throw new SmtpError(`Inloggning misslyckades (${authResp.code}): ${authResp.text}`);
+  }
+}
+
 export async function sendSmtpMail(
   config: SmtpConfig,
   opts: { to: string; subject?: string; html: string },
 ): Promise<void> {
-  const useDirectTls = config.port === 465;
-
-  let socket = connect(
-    { hostname: config.host, port: config.port },
-    { secureTransport: useDirectTls ? "on" : "starttls", allowHalfOpen: false },
-  );
-
-  const writer = socket.writable.getWriter();
-  const reader = socket.readable.getReader();
-
-  const read = () => readSmtpResponse(reader);
-  const write = (line: string) => writer.write(new TextEncoder().encode(line + "\r\n"));
-
+  const conn = await openConnection(config.host, config.port);
   try {
-    await expect(await read(), 220, "Servern svarade inte med 220 vid anslutning");
+    await authenticate(conn, config);
 
-    await write(`EHLO ${new URL("https://" + config.host).hostname || "politiker.denied.se"}`);
-    await read(); // EHLO-svar (kan vara flerradigt, readSmtpResponse hanterar det)
+    await conn.write(`MAIL FROM:<${config.fromAddress}>`);
+    await expect(await conn.read(), 250, "MAIL FROM nekades");
 
-    if (!useDirectTls) {
-      await write("STARTTLS");
-      await expect(await read(), 220, "STARTTLS nekades av servern");
-      socket = await socket.startTls();
-      writer.close().catch(() => {});
-      const newWriter = socket.writable.getWriter();
-      const newReader = socket.readable.getReader();
-      await sendAfterStartTls(newWriter, newReader, config, opts);
-      return;
+    await conn.write(`RCPT TO:<${opts.to}>`);
+    const rcptResp = await conn.read();
+    if (rcptResp.code !== 250 && rcptResp.code !== 251) {
+      throw new SmtpError(`RCPT TO nekades (${rcptResp.code}): ${rcptResp.text}`);
     }
 
-    await authenticateAndSend(write, read, config, opts);
+    await conn.write("DATA");
+    await expect(await conn.read(), 354, "Servern accepterade inte DATA");
+
+    const headers = [
+      `From: ${config.fromAddress}`,
+      `To: ${opts.to}`,
+      opts.subject ? `Subject: ${opts.subject}` : null,
+      "MIME-Version: 1.0",
+      "Content-Type: text/html; charset=UTF-8",
+      "",
+    ].filter((l): l is string => l !== null);
+
+    const body = opts.html.replace(/\r?\n\./g, "\n.."); // dot-stuffing
+    await conn.write([...headers, body, "."].join("\r\n"));
+    await expect(await conn.read(), 250, "Mejlet accepterades inte av servern");
   } finally {
-    try {
-      await writer.close();
-    } catch {
-      /* redan stängd */
-    }
+    await conn.quit();
   }
-}
-
-async function sendAfterStartTls(
-  writer: WritableStreamDefaultWriter<Uint8Array>,
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  config: SmtpConfig,
-  opts: { to: string; subject?: string; html: string },
-): Promise<void> {
-  const read = () => readSmtpResponse(reader);
-  const write = (line: string) => writer.write(new TextEncoder().encode(line + "\r\n"));
-
-  await write(`EHLO politiker.denied.se`);
-  await read();
-  await authenticateAndSend(write, read, config, opts);
-  await writer.close();
-}
-
-async function authenticateAndSend(
-  write: (line: string) => Promise<void>,
-  read: () => Promise<SmtpResponse>,
-  config: SmtpConfig,
-  opts: { to: string; subject?: string; html: string },
-): Promise<void> {
-  await write("AUTH LOGIN");
-  await expect(await read(), 334, "Servern accepterade inte AUTH LOGIN");
-  await write(btoa(config.user));
-  await expect(await read(), 334, "Användarnamn accepterades inte");
-  await write(btoa(config.password));
-  const authResp = await read();
-  if (authResp.code !== 235) {
-    throw new SmtpError(`Inloggning misslyckades (${authResp.code}): ${authResp.text}`);
-  }
-
-  await write(`MAIL FROM:<${config.fromAddress}>`);
-  await expect(await read(), 250, "MAIL FROM nekades");
-
-  await write(`RCPT TO:<${opts.to}>`);
-  const rcptResp = await read();
-  if (rcptResp.code !== 250 && rcptResp.code !== 251) {
-    throw new SmtpError(`RCPT TO nekades (${rcptResp.code}): ${rcptResp.text}`);
-  }
-
-  await write("DATA");
-  await expect(await read(), 354, "Servern accepterade inte DATA");
-
-  const headers = [
-    `From: ${config.fromAddress}`,
-    `To: ${opts.to}`,
-    opts.subject ? `Subject: ${opts.subject}` : null,
-    "MIME-Version: 1.0",
-    "Content-Type: text/html; charset=UTF-8",
-    "",
-  ].filter((l): l is string => l !== null);
-
-  const body = opts.html.replace(/\r?\n\./g, "\n.."); // dot-stuffing
-  await write([...headers, body, "."].join("\r\n"));
-  await expect(await read(), 250, "Mejlet accepterades inte av servern");
-
-  await write("QUIT");
 }
 
 // Testar bara att AUTH lyckas (ingen DATA/sändning) — används när
 // användaren lägger till en mailkoppling, för omedelbar feedback.
 export async function testSmtpAuth(config: SmtpConfig): Promise<void> {
-  const useDirectTls = config.port === 465;
-  let socket = connect(
-    { hostname: config.host, port: config.port },
-    { secureTransport: useDirectTls ? "on" : "starttls", allowHalfOpen: false },
-  );
-  let writer = socket.writable.getWriter();
-  let reader = socket.readable.getReader();
-  const read = () => readSmtpResponse(reader);
-  const write = (line: string) => writer.write(new TextEncoder().encode(line + "\r\n"));
-
+  const conn = await openConnection(config.host, config.port);
   try {
-    await expect(await read(), 220, "Servern svarade inte vid anslutning");
-    await write(`EHLO politiker.denied.se`);
-    await read();
-
-    if (!useDirectTls) {
-      await write("STARTTLS");
-      await expect(await read(), 220, "STARTTLS nekades");
-      socket = await socket.startTls();
-      writer = socket.writable.getWriter();
-      reader = socket.readable.getReader();
-      await write(`EHLO politiker.denied.se`);
-      await read();
-    }
-
-    await write("AUTH LOGIN");
-    await expect(await read(), 334, "AUTH LOGIN stöds inte");
-    await write(btoa(config.user));
-    await expect(await read(), 334, "Användarnamn nekades");
-    await write(btoa(config.password));
-    const authResp = await read();
-    if (authResp.code !== 235) {
-      throw new SmtpError(`Felaktiga inloggningsuppgifter (${authResp.code}): ${authResp.text}`);
-    }
-    await write("QUIT");
+    await authenticate(conn, config);
   } finally {
-    try {
-      await writer.close();
-    } catch {
-      /* redan stängd */
-    }
+    await conn.quit();
   }
-}
-
-interface SmtpResponse {
-  code: number;
-  text: string;
 }
 
 async function readSmtpResponse(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<SmtpResponse> {

@@ -9,6 +9,69 @@ let pendingAccountId = null;
 let selectedAreas = new Set();
 let allAreas = [];
 
+// Tema: mörkt som standard, växlingsbart till ljust/system, sparas lokalt.
+const THEME_ORDER = ["dark", "light", "system"];
+const THEME_LABELS = { dark: "🌙 Mörkt", light: "☀️ Ljust", system: "🖥️ System" };
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  document.getElementById("theme-toggle").textContent = THEME_LABELS[theme];
+}
+
+function initTheme() {
+  const saved = localStorage.getItem("theme") || "dark";
+  applyTheme(saved);
+}
+
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(current) + 1) % THEME_ORDER.length];
+  localStorage.setItem("theme", next);
+  applyTheme(next);
+});
+
+initTheme();
+
+// Automatisk felrapportering: riktiga JS-fel (buggar) skickas till
+// /api/feedback utan att användaren behöver agera debug-verktyg. Fungerar
+// utan inloggning (endpointen kräver inte session). Användarens egna
+// hanterade meddelanden (fel lösenord, validering m.m.) rapporteras INTE
+// automatiskt — bara oväntade undantag.
+let lastAutoReportAt = 0;
+async function autoReportError(message, extra = {}) {
+  const now = Date.now();
+  if (now - lastAutoReportAt < 5000) return; // undvik spam vid upprepade fel
+  lastAutoReportAt = now;
+  try {
+    await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `[Auto-rapport] ${message}`,
+        context: { url: location.href, userAgent: navigator.userAgent, ...extra },
+      }),
+    });
+    showToast("Ett tekniskt fel uppstod och har skickats automatiskt till utvecklaren.");
+  } catch {
+    // Om till och med felrapporteringen misslyckas finns inget mer att göra klientsidan.
+  }
+}
+
+window.addEventListener("error", (e) => {
+  autoReportError(e.message, { stack: e.error?.stack });
+});
+window.addEventListener("unhandledrejection", (e) => {
+  autoReportError(String(e.reason?.message ?? e.reason), { stack: e.reason?.stack });
+});
+
+function showToast(text) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 6000);
+}
+
 async function api(path, opts = {}) {
   const resp = await fetch(path, {
     ...opts,
@@ -49,12 +112,56 @@ document.getElementById("verify-form").addEventListener("submit", async (e) => {
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
+  const msg = document.getElementById("login-msg");
   try {
-    await api("/api/login", { method: "POST", body: JSON.stringify({ email: fd.get("email"), password: fd.get("password") }) });
+    await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify({ email: fd.get("email"), password: fd.get("password"), totpCode: fd.get("totpCode") || undefined }),
+    });
     showApp();
   } catch (err) {
-    document.getElementById("login-msg").textContent = err.message;
+    if (err.message === "TOTP_REQUIRED") {
+      document.getElementById("login-totp").hidden = false;
+      msg.textContent = "Ange din 2FA-kod också.";
+    } else {
+      msg.textContent = err.message;
+    }
   }
+});
+
+document.getElementById("forgot-password-btn").addEventListener("click", () => {
+  document.getElementById("forgot-password-card").hidden = false;
+});
+
+document.getElementById("forgot-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("forgot-password-msg");
+  try {
+    await api("/api/request-password-reset", { method: "POST", body: JSON.stringify({ email: fd.get("email") }) });
+    msg.textContent = "Om adressen finns har en återställningslänk skickats.";
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
+document.getElementById("reset-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("reset-password-msg");
+  const token = new URLSearchParams(location.search).get("reset");
+  try {
+    await api("/api/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword: fd.get("newPassword") }) });
+    msg.textContent = "Lösenordet är ändrat — du kan logga in nu.";
+    history.replaceState(null, "", "/");
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  await api("/api/logout", { method: "POST" });
+  location.reload();
 });
 
 document.getElementById("provider-select").addEventListener("change", (e) => {
@@ -170,6 +277,60 @@ async function loadSendJobs() {
   }
 }
 
+document.getElementById("totp-setup-btn").addEventListener("click", async () => {
+  const msg = document.getElementById("totp-msg");
+  try {
+    const { secret, authUri } = await api("/api/totp/setup", { method: "POST" });
+    document.getElementById("totp-secret").textContent = secret;
+    document.getElementById("totp-disabled-view").hidden = true;
+    document.getElementById("totp-setup-view").hidden = false;
+    msg.textContent = "";
+    console.log("TOTP auth URI (för manuell otpauth-länk om du vill):", authUri);
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
+document.getElementById("totp-confirm-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("totp-msg");
+  try {
+    await api("/api/totp/confirm", { method: "POST", body: JSON.stringify({ code: fd.get("code") }) });
+    document.getElementById("totp-setup-view").hidden = true;
+    document.getElementById("totp-enabled-view").hidden = false;
+    msg.textContent = "2FA aktiverat!";
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
+document.getElementById("totp-disable-btn").addEventListener("click", async () => {
+  await api("/api/totp/disable", { method: "POST" });
+  document.getElementById("totp-enabled-view").hidden = true;
+  document.getElementById("totp-disabled-view").hidden = false;
+});
+
+async function loadAdminPanel() {
+  const accounts = await api("/api/admin/accounts");
+  const accUl = document.getElementById("admin-accounts-list");
+  accUl.innerHTML = "";
+  for (const a of accounts) {
+    const li = document.createElement("li");
+    li.textContent = `${a.email}${a.is_admin ? " (admin)" : ""} — verifierad: ${!!a.email_verified}, dygnsgräns: ${a.daily_send_cap}`;
+    accUl.appendChild(li);
+  }
+
+  const feedback = await api("/api/admin/feedback");
+  const fbUl = document.getElementById("admin-feedback-list");
+  fbUl.innerHTML = "";
+  for (const f of feedback) {
+    const li = document.createElement("li");
+    li.textContent = `${new Date(f.created_at).toLocaleString("sv-SE")}: ${f.message}`;
+    fbUl.appendChild(li);
+  }
+}
+
 document.getElementById("feedback-btn").addEventListener("click", () => document.getElementById("feedback-dialog").showModal());
 document.getElementById("feedback-cancel").addEventListener("click", () => document.getElementById("feedback-dialog").close());
 document.getElementById("feedback-form").addEventListener("submit", async (e) => {
@@ -183,10 +344,26 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
 async function showApp() {
   document.getElementById("auth-view").hidden = true;
   document.getElementById("app-view").hidden = false;
-  await Promise.all([loadMailCredentials(), loadAreas(), loadSendJobs()]);
+  document.getElementById("logout-btn").hidden = false;
+  const me = await api("/api/me");
+  if (me.totpEnabled) {
+    document.getElementById("totp-disabled-view").hidden = true;
+    document.getElementById("totp-enabled-view").hidden = false;
+  }
+  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs()];
+  if (me.isAdmin) {
+    document.getElementById("admin-card").hidden = false;
+    tasks.push(loadAdminPanel());
+  }
+  await Promise.all(tasks);
 }
 
 (async function init() {
+  const resetToken = new URLSearchParams(location.search).get("reset");
+  if (resetToken) {
+    document.getElementById("reset-password-card").hidden = false;
+  }
+
   const me = await api("/api/me");
   if (me.loggedIn) showApp();
 })();

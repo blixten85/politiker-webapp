@@ -9,7 +9,24 @@ CREATE TABLE accounts (
   verification_code TEXT,
   verification_expires_at INTEGER,
   daily_send_cap INTEGER NOT NULL DEFAULT 200,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  reset_token TEXT,
+  reset_expires_at INTEGER,
+  totp_secret TEXT,
+  totp_enabled INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
+);
+
+-- Länkar externa OAuth-identiteter (Google/GitHub/Microsoft/Apple) till ett
+-- lokalt konto. Ett konto skapat enbart via OAuth har tom password_hash/salt
+-- (kan inte logga in med lösenord förrän det sätts explicit).
+CREATE TABLE oauth_identities (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  provider TEXT NOT NULL, -- google | github | microsoft | apple
+  provider_user_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  UNIQUE(provider, provider_user_id)
 );
 
 CREATE TABLE mail_credentials (

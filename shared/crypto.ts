@@ -2,7 +2,9 @@
 // lösenordshashning för accounts (PBKDF2) — allt via Web Crypto, ingen
 // extern dependency (fungerar nativt i Workers-runtimen).
 
-const PBKDF2_ITERATIONS = 210_000;
+// Workers' WebCrypto-implementation tillåter max 100 000 PBKDF2-iterationer
+// (verifierat i produktion 2026-06-22 — högre värden ger ett runtime-fel).
+const PBKDF2_ITERATIONS = 100_000;
 
 export async function hashPassword(password: string): Promise<{ hash: string; salt: string }> {
   const salt = crypto.getRandomValues(new Uint8Array(16));

@@ -34,5 +34,12 @@
         "binding": "SEND_QUEUE"
       }
     ]
+  },
+  "vars": {
+    "SYSTEM_SMTP_HOST": "smtp.mail.me.com",
+    "SYSTEM_SMTP_PORT": "587",
+    "SYSTEM_SMTP_USER": "nils.anders.eriksson@icloud.com",
+    "SYSTEM_FROM_ADDRESS": "anders.eriksson@denied.se",
+    "FEEDBACK_NOTIFY_EMAIL": "anders.eriksson@denied.se"
   }
 }

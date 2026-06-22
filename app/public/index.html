@@ -8,14 +8,57 @@
 </head>
 <body>
 <header>
-  <h1>Politiker-kontakt</h1>
-  <p>Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
-  <button id="feedback-btn" class="link-btn">Ge feedback / rapportera fel</button>
-  <a href="https://www.paypal.com/donate/?hosted_button_id=TODO_PAYPAL_BUTTON_ID" target="_blank" rel="noopener" class="link-btn">Stötta tjänsten (valfri donation)</a>
+  <div class="brand">
+    <h1>Politiker-kontakt</h1>
+    <p>Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
+  </div>
+  <nav class="header-links">
+    <button id="feedback-btn" class="link-btn">Ge feedback / rapportera fel</button>
+    <a href="https://www.paypal.com/donate?business=anders.eriksson@denied.se&currency_code=SEK&item_name=Politiker-kontakt" target="_blank" rel="noopener" class="link-btn">Stötta tjänsten</a>
+    <button id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
+    <button id="logout-btn" class="link-btn" hidden>Logga ut</button>
+  </nav>
 </header>
 
 <main>
   <section id="auth-view">
+    <div class="card">
+      <h2>Logga in</h2>
+      <div class="oauth-buttons">
+        <a href="/api/oauth/google/start" class="btn-oauth btn-google">Logga in med Google</a>
+        <a href="/api/oauth/github/start" class="btn-oauth btn-github">Logga in med GitHub</a>
+        <a href="/api/oauth/microsoft/start" class="btn-oauth btn-microsoft">Logga in med Microsoft</a>
+      </div>
+      <p class="hint">Apple-inloggning kommer snart.</p>
+      <div class="divider">eller</div>
+      <form id="login-form">
+        <input type="email" name="email" placeholder="E-post" required>
+        <input type="password" name="password" placeholder="Lösenord" required>
+        <input type="text" name="totpCode" id="login-totp" placeholder="6-siffrig 2FA-kod" hidden>
+        <button type="submit">Logga in</button>
+      </form>
+      <button id="forgot-password-btn" class="link-btn">Glömt lösenord?</button>
+      <p id="login-msg"></p>
+    </div>
+
+    <div class="card" id="forgot-password-card" hidden>
+      <h2>Återställ lösenord</h2>
+      <form id="forgot-password-form">
+        <input type="email" name="email" placeholder="E-post" required>
+        <button type="submit">Skicka återställningslänk</button>
+      </form>
+      <p id="forgot-password-msg"></p>
+    </div>
+
+    <div class="card" id="reset-password-card" hidden>
+      <h2>Sätt nytt lösenord</h2>
+      <form id="reset-password-form">
+        <input type="password" name="newPassword" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <button type="submit">Spara nytt lösenord</button>
+      </form>
+      <p id="reset-password-msg"></p>
+    </div>
+
     <div class="card">
       <h2>Skapa konto</h2>
       <form id="signup-form">
@@ -33,16 +76,6 @@
         <button type="submit">Bekräfta</button>
       </form>
       <p id="verify-msg"></p>
-    </div>
-
-    <div class="card">
-      <h2>Logga in</h2>
-      <form id="login-form">
-        <input type="email" name="email" placeholder="E-post" required>
-        <input type="password" name="password" placeholder="Lösenord" required>
-        <button type="submit">Logga in</button>
-      </form>
-      <p id="login-msg"></p>
     </div>
   </section>
 
@@ -72,6 +105,27 @@
     </div>
 
     <div class="card">
+      <h2>Tvåfaktorsinloggning (2FA)</h2>
+      <div id="totp-disabled-view">
+        <p class="hint">Inte aktiverat.</p>
+        <button id="totp-setup-btn">Aktivera 2FA</button>
+      </div>
+      <div id="totp-setup-view" hidden>
+        <p class="hint">Lägg till denna hemlighet manuellt i din autentiseringsapp (Google Authenticator, Authy, m.fl.):</p>
+        <code id="totp-secret"></code>
+        <form id="totp-confirm-form">
+          <input type="text" name="code" placeholder="6-siffrig kod från appen" required>
+          <button type="submit">Bekräfta och aktivera</button>
+        </form>
+      </div>
+      <div id="totp-enabled-view" hidden>
+        <p class="hint">2FA är aktiverat på ditt konto.</p>
+        <button id="totp-disable-btn">Inaktivera 2FA</button>
+      </div>
+      <p id="totp-msg"></p>
+    </div>
+
+    <div class="card">
       <h2>Välj mottagare</h2>
       <input type="text" id="area-filter" placeholder="Sök kommun/region...">
       <div id="area-list"></div>
@@ -88,6 +142,14 @@
     <div class="card">
       <h2>Status på dina utskick</h2>
       <ul id="send-jobs-list"></ul>
+    </div>
+
+    <div class="card" id="admin-card" hidden>
+      <h2>Admin</h2>
+      <h3>Konton</h3>
+      <ul id="admin-accounts-list"></ul>
+      <h3>Feedback</h3>
+      <ul id="admin-feedback-list"></ul>
     </div>
   </section>
 </main>
