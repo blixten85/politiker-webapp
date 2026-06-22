@@ -82,7 +82,7 @@ async function processJobMessages(
     try {
       const greeting = firstName(m.recipientName) ? `Hej ${firstName(m.recipientName)}!` : "Hej!";
       const html = `<p>${greeting}</p>\n${m.htmlBody}`;
-      await sendOneMail(env, credentialRow, m.recipientEmail, html);
+      await sendOneMail(env, credentialRow, m.recipientEmail, html, m.subject);
       await logSend(env, m, "ok", null);
       queueMsg.ack();
     } catch (err) {
@@ -111,10 +111,10 @@ async function processJobMessages(
   await maybeFinishJob(env, sendJobId);
 }
 
-async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, html: string): Promise<void> {
+async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, html: string, subject?: string): Promise<void> {
   if (credentialRow.provider === "microsoft_graph") {
     const accessToken = await decryptSecret(credentialRow.oauth_access_token!, env.MAIL_CRED_KEY);
-    await sendGraphMail(accessToken, { to, html });
+    await sendGraphMail(accessToken, { to, html, subject }); // JSON-API — ingen RFC2047-kodning behövs, UTF-8 funkar direkt
     return;
   }
 
@@ -127,7 +127,7 @@ async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, h
       password,
       fromAddress: credentialRow.from_address,
     },
-    { to, html },
+    { to, html, subject },
   );
 }
 
