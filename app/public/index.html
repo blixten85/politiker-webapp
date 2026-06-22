@@ -164,6 +164,17 @@
       <ul id="send-jobs-list"></ul>
     </div>
 
+    <div class="card">
+      <h2>API-nycklar</h2>
+      <p class="hint">För programmatisk åtkomst — skicka med <code>Authorization: Bearer &lt;nyckel&gt;</code> istället för att logga in i webbläsaren.</p>
+      <ul id="api-keys-list"></ul>
+      <form id="create-api-key-form">
+        <input type="text" name="name" placeholder="Namn på nyckeln (t.ex. 'mitt script')" required>
+        <button type="submit">Skapa ny nyckel</button>
+      </form>
+      <p id="api-key-msg"></p>
+    </div>
+
     <div class="card" id="admin-card" hidden>
       <h2>Admin</h2>
       <h3>Konton</h3>
