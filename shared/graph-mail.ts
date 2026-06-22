@@ -88,9 +88,15 @@ export async function refreshMicrosoftToken(
   };
 }
 
+export interface GraphMailAttachment {
+  filename: string;
+  contentType: string;
+  bytes: ArrayBuffer;
+}
+
 export async function sendGraphMail(
   accessToken: string,
-  opts: { to: string; subject?: string; html: string },
+  opts: { to: string; subject?: string; html: string; attachments?: GraphMailAttachment[] },
 ): Promise<void> {
   const resp = await fetch("https://graph.microsoft.com/v1.0/me/sendMail", {
     method: "POST",
@@ -100,6 +106,12 @@ export async function sendGraphMail(
         subject: opts.subject ?? "",
         body: { contentType: "HTML", content: opts.html },
         toRecipients: [{ emailAddress: { address: opts.to } }],
+        attachments: (opts.attachments ?? []).map((att) => ({
+          "@odata.type": "#microsoft.graph.fileAttachment",
+          name: att.filename,
+          contentType: att.contentType,
+          contentBytes: bytesToBase64(att.bytes),
+        })),
       },
       saveToSentItems: true,
     }),
@@ -107,4 +119,10 @@ export async function sendGraphMail(
   if (!resp.ok) {
     throw new Error(`Microsoft Graph nekade sändning (${resp.status}): ${await resp.text()}`);
   }
+}
+
+function bytesToBase64(bytes: ArrayBuffer): string {
+  let binary = "";
+  for (const b of new Uint8Array(bytes)) binary += String.fromCharCode(b);
+  return btoa(binary);
 }

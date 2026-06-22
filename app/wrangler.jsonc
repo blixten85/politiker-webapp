@@ -35,6 +35,12 @@
       }
     ]
   },
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "politiker-webapp-attachments"
+    }
+  ],
   "vars": {
     "SYSTEM_SMTP_HOST": "smtp.mail.me.com",
     "SYSTEM_SMTP_PORT": "587",

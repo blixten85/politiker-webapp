@@ -5,6 +5,7 @@ import type { SendJobMessage } from "../../shared/types";
 
 interface Env {
   DB: D1Database;
+  ATTACHMENTS: R2Bucket;
   MAIL_CRED_KEY: string;
   OAUTH_MICROSOFT_CLIENT_ID?: string;
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
@@ -67,6 +68,11 @@ async function processJobMessages(
     credentialRow = await refreshAndPersistMicrosoftToken(env, credentialId, credentialRow);
   }
 
+  // Hämta ev. bilagor en gång per utskick (inte en gång per mottagare) —
+  // letter_id ligger på send_jobs, samma bilagor gäller alla mottagare i jobbet.
+  const job = await env.DB.prepare("SELECT letter_id FROM send_jobs WHERE id = ?").bind(sendJobId).first<{ letter_id: string }>();
+  const attachments = job ? await fetchAttachments(env, job.letter_id) : [];
+
   let bounceCount = 0;
   let attempted = 0;
   let aborted = false;
@@ -82,7 +88,7 @@ async function processJobMessages(
     try {
       const greeting = firstName(m.recipientName) ? `Hej ${firstName(m.recipientName)}!` : "Hej!";
       const html = `<p>${greeting}</p>\n${m.htmlBody}`;
-      await sendOneMail(env, credentialRow, m.recipientEmail, html, m.subject);
+      await sendOneMail(env, credentialRow, m.recipientEmail, html, m.subject, attachments);
       await logSend(env, m, "ok", null);
       queueMsg.ack();
     } catch (err) {
@@ -111,10 +117,17 @@ async function processJobMessages(
   await maybeFinishJob(env, sendJobId);
 }
 
-async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, html: string, subject?: string): Promise<void> {
+async function sendOneMail(
+  env: Env,
+  credentialRow: CredentialRow,
+  to: string,
+  html: string,
+  subject: string | undefined,
+  attachments: Array<{ filename: string; contentType: string; bytes: ArrayBuffer }>,
+): Promise<void> {
   if (credentialRow.provider === "microsoft_graph") {
     const accessToken = await decryptSecret(credentialRow.oauth_access_token!, env.MAIL_CRED_KEY);
-    await sendGraphMail(accessToken, { to, html, subject }); // JSON-API — ingen RFC2047-kodning behövs, UTF-8 funkar direkt
+    await sendGraphMail(accessToken, { to, html, subject, attachments }); // JSON-API — ingen RFC2047-kodning behövs, UTF-8 funkar direkt
     return;
   }
 
@@ -127,8 +140,27 @@ async function sendOneMail(env: Env, credentialRow: CredentialRow, to: string, h
       password,
       fromAddress: credentialRow.from_address,
     },
-    { to, html, subject },
+    { to, html, subject, attachments },
   );
+}
+
+async function fetchAttachments(
+  env: Env,
+  letterId: string,
+): Promise<Array<{ filename: string; contentType: string; bytes: ArrayBuffer }>> {
+  const { results } = await env.DB.prepare(
+    "SELECT filename, content_type, r2_key FROM letter_attachments WHERE letter_id = ? AND mode = 'attach'",
+  )
+    .bind(letterId)
+    .all<{ filename: string; content_type: string; r2_key: string }>();
+
+  const attachments: Array<{ filename: string; contentType: string; bytes: ArrayBuffer }> = [];
+  for (const row of results) {
+    const obj = await env.ATTACHMENTS.get(row.r2_key);
+    if (!obj) continue; // borttagen — skippa snarare än att krascha hela utskicket
+    attachments.push({ filename: row.filename, contentType: row.content_type, bytes: await obj.arrayBuffer() });
+  }
+  return attachments;
 }
 
 async function refreshAndPersistMicrosoftToken(env: Env, credentialId: string, credentialRow: CredentialRow): Promise<CredentialRow> {
