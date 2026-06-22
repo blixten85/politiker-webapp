@@ -85,3 +85,18 @@ export function randomId(): string {
 export function randomVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+// API-nycklar är hög-entropi slumptokens, inte mänskliga lösenord — vanlig
+// snabb SHA-256 räcker (samma praxis som GitHub/Stripe), ingen PBKDF2 behövs.
+export async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function generateApiKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const token = toBase64(bytes).replace(/[+/=]/g, "");
+  return `pwapi_${token}`;
+}

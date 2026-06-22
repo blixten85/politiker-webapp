@@ -115,3 +115,15 @@ CREATE TABLE feedback (
   github_issue_url TEXT,
   created_at INTEGER NOT NULL
 );
+
+-- Personliga API-nycklar: alternativ till sessionskaka för programmatisk
+-- åtkomst (Authorization: Bearer <nyckel>). Bara hash lagras, klartext visas
+-- en gång vid skapande.
+CREATE TABLE api_keys (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES accounts(id),
+  key_hash TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  last_used_at INTEGER
+);
