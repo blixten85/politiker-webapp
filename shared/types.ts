@@ -7,4 +7,5 @@ export interface SendJobMessage {
   recipientEmail: string;
   recipientName: string;
   htmlBody: string;
+  subject?: string;
 }
