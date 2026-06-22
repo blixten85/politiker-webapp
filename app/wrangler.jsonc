@@ -46,6 +46,7 @@
     "SYSTEM_SMTP_PORT": "587",
     "SYSTEM_SMTP_USER": "nils.anders.eriksson@icloud.com",
     "SYSTEM_FROM_ADDRESS": "anders.eriksson@denied.se",
-    "FEEDBACK_NOTIFY_EMAIL": "anders.eriksson@denied.se"
+    "FEEDBACK_NOTIFY_EMAIL": "anders.eriksson@denied.se",
+    "OAUTH_GOOGLE_CLIENT_ID": "1051427827429-nu6si4bq993a4onm8spk7bf94gctgr18.apps.googleusercontent.com"
   }
 }
