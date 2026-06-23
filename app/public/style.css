@@ -148,6 +148,7 @@ button {
 }
 button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 button:active { transform: translateY(1px); }
+button:disabled { background: var(--hint); border-color: var(--hint); opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .hint { color: var(--hint); font-size: 0.88rem; }
 .link-btn {
@@ -230,3 +231,32 @@ textarea#letter-body { font-family: monospace; }
   height: 100%; background: var(--accent); width: 0%;
   transition: width 0.3s ease;
 }
+
+.admin-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+.admin-tab-btn {
+  background: none; border: none; padding: 0.5rem 0.9rem; cursor: pointer;
+  color: var(--hint); font-size: 0.95rem; border-bottom: 2px solid transparent;
+}
+.admin-tab-btn.active { color: var(--fg); border-bottom-color: var(--accent); font-weight: 500; }
+.admin-tab-panel { margin-bottom: 1rem; }
+
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 0.5rem; }
+.admin-table td { padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.admin-table button { font-size: 0.78rem; padding: 0.25rem 0.5rem; margin-left: 0.3rem; }
+.admin-badge { padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.78rem; }
+.admin-badge.ok { background: #1a7f37; color: #fff; }
+.admin-badge.warn { background: #9a6700; color: #fff; }
+.admin-badge.danger { background: #cf222e; color: #fff; }
+
+.admin-stats-totals { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.75rem 0; }
+.admin-stats-totals .stat-box { background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; min-width: 110px; }
+.admin-stats-totals .stat-box .n { font-size: 1.4rem; font-weight: 600; display: block; }
+.admin-stats-totals .stat-box .l { font-size: 0.78rem; color: var(--hint); }
+
+.admin-stats-controls { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.admin-stats-controls select {
+  padding: 0.35rem 0.5rem; background: var(--input-bg); color: var(--fg);
+  border: 1px solid var(--input-border); border-radius: 6px; font-size: 0.88rem;
+}
+
+#admin-stats-chart { width: 100%; max-width: 640px; height: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; }
