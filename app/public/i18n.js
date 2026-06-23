@@ -67,9 +67,6 @@ function applyTranslations() {
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     el.placeholder = t(el.getAttribute("data-i18n-placeholder"));
   });
-  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
-    el.innerHTML = t(el.getAttribute("data-i18n-html"));
-  });
   const lang = LANGUAGES.find((l) => l.code === currentLang);
   const flagChar = lang ? lang.flag : "🇸🇪";
   const flagEl = document.querySelector(".se-flag");
