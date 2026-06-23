@@ -260,3 +260,8 @@ textarea#letter-body { font-family: monospace; }
 }
 
 #admin-stats-chart { width: 100%; max-width: 640px; height: auto; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; }
+
+#add-credential-form label { font-size: 0.88rem; color: var(--hint); margin-top: 0.2rem; }
+#cap-pct-preview { margin-top: 0; }
+.cred-cap-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.cred-cap-row select { padding: 0.2rem 0.4rem; font-size: 0.8rem; background: var(--input-bg); color: var(--fg); border: 1px solid var(--input-border); border-radius: 4px; }

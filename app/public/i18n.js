@@ -266,6 +266,13 @@ registerTranslations("sv", {
   confirm_disable_account: "Inaktivera kontot för {email}?",
   confirm_enable_account: "Aktivera kontot för {email} igen?",
   msg_sent_success: "Skickat! ✅",
+  label_cap_pct: "Hur stor andel av taket vill du använda?",
+  cap_pct_custom: "Anpassad %",
+  msg_cap_preview: "Tak: {ceiling} brev/dag (90% av leverantörens gräns på {limit}/dag). Du har valt {pct}% = {cap} brev/dag.",
+  msg_cap_preview_unknown: "Ingen känd gräns för denna leverantör — inget tak sätts automatiskt.",
+  msg_cap_updated: "Ny gräns: {cap} brev/dag ({pct}%)",
+  faq_q8: "Varför finns det en gräns för hur många brev jag kan skicka per dag?",
+  faq_a8: "Din mailleverantör (Gmail, Outlook, iCloud, Yahoo) har egna gränser för hur många mejl ett konto får skicka per dygn. Om du skickar fler riskerar leverantören att tillfälligt blockera eller flagga ditt konto. Vi sätter därför ett tak på 10% under leverantörens kända gräns, så att din vanliga mailanvändning på samma konto inte trängs ut och du har marginal. Du kan själv välja att använda en lägre andel av det taket (t.ex. 50%) om du vill vara extra säker — men aldrig en högre andel än taket tillåter.",
 });
 
 registerTranslations("en", {
@@ -427,6 +434,13 @@ registerTranslations("en", {
   confirm_disable_account: "Disable the account for {email}?",
   confirm_enable_account: "Re-enable the account for {email}?",
   msg_sent_success: "Sent! ✅",
+  label_cap_pct: "What share of the cap would you like to use?",
+  cap_pct_custom: "Custom %",
+  msg_cap_preview: "Cap: {ceiling} letters/day (90% of the provider's limit of {limit}/day). You've chosen {pct}% = {cap} letters/day.",
+  msg_cap_preview_unknown: "No known limit for this provider — no cap is set automatically.",
+  msg_cap_updated: "New cap: {cap} letters/day ({pct}%)",
+  faq_q8: "Why is there a limit on how many letters I can send per day?",
+  faq_a8: "Your mail provider (Gmail, Outlook, iCloud, Yahoo) has its own limits on how many emails an account can send per day. Sending more risks your provider temporarily blocking or flagging your account. We therefore set a cap at 10% below the provider's known limit, so your normal email use on the same account isn't crowded out and you have margin. You can choose to use a lower share of that cap yourself (e.g. 50%) if you want extra safety — but never a higher share than the cap allows.",
 });
 
 registerTranslations("no", {
@@ -588,6 +602,13 @@ registerTranslations("no", {
   confirm_disable_account: "Deaktivere kontoen for {email}?",
   confirm_enable_account: "Aktivere kontoen for {email} igjen?",
   msg_sent_success: "Sendt! ✅",
+  label_cap_pct: "Hvor stor andel av taket vil du bruke?",
+  cap_pct_custom: "Egendefinert %",
+  msg_cap_preview: "Tak: {ceiling} brev/dag (90% av leverandørens grense på {limit}/dag). Du har valgt {pct}% = {cap} brev/dag.",
+  msg_cap_preview_unknown: "Ingen kjent grense for denne leverandøren — ingen tak settes automatisk.",
+  msg_cap_updated: "Ny grense: {cap} brev/dag ({pct}%)",
+  faq_q8: "Hvorfor finnes det en grense for hvor mange brev jeg kan sende per dag?",
+  faq_a8: "Din e-postleverandør (Gmail, Outlook, iCloud, Yahoo) har egne grenser for hvor mange e-poster en konto kan sende per dag. Sender du flere, risikerer du at leverandøren midlertidig blokkerer eller flagger kontoen din. Vi setter derfor et tak på 10% under leverandørens kjente grense, slik at din vanlige e-postbruk på samme konto ikke trenges ut, og du har margin. Du kan selv velge å bruke en lavere andel av taket (f.eks. 50%) hvis du vil være ekstra trygg — men aldri en høyere andel enn taket tillater.",
 });
 
 registerTranslations("da", {
@@ -749,6 +770,13 @@ registerTranslations("da", {
   confirm_disable_account: "Deaktivere kontoen for {email}?",
   confirm_enable_account: "Genaktivere kontoen for {email}?",
   msg_sent_success: "Sendt! ✅",
+  label_cap_pct: "Hvor stor andel af loftet vil du bruge?",
+  cap_pct_custom: "Brugerdefineret %",
+  msg_cap_preview: "Loft: {ceiling} breve/dag (90% af udbyderens grænse på {limit}/dag). Du har valgt {pct}% = {cap} breve/dag.",
+  msg_cap_preview_unknown: "Ingen kendt grænse for denne udbyder — intet loft sættes automatisk.",
+  msg_cap_updated: "Ny grænse: {cap} breve/dag ({pct}%)",
+  faq_q8: "Hvorfor er der en grænse for, hvor mange breve jeg kan sende per dag?",
+  faq_a8: "Din mailudbyder (Gmail, Outlook, iCloud, Yahoo) har egne grænser for, hvor mange e-mails en konto kan sende per dag. Sender du flere, risikerer du, at udbyderen midlertidigt blokerer eller markerer din konto. Vi sætter derfor et loft på 10% under udbyderens kendte grænse, så din normale mailbrug på samme konto ikke fortrænges, og du har margin. Du kan selv vælge at bruge en lavere andel af det loft (f.eks. 50%), hvis du vil være ekstra sikker — men aldrig en højere andel end loftet tillader.",
 });
 
 registerTranslations("fi", {
@@ -910,6 +938,13 @@ registerTranslations("fi", {
   confirm_disable_account: "Poistetaanko tili {email} käytöstä?",
   confirm_enable_account: "Otetaanko tili {email} käyttöön uudelleen?",
   msg_sent_success: "Lähetetty! ✅",
+  label_cap_pct: "Kuinka suuren osan rajasta haluat käyttää?",
+  cap_pct_custom: "Mukautettu %",
+  msg_cap_preview: "Raja: {ceiling} kirjettä/vrk (90% palveluntarjoajan rajasta {limit}/vrk). Olet valinnut {pct}% = {cap} kirjettä/vrk.",
+  msg_cap_preview_unknown: "Ei tunnettua rajaa tälle palveluntarjoajalle — rajaa ei aseteta automaattisesti.",
+  msg_cap_updated: "Uusi raja: {cap} kirjettä/vrk ({pct}%)",
+  faq_q8: "Miksi on rajoitus, kuinka monta kirjettä voin lähettää päivässä?",
+  faq_a8: "Sähköpostipalveluntarjoajallasi (Gmail, Outlook, iCloud, Yahoo) on omat rajansa sille, kuinka monta sähköpostia tili voi lähettää päivässä. Jos lähetät enemmän, palveluntarjoaja voi väliaikaisesti estää tai merkitä tilisi. Asetamme siksi rajan 10% palveluntarjoajan tunnetun rajan alapuolelle, jotta tavallinen sähköpostin käyttösi samalla tilillä ei häiriinny ja sinulla on liikkumavaraa. Voit itse valita käyttää pienempää osuutta tästä rajasta (esim. 50%), jos haluat olla erityisen varovainen — mutta ei koskaan suurempaa osuutta kuin raja sallii.",
 });
 
 registerTranslations("is", {
@@ -1071,6 +1106,13 @@ registerTranslations("is", {
   confirm_disable_account: "Gera aðgang {email} óvirkan?",
   confirm_enable_account: "Virkja aðgang {email} aftur?",
   msg_sent_success: "Sent! ✅",
+  label_cap_pct: "Hve mikinn hluta af þakinu vilt þú nota?",
+  cap_pct_custom: "Sérsniðið %",
+  msg_cap_preview: "Þak: {ceiling} bréf/dag (90% af mörkum veitandans á {limit}/dag). Þú hefur valið {pct}% = {cap} bréf/dag.",
+  msg_cap_preview_unknown: "Engin þekkt mörk fyrir þennan veitanda — engin þak er sett sjálfkrafa.",
+  msg_cap_updated: "Ný mörk: {cap} bréf/dag ({pct}%)",
+  faq_q8: "Hvers vegna er takmörkun á því hversu mörg bréf ég get sent á dag?",
+  faq_a8: "Tölvupóstveitandinn þinn (Gmail, Outlook, iCloud, Yahoo) hefur eigin mörk fyrir hversu mörg tölvupóst aðgangur getur sent á dag. Ef þú sendir fleiri áhættar þú að veitandinn loki tímabundið eða merki aðgang þinn. Við setjum því þak 10% undir þekktum mörkum veitandans, svo venjuleg tölvupóstnotkun þín á sama aðgangi verði ekki útrýmt og þú hafir svigrúm. Þú getur sjálf/ur valið að nota lægra hlutfall af því þaki (t.d. 50%) ef þú vilt vera extra öruggur — en aldrei hærra hlutfall en þakið leyfir.",
 });
 
 registerTranslations("de", {
@@ -1232,6 +1274,13 @@ registerTranslations("de", {
   confirm_disable_account: "Konto für {email} deaktivieren?",
   confirm_enable_account: "Konto für {email} wieder aktivieren?",
   msg_sent_success: "Gesendet! ✅",
+  label_cap_pct: "Welchen Anteil der Obergrenze möchten Sie nutzen?",
+  cap_pct_custom: "Benutzerdefiniert %",
+  msg_cap_preview: "Obergrenze: {ceiling} Briefe/Tag (90% des Anbieterlimits von {limit}/Tag). Sie haben {pct}% = {cap} Briefe/Tag gewählt.",
+  msg_cap_preview_unknown: "Kein bekanntes Limit für diesen Anbieter — es wird keine Obergrenze automatisch gesetzt.",
+  msg_cap_updated: "Neue Obergrenze: {cap} Briefe/Tag ({pct}%)",
+  faq_q8: "Warum gibt es ein Limit, wie viele Briefe ich pro Tag senden kann?",
+  faq_a8: "Ihr E-Mail-Anbieter (Gmail, Outlook, iCloud, Yahoo) hat eigene Limits, wie viele E-Mails ein Konto pro Tag senden kann. Senden Sie mehr, riskieren Sie, dass der Anbieter Ihr Konto vorübergehend blockiert oder markiert. Wir setzen daher eine Obergrenze von 10% unter dem bekannten Anbieterlimit, damit Ihre normale E-Mail-Nutzung auf demselben Konto nicht verdrängt wird und Sie Spielraum haben. Sie können selbst einen niedrigeren Anteil dieser Obergrenze nutzen (z.B. 50%), wenn Sie zusätzliche Sicherheit möchten — aber niemals einen höheren Anteil, als die Obergrenze erlaubt.",
 });
 
 registerTranslations("fr", {
@@ -1393,6 +1442,13 @@ registerTranslations("fr", {
   confirm_disable_account: "Désactiver le compte de {email} ?",
   confirm_enable_account: "Réactiver le compte de {email} ?",
   msg_sent_success: "Envoyé ! ✅",
+  label_cap_pct: "Quelle part du plafond souhaitez-vous utiliser ?",
+  cap_pct_custom: "% personnalisé",
+  msg_cap_preview: "Plafond : {ceiling} lettres/jour (90% de la limite du fournisseur de {limit}/jour). Vous avez choisi {pct}% = {cap} lettres/jour.",
+  msg_cap_preview_unknown: "Aucune limite connue pour ce fournisseur — aucun plafond n'est défini automatiquement.",
+  msg_cap_updated: "Nouveau plafond : {cap} lettres/jour ({pct}%)",
+  faq_q8: "Pourquoi y a-t-il une limite au nombre de lettres que je peux envoyer par jour ?",
+  faq_a8: "Votre fournisseur de messagerie (Gmail, Outlook, iCloud, Yahoo) a ses propres limites sur le nombre d'e-mails qu'un compte peut envoyer par jour. En envoyer davantage risque de faire bloquer ou signaler temporairement votre compte par le fournisseur. Nous fixons donc un plafond à 10% sous la limite connue du fournisseur, afin que votre usage normal de messagerie sur le même compte ne soit pas évincé et que vous ayez une marge. Vous pouvez choisir d'utiliser vous-même une part inférieure de ce plafond (par ex. 50%) si vous souhaitez plus de sécurité — mais jamais une part supérieure à ce que le plafond permet.",
 });
 
 registerTranslations("es", {
@@ -1554,6 +1610,13 @@ registerTranslations("es", {
   confirm_disable_account: "¿Desactivar la cuenta de {email}?",
   confirm_enable_account: "¿Reactivar la cuenta de {email}?",
   msg_sent_success: "¡Enviado! ✅",
+  label_cap_pct: "¿Qué parte del límite quieres usar?",
+  cap_pct_custom: "% personalizado",
+  msg_cap_preview: "Límite: {ceiling} cartas/día (90% del límite del proveedor de {limit}/día). Has elegido {pct}% = {cap} cartas/día.",
+  msg_cap_preview_unknown: "No hay un límite conocido para este proveedor — no se establece ningún límite automáticamente.",
+  msg_cap_updated: "Nuevo límite: {cap} cartas/día ({pct}%)",
+  faq_q8: "¿Por qué hay un límite de cuántas cartas puedo enviar al día?",
+  faq_a8: "Tu proveedor de correo (Gmail, Outlook, iCloud, Yahoo) tiene sus propios límites de cuántos correos puede enviar una cuenta al día. Enviar más arriesga que el proveedor bloquee o marque temporalmente tu cuenta. Por eso establecemos un límite del 10% por debajo del límite conocido del proveedor, para que tu uso normal de correo en la misma cuenta no se vea desplazado y tengas margen. Puedes elegir usar tú mismo una parte menor de ese límite (p.ej. 50%) si quieres más seguridad — pero nunca una parte mayor de la que el límite permite.",
 });
 
 registerTranslations("pl", {
@@ -1715,6 +1778,13 @@ registerTranslations("pl", {
   confirm_disable_account: "Wyłączyć konto {email}?",
   confirm_enable_account: "Ponownie włączyć konto {email}?",
   msg_sent_success: "Wysłano! ✅",
+  label_cap_pct: "Jaką część limitu chcesz wykorzystać?",
+  cap_pct_custom: "Niestandardowy %",
+  msg_cap_preview: "Limit: {ceiling} listów/dzień (90% limitu dostawcy {limit}/dzień). Wybrałeś {pct}% = {cap} listów/dzień.",
+  msg_cap_preview_unknown: "Brak znanego limitu dla tego dostawcy — limit nie jest ustawiany automatycznie.",
+  msg_cap_updated: "Nowy limit: {cap} listów/dzień ({pct}%)",
+  faq_q8: "Czemu istnieje limit liczby listów, które mogę wysłać dziennie?",
+  faq_a8: "Twój dostawca poczty (Gmail, Outlook, iCloud, Yahoo) ma własne limity liczby e-maili, które konto może wysłać dziennie. Wysyłając więcej, ryzykujesz tymczasowe zablokowanie lub oflagowanie konta przez dostawcę. Dlatego ustawiamy limit na 10% poniżej znanego limitu dostawcy, aby Twoje normalne korzystanie z poczty na tym samym koncie nie zostało wypchnięte i miałeś margines. Możesz sam wybrać niższą część tego limitu (np. 50%), jeśli chcesz dodatkowego bezpieczeństwa — ale nigdy wyższą część, niż limit pozwala.",
 });
 
 registerTranslations("tr", {
@@ -1876,6 +1946,13 @@ registerTranslations("tr", {
   confirm_disable_account: "{email} hesabı devre dışı bırakılsın mı?",
   confirm_enable_account: "{email} hesabı yeniden etkinleştirilsin mi?",
   msg_sent_success: "Gönderildi! ✅",
+  label_cap_pct: "Sınırın ne kadarını kullanmak istersiniz?",
+  cap_pct_custom: "Özel %",
+  msg_cap_preview: "Sınır: günde {ceiling} mektup (sağlayıcının günde {limit} sınırının %90'ı). %{pct} = günde {cap} mektup seçtiniz.",
+  msg_cap_preview_unknown: "Bu sağlayıcı için bilinen bir sınır yok — otomatik olarak sınır belirlenmez.",
+  msg_cap_updated: "Yeni sınır: günde {cap} mektup (%{pct})",
+  faq_q8: "Günde kaç mektup gönderebileceğime neden bir sınır var?",
+  faq_a8: "E-posta sağlayıcınızın (Gmail, Outlook, iCloud, Yahoo) bir hesabın günde kaç e-posta gönderebileceğine dair kendi sınırları vardır. Daha fazla gönderirseniz, sağlayıcının hesabınızı geçici olarak engelleme veya işaretleme riski vardır. Bu nedenle, aynı hesaptaki normal e-posta kullanımınızın dışlanmaması ve bir marjınız olması için sağlayıcının bilinen sınırının %10 altında bir sınır belirliyoruz. Daha fazla güvenlik istiyorsanız bu sınırın daha düşük bir bölümünü (örn. %50) kendiniz seçebilirsiniz — ama sınırın izin verdiğinden daha yüksek bir bölümü asla.",
 });
 
 registerTranslations("ru", {
@@ -2037,6 +2114,13 @@ registerTranslations("ru", {
   confirm_disable_account: "Отключить аккаунт {email}?",
   confirm_enable_account: "Снова включить аккаунт {email}?",
   msg_sent_success: "Отправлено! ✅",
+  label_cap_pct: "Какую долю лимита вы хотите использовать?",
+  cap_pct_custom: "Свой %",
+  msg_cap_preview: "Лимит: {ceiling} писем/день (90% от лимита провайдера {limit}/день). Вы выбрали {pct}% = {cap} писем/день.",
+  msg_cap_preview_unknown: "Нет известного лимита для этого провайдера — лимит не устанавливается автоматически.",
+  msg_cap_updated: "Новый лимит: {cap} писем/день ({pct}%)",
+  faq_q8: "Почему есть ограничение на количество писем, которые я могу отправить в день?",
+  faq_a8: "Ваш почтовый провайдер (Gmail, Outlook, iCloud, Yahoo) имеет собственные ограничения на количество писем, которые аккаунт может отправить в день. Отправка большего количества рискует тем, что провайдер временно заблокирует или пометит ваш аккаунт. Поэтому мы устанавливаем лимит на 10% ниже известного лимита провайдера, чтобы ваше обычное использование почты на том же аккаунте не было вытеснено, и у вас был запас. Вы можете сами выбрать использовать более низкую долю этого лимита (например, 50%), если хотите дополнительной безопасности — но никогда более высокую долю, чем позволяет лимит.",
 });
 
 registerTranslations("uk", {
@@ -2198,6 +2282,13 @@ registerTranslations("uk", {
   confirm_disable_account: "Вимкнути акаунт {email}?",
   confirm_enable_account: "Знову увімкнути акаунт {email}?",
   msg_sent_success: "Надіслано! ✅",
+  label_cap_pct: "Яку частку лімту ви хочете використовувати?",
+  cap_pct_custom: "Власний %",
+  msg_cap_preview: "Ліміт: {ceiling} листів/день (90% від лімту провайдера {limit}/день). Ви обрали {pct}% = {cap} листів/день.",
+  msg_cap_preview_unknown: "Немає відомого лімту для цього провайдера — ліміт не встановлюється автоматично.",
+  msg_cap_updated: "Новий ліміт: {cap} листів/день ({pct}%)",
+  faq_q8: "Чому є обмеження на кількість листів, які я можу надіслати за день?",
+  faq_a8: "Ваш поштовий провайдер (Gmail, Outlook, iCloud, Yahoo) має власні обмеження на кількість листів, які акаунт може надіслати за день. Надсилаючи більше, ви ризикуєте, що провайдер тимчасово заблокує або позначить ваш акаунт. Тому ми встановлюємо ліміт на 10% нижче відомого лімту провайдера, щоб ваше звичайне використання пошти на тому самому акаунті не було витіснене, і у вас був запас. Ви можете самі обрати використовувати нижчу частку цього лімту (напр. 50%), якщо хочете додаткової безпеки — але ніколи вищу частку, ніж дозволяє ліміт.",
 });
 
 registerTranslations("ar", {
@@ -2359,6 +2450,13 @@ registerTranslations("ar", {
   confirm_disable_account: "تعطيل حساب {email}؟",
   confirm_enable_account: "إعادة تفعيل حساب {email}؟",
   msg_sent_success: "تم الإرسال! ✅",
+  label_cap_pct: "ما هي النسبة من الحد التي تريد استخدامها؟",
+  cap_pct_custom: "نسبة مخصصة %",
+  msg_cap_preview: "الحد: {ceiling} رسالة/يوم (90% من حد المزود البالغ {limit}/يوم). لقد اخترت {pct}% = {cap} رسالة/يوم.",
+  msg_cap_preview_unknown: "لا يوجد حد معروف لهذا المزود — لا يتم تعيين حد تلقائيًا.",
+  msg_cap_updated: "الحد الجديد: {cap} رسالة/يوم ({pct}%)",
+  faq_q8: "لماذا يوجد حد لعدد الرسائل التي يمكنني إرسالها يوميًا؟",
+  faq_a8: "مزود البريد الإلكتروني الخاص بك (Gmail، Outlook، iCloud، Yahoo) لديه حدوده الخاصة لعدد الرسائل التي يمكن لحساب إرسالها يوميًا. إرسال المزيد يعرضك لخطر حظر أو وضع علامة على حسابك مؤقتًا من قبل المزود. لذلك نضع حدًا أقل بـ10% من الحد المعروف للمزود، حتى لا يُزاحم استخدامك العادي للبريد على نفس الحساب وتحصل على هامش. يمكنك اختيار استخدام نسبة أقل من هذا الحد بنفسك (مثل 50%) إذا كنت تريد أمانًا إضافيًا — ولكن أبدًا نسبة أعلى مما يسمح به الحد.",
 });
 
 registerTranslations("fa", {
@@ -2520,6 +2618,13 @@ registerTranslations("fa", {
   confirm_disable_account: "حساب {email} غیرفعال شود؟",
   confirm_enable_account: "حساب {email} دوباره فعال شود؟",
   msg_sent_success: "ارسال شد! ✅",
+  label_cap_pct: "چه سهمی از سقف را می‌خواهید استفاده کنید؟",
+  cap_pct_custom: "درصد دلخواه",
+  msg_cap_preview: "سقف: {ceiling} نامه در روز (۹۰٪ از حد ارائه‌دهنده که {limit} در روز است). شما {pct}٪ = {cap} نامه در روز را انتخاب کرده‌اید.",
+  msg_cap_preview_unknown: "هیچ حد شناخته‌شده‌ای برای این ارائه‌دهنده وجود ندارد — هیچ سقفی به‌طور خودکار تعیین نمی‌شود.",
+  msg_cap_updated: "سقف جدید: {cap} نامه در روز (٪{pct})",
+  faq_q8: "چرا محدودیتی برای تعداد نامه‌هایی که می‌توانم در روز ارسال کنم وجود دارد؟",
+  faq_a8: "ارائه‌دهنده ایمیل شما (Gmail، Outlook، iCloud، Yahoo) محدودیت‌های خاص خود را برای تعداد ایمیل‌هایی که یک حساب می‌تواند در روز ارسال کند دارد. ارسال بیشتر، خطر مسدود شدن یا علامت‌گذاری موقت حساب شما توسط ارائه‌دهنده را افزایش می‌دهد. بنابراین ما سقفی ۱۰٪ پایین‌تر از حد شناخته‌شده ارائه‌دهنده تعیین می‌کنیم، تا استفاده عادی شما از ایمیل در همان حساب کنار گذاشته نشود و حاشیه‌ای داشته باشید. شما می‌توانید خودتان سهم کمتری از این سقف (مثلاً ۵۰٪) را برای امنیت بیشتر انتخاب کنید — اما هرگز سهمی بیشتر از آنچه سقف اجازه می‌دهد.",
 });
 
 registerTranslations("so", {
@@ -2681,6 +2786,13 @@ registerTranslations("so", {
   confirm_disable_account: "Joojinta akoonka {email}?",
   confirm_enable_account: "Dib u shaqaysiinta akoonka {email}?",
   msg_sent_success: "La diray! ✅",
+  label_cap_pct: "Imisaa qaybood oo hadafka ah ayaad rabtaa inaad isticmaalo?",
+  cap_pct_custom: "% gaar ah",
+  msg_cap_preview: "Hadafka: {ceiling} warqadood/maalin (90% xadka bixiyaha ee {limit}/maalin). Waxaad dooratay {pct}% = {cap} warqadood/maalin.",
+  msg_cap_preview_unknown: "Ma jiro xad la yaqaan oo bixiyahan — xad lama dejin si toos ah.",
+  msg_cap_updated: "Xadka cusub: {cap} warqadood/maalin ({pct}%)",
+  faq_q8: "Maxaa loo baahan yahay xad ku saabsan immisa warqadood ee aan maalin kasta diri karo?",
+  faq_a8: "Bixiyaha email-kaaga (Gmail, Outlook, iCloud, Yahoo) wuxuu leeyahay xaddidaad gaar ah oo ku saabsan immisa email akoonku uu diri karo maalin kasta. Haddii aad dirto in ka badan, waxaa jira khatar ah in bixiyuhu si ku meel gaar ah u xanniba ama calaamadeeyo akoonkaaga. Sidaa darteed waxaan dejinaa xad 10% ka hooseeya xadka la yaqaan ee bixiyaha, si isticmaalkaaga caadiga ah ee email-ka ee isla akoonka aanu loo saarin oo aad u lahaato boos dhaaf ah. Waxaad keligaa dooran kartaa inaad isticmaalo qayb ka yar xadkaas (tusaale 50%) haddii aad rabto ammaan dheeraad ah — laakiin marnaba qayb ka badan inta xadku oggol yahay.",
 });
 
 registerTranslations("zh", {
@@ -2842,6 +2954,13 @@ registerTranslations("zh", {
   confirm_disable_account: "禁用 {email} 的账户？",
   confirm_enable_account: "重新启用 {email} 的账户？",
   msg_sent_success: "已发送！✅",
+  label_cap_pct: "您想使用多少比例的上限？",
+  cap_pct_custom: "自定义 %",
+  msg_cap_preview: "上限：每天 {ceiling} 封信（服务商每天 {limit} 封限制的 90%）。您选择了 {pct}% = 每天 {cap} 封信。",
+  msg_cap_preview_unknown: "此服务商没有已知限制 — 不会自动设置上限。",
+  msg_cap_updated: "新上限：每天 {cap} 封信（{pct}%）",
+  faq_q8: "为什么每天能发送的信件数量有限制？",
+  faq_a8: "您的邮箱服务商（Gmail、Outlook、iCloud、Yahoo）对每个账户每天可发送的邮件数量有自己的限制。发送过多可能导致服务商暂时封锁或标记您的账户。因此我们将上限设置为比服务商已知限制低10%，这样您在同一账户上的正常邮件使用不会被挤占，并留有余地。如果您想要额外的安全保障，可以自行选择使用该上限的较低比例（例如50%）——但永远不能超过上限允许的比例。",
 });
 
 registerTranslations("hi", {
@@ -3003,4 +3122,11 @@ registerTranslations("hi", {
   confirm_disable_account: "{email} का खाता निष्क्रिय करें?",
   confirm_enable_account: "{email} का खाता फिर से सक्षम करें?",
   msg_sent_success: "भेजा गया! ✅",
+  label_cap_pct: "आप सीमा का कितना हिस्सा उपयोग करना चाहते हैं?",
+  cap_pct_custom: "कस्टम %",
+  msg_cap_preview: "सीमा: {ceiling} पत्र/दिन (प्रदाता की {limit}/दिन सीमा का 90%)। आपने {pct}% = {cap} पत्र/दिन चुना है।",
+  msg_cap_preview_unknown: "इस प्रदाता के लिए कोई ज्ञात सीमा नहीं है — कोई सीमा स्वचालित रूप से सेट नहीं की जाती।",
+  msg_cap_updated: "नई सीमा: {cap} पत्र/दिन ({pct}%)",
+  faq_q8: "मैं प्रतिदिन कितने पत्र भेज सकता हूँ, इस पर सीमा क्यों है?",
+  faq_a8: "आपके मेल प्रदाता (Gmail, Outlook, iCloud, Yahoo) की अपनी सीमाएँ हैं कि एक खाता प्रतिदिन कितने ईमेल भेज सकता है। अधिक भेजने से प्रदाता द्वारा आपके खाते को अस्थायी रूप से अवरुद्ध या चिह्नित करने का जोखिम है। इसलिए हम प्रदाता की ज्ञात सीमा से 10% कम सीमा निर्धारित करते हैं, ताकि उसी खाते पर आपका सामान्य मेल उपयोग बाधित न हो और आपके पास मार्जिन हो। यदि आप अतिरिक्त सुरक्षा चाहते हैं तो आप स्वयं इस सीमा का कम हिस्सा (जैसे 50%) उपयोग करना चुन सकते हैं — लेकिन सीमा जितनी अनुमति देती है उससे अधिक हिस्सा कभी नहीं।",
 });

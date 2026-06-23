@@ -13,7 +13,16 @@ import {
   setAccountDisabled,
 } from "./auth";
 import { getAdminStats, exportAdminData } from "./admin-stats";
-import { addMailCredential, listMailCredentials, deleteMailCredential, addMicrosoftGraphMailCredential } from "./mail-credentials";
+import {
+  addMailCredential,
+  listMailCredentials,
+  deleteMailCredential,
+  addMicrosoftGraphMailCredential,
+  updateMailCredentialCapPct,
+  PROVIDER_PRESETS,
+  getCeiling,
+  MICROSOFT_GRAPH_DAILY_LIMIT,
+} from "./mail-credentials";
 import { listAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
@@ -254,6 +263,18 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         return json(await listMailCredentials(env, accountId));
       }
 
+      if (url.pathname === "/api/provider-ceilings" && req.method === "GET") {
+        const providers = [...Object.keys(PROVIDER_PRESETS), "microsoft_graph"];
+        const result: Record<string, { providerDailyLimit: number | null; ceiling: number | null }> = {};
+        for (const p of providers) {
+          result[p] = {
+            providerDailyLimit: p === "microsoft_graph" ? MICROSOFT_GRAPH_DAILY_LIMIT : PROVIDER_PRESETS[p].providerDailyLimit,
+            ceiling: getCeiling(p),
+          };
+        }
+        return json(result);
+      }
+
       if (url.pathname === "/api/mail-credentials" && req.method === "POST") {
         const input = await req.json<Parameters<typeof addMailCredential>[2]>();
         const result = await addMailCredential(env, accountId, input);
@@ -264,6 +285,13 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         const id = url.pathname.split("/").pop()!;
         await deleteMailCredential(env, accountId, id);
         return json({ ok: true });
+      }
+
+      const capPctMatch = url.pathname.match(/^\/api\/mail-credentials\/([^/]+)\/cap-pct$/);
+      if (capPctMatch && req.method === "POST") {
+        const { userCapPct } = await req.json<{ userCapPct: number }>();
+        const result = await updateMailCredentialCapPct(env, accountId, capPctMatch[1], userCapPct);
+        return json(result);
       }
 
       if (url.pathname === "/api/send" && req.method === "POST") {
