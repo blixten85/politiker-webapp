@@ -9,7 +9,10 @@ import {
   confirmTotpSetup,
   disableTotp,
   setPassword,
+  adminResetPassword,
+  setAccountDisabled,
 } from "./auth";
+import { getAdminStats, exportAdminData } from "./admin-stats";
 import { addMailCredential, listMailCredentials, deleteMailCredential, addMicrosoftGraphMailCredential } from "./mail-credentials";
 import { listAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
@@ -305,9 +308,22 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
 
         if (url.pathname === "/api/admin/accounts" && req.method === "GET") {
           const { results } = await env.DB.prepare(
-            "SELECT id, email, email_verified, daily_send_cap, is_admin, created_at FROM accounts ORDER BY created_at DESC",
+            "SELECT id, email, email_verified, daily_send_cap, is_admin, disabled, created_at FROM accounts ORDER BY created_at DESC",
           ).all();
           return json(results);
+        }
+
+        const resetMatch = url.pathname.match(/^\/api\/admin\/accounts\/([^/]+)\/reset-password$/);
+        if (resetMatch && req.method === "POST") {
+          await adminResetPassword(env, resetMatch[1]);
+          return json({ ok: true });
+        }
+
+        const disableMatch = url.pathname.match(/^\/api\/admin\/accounts\/([^/]+)\/toggle-disabled$/);
+        if (disableMatch && req.method === "POST") {
+          const { disabled } = await req.json<{ disabled: boolean }>();
+          await setAccountDisabled(env, disableMatch[1], disabled);
+          return json({ ok: true });
         }
 
         if (url.pathname === "/api/admin/feedback" && req.method === "GET") {
@@ -320,6 +336,19 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
             `SELECT sj.*, a.email FROM send_jobs sj JOIN accounts a ON a.id = sj.account_id ORDER BY sj.created_at DESC LIMIT 100`,
           ).all();
           return json(results);
+        }
+
+        if (url.pathname === "/api/admin/stats" && req.method === "GET") {
+          return json(await getAdminStats(env));
+        }
+
+        if (url.pathname === "/api/admin/export" && req.method === "GET") {
+          const section = (url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "all";
+          const format = (url.searchParams.get("format") ?? "json") as "csv" | "json";
+          const { filename, content, contentType } = await exportAdminData(env, section, format);
+          return new Response(content, {
+            headers: { "Content-Type": contentType, "Content-Disposition": `attachment; filename="${filename}"` },
+          });
         }
 
         return json({ error: "Not found" }, 404);

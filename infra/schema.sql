@@ -14,6 +14,7 @@ CREATE TABLE accounts (
   reset_expires_at INTEGER,
   totp_secret TEXT,
   totp_enabled INTEGER NOT NULL DEFAULT 0,
+  disabled INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 

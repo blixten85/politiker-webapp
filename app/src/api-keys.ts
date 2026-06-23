@@ -33,5 +33,7 @@ export async function getAccountFromApiKey(env: Env, key: string) {
   // Uppdatera last_used_at "best effort" — väntar inte på den, ska inte sakta ner requesten
   env.DB.prepare("UPDATE api_keys SET last_used_at = ? WHERE id = ?").bind(Date.now(), row.id).run().catch(() => {});
 
-  return getAccountById(env.DB, row.account_id);
+  const account = await getAccountById(env.DB, row.account_id);
+  if (account?.disabled) return null; // inaktiverade konton tappar omedelbart åtkomst, även via API-nyckel
+  return account;
 }

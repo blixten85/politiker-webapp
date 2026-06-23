@@ -33,6 +33,7 @@ export async function login(
 ): Promise<{ sessionToken: string }> {
   const account = await getAccountByEmail(env.DB, email);
   if (!account) throw new Error("Fel e-post eller lösenord");
+  if (account.disabled) throw new Error("Kontot är inaktiverat — kontakta support om du tror detta är ett fel");
   if (!account.password_hash) throw new Error("Det här kontot använder inloggning via leverantör — använd den knappen istället");
   const ok = await verifyPassword(password, account.password_hash as string, account.password_salt as string);
   if (!ok) throw new Error("Fel e-post eller lösenord");
@@ -53,7 +54,9 @@ export async function getAccountFromSession(env: Env, sessionToken: string | nul
   if (!sessionToken) return null;
   const accountId = await env.SESSIONS.get(`session:${sessionToken}`);
   if (!accountId) return null;
-  return getAccountById(env.DB, accountId);
+  const account = await getAccountById(env.DB, accountId);
+  if (account?.disabled) return null; // inaktiverade konton tappar omedelbart åtkomst, även med giltig sessionskaka
+  return account;
 }
 
 export async function requestPasswordReset(env: Env, email: string): Promise<void> {
@@ -116,6 +119,31 @@ export async function setPassword(env: Env, accountId: string, newPassword: stri
 
 export async function disableTotp(env: Env, accountId: string): Promise<void> {
   await env.DB.prepare("UPDATE accounts SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").bind(accountId).run();
+}
+
+// Admin-initierad: till skillnad från requestPasswordReset (självbetjäning,
+// avslöjar aldrig om kontot finns) känner admin redan till kontot, så vi
+// skickar alltid länken direkt.
+export async function adminResetPassword(env: Env, targetAccountId: string): Promise<void> {
+  const account = await getAccountById(env.DB, targetAccountId);
+  if (!account) throw new Error("Konto saknas");
+
+  const token = randomId() + randomId();
+  await env.DB.prepare("UPDATE accounts SET reset_token = ?, reset_expires_at = ? WHERE id = ?")
+    .bind(token, Date.now() + RESET_TTL_MS, targetAccountId)
+    .run();
+
+  const resetUrl = `https://politiker.denied.se/?reset=${token}`;
+  await sendSystemMail(
+    env,
+    account.email as string,
+    "Återställ ditt lösenord — politiker.denied.se",
+    `<p>En administratör har begärt en lösenordsåterställning åt dig. Klicka för att sätta ett nytt lösenord: <a href="${resetUrl}">${resetUrl}</a></p><p>Länken gäller i 30 minuter. Kontakta oss om du inte förväntade dig detta.</p>`,
+  );
+}
+
+export async function setAccountDisabled(env: Env, targetAccountId: string, disabled: boolean): Promise<void> {
+  await env.DB.prepare("UPDATE accounts SET disabled = ? WHERE id = ?").bind(disabled ? 1 : 0, targetAccountId).run();
 }
 
 export async function sendSystemMail(env: Env, to: string, subject: string, html: string): Promise<void> {

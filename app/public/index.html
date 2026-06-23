@@ -197,10 +197,43 @@
 
     <div class="card" id="admin-card" hidden>
       <h2 data-i18n="admin_title">Admin</h2>
-      <h3 data-i18n="admin_accounts">Konton</h3>
-      <ul id="admin-accounts-list"></ul>
-      <h3 data-i18n="admin_feedback">Feedback</h3>
-      <ul id="admin-feedback-list"></ul>
+      <div class="admin-tabs">
+        <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
+        <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
+        <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
+      </div>
+
+      <div class="admin-tab-panel" id="admin-tab-accounts">
+        <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+        <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
+      </div>
+
+      <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
+        <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+        <ul id="admin-feedback-list"></ul>
+      </div>
+
+      <div class="admin-tab-panel" id="admin-tab-stats" hidden>
+        <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+        <div id="admin-stats-totals" class="admin-stats-totals"></div>
+        <div class="admin-stats-controls">
+          <select id="admin-stats-granularity">
+            <option value="day" data-i18n="stats_day">Dag</option>
+            <option value="week" data-i18n="stats_week">Vecka</option>
+            <option value="month" selected data-i18n="stats_month">Månad</option>
+            <option value="year" data-i18n="stats_year">År</option>
+          </select>
+          <select id="admin-stats-year"></select>
+          <select id="admin-stats-month">
+            <option value="" data-i18n="stats_all_months">Alla månader</option>
+          </select>
+        </div>
+        <canvas id="admin-stats-chart" width="640" height="220"></canvas>
+        <h3 data-i18n="stats_leaderboard">Topplista per konto</h3>
+        <table class="admin-table"><tbody id="admin-leaderboard-list"></tbody></table>
+      </div>
+
+      <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
     </div>
   </section>
 </main>
@@ -212,9 +245,10 @@
     <input type="email" name="replyTo" id="feedback-replyto" data-i18n-placeholder="placeholder_replyto" placeholder="Din e-post (om du vill ha svar)" hidden>
     <textarea name="message" rows="6" data-i18n-placeholder="placeholder_feedback_message" placeholder="Vad hände? Vad förväntade du dig?" required></textarea>
     <menu>
-      <button type="submit" data-i18n="btn_send_feedback">Skicka</button>
+      <button type="submit" id="feedback-submit-btn" data-i18n="btn_send_feedback">Skicka</button>
       <button type="button" id="feedback-cancel" data-i18n="btn_cancel">Avbryt</button>
     </menu>
+    <p id="feedback-status-msg"></p>
   </form>
 </dialog>
 
