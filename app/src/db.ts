@@ -39,8 +39,8 @@ export async function createAccount(
   const expires = now + 30 * 60 * 1000; // 30 min
   await db
     .prepare(
-      `INSERT INTO accounts (id, email, password_hash, password_salt, email_verified, verification_code, verification_expires_at, created_at)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+      `INSERT INTO accounts (id, email, password_hash, password_salt, password_set_by_user, email_verified, verification_code, verification_expires_at, created_at)
+       VALUES (?, ?, ?, ?, 1, 0, ?, ?, ?)`,
     )
     .bind(id, fields.email, fields.passwordHash, fields.passwordSalt, fields.verificationCode, expires, now)
     .run();

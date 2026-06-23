@@ -179,10 +179,18 @@ async function refreshAndPersistMicrosoftToken(env: Env, credentialId: string, c
 }
 
 async function logSend(env: Env, m: SendJobMessage, status: "ok" | "bounce", error: string | null): Promise<void> {
+  const now = Date.now();
   await env.DB.prepare(
     "INSERT INTO send_log (id, send_job_id, account_id, recipient_email, status, error, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
   )
-    .bind(randomId(), m.sendJobId, m.accountId, m.recipientEmail, status, error, Date.now())
+    .bind(randomId(), m.sendJobId, m.accountId, m.recipientEmail, status, error, now)
+    .run();
+
+  // Riktiga utskick är samtidigt det mest tillförlitliga sättet att verifiera
+  // att en politiker-adress fortfarande är levande — uppdatera direkt, ingen
+  // separat batch-körning eller probing mot leverantörer behövs.
+  await env.DB.prepare("UPDATE politicians SET verification_status = ?, last_verified_at = ? WHERE email = ?")
+    .bind(status === "ok" ? "valid_via_send" : "dead_via_send", now, m.recipientEmail)
     .run();
 }
 

@@ -28,7 +28,9 @@ import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
-import { getAuthorizeUrl, handleOAuthCallback } from "./oauth";
+import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
+import { approveCivicLetterDraft, rejectCivicLetterDraft, createCivicLetterDraft, approvalEmailBody } from "./civic-outreach";
+import { sendSystemMail } from "./auth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
 import type { Env } from "./db";
@@ -127,6 +129,58 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         await env.SESSIONS.delete(`oauthmailstate:${state}`);
 
         await addMicrosoftGraphMailCredential(env, stateAccountId, code);
+        return new Response(null, { status: 302, headers: { Location: "https://politiker.denied.se/" } });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
+      }
+    }
+
+    // --- Civilsamhälls-brev: godkänn/avslå-länkar i granskningsmailet, ingen
+    // inloggning krävs (token i URL:en är behörigheten). Inget skickas
+    // förrän /approve anropats — ingen passiv timeout finns. ---
+    const civicLetterMatch = url.pathname.match(/^\/api\/civic-letter\/([a-zA-Z0-9]+)\/(approve|reject)$/);
+    if (civicLetterMatch) {
+      const [, draftId, action] = civicLetterMatch;
+      const token = url.searchParams.get("token");
+      if (!token) return json({ error: "Saknar token" }, 400);
+      try {
+        if (action === "approve") {
+          await approveCivicLetterDraft(env, draftId, token);
+          return new Response("Godkänt — brevet skickas i kommande dagliga omgångar.", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        }
+        await rejectCivicLetterDraft(env, draftId, token);
+        return new Response("Avslaget — inget skickas.", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "Fel" }, 400);
+      }
+    }
+
+    // --- OAuth-LÄNKNING: koppla en ytterligare inloggningsleverantör till ett
+    // REDAN INLOGGAT konto, utan att matcha på e-post eller skapa nya konton
+    // (se oauth.ts: handleOAuthLinkCallback). ---
+    const oauthLinkMatch = url.pathname.match(/^\/api\/oauth-link\/([a-z]+)\/(start|callback)$/);
+    if (oauthLinkMatch) {
+      const [, provider, step] = oauthLinkMatch;
+      try {
+        const sessionToken = getCookie(req, "session");
+        const account = await getAccountFromSession(env, sessionToken);
+        if (!account) return json({ error: "Inte inloggad" }, 401);
+
+        if (step === "start") {
+          const state = randomId();
+          await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          return Response.redirect(getLinkAuthorizeUrl(provider, env, state), 302);
+        }
+
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        if (!code || !state) return json({ error: "Saknar code/state" }, 400);
+        const stateAccountId = await env.SESSIONS.get(`oauthlinkstate:${state}`);
+        if (!stateAccountId) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
+        await env.SESSIONS.delete(`oauthlinkstate:${state}`);
+        if (stateAccountId !== account.id) return json({ error: "State tillhör en annan session — försök igen" }, 400);
+
+        await handleOAuthLinkCallback(provider, env, code, stateAccountId);
         return new Response(null, { status: 302, headers: { Location: "https://politiker.denied.se/" } });
       } catch (err) {
         return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
@@ -237,6 +291,16 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
       if (url.pathname === "/api/set-password" && req.method === "POST") {
         const { newPassword } = await req.json<{ newPassword: string }>();
         await setPassword(env, accountId, newPassword);
+        return json({ ok: true });
+      }
+
+      if (url.pathname === "/api/oauth-identities" && req.method === "GET") {
+        return json(await getOAuthIdentities(env, accountId));
+      }
+
+      const unlinkMatch = url.pathname.match(/^\/api\/oauth-identities\/([a-z]+)$/);
+      if (unlinkMatch && req.method === "DELETE") {
+        await unlinkOAuthIdentity(env, accountId, unlinkMatch[1]);
         return json({ ok: true });
       }
 
@@ -352,6 +416,14 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           const { disabled } = await req.json<{ disabled: boolean }>();
           await setAccountDisabled(env, disableMatch[1], disabled);
           return json({ ok: true });
+        }
+
+        if (url.pathname === "/api/admin/civic-letter" && req.method === "POST") {
+          const { subject, htmlBody, topicSourceUrl } = await req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
+          const draft = await createCivicLetterDraft(env, { subject, htmlBody, topicSourceUrl });
+          const mail = approvalEmailBody(draft);
+          await sendSystemMail(env, mail.to, mail.subject, mail.html);
+          return json({ ok: true, draftId: draft.id });
         }
 
         if (url.pathname === "/api/admin/feedback" && req.method === "GET") {

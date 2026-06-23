@@ -150,6 +150,13 @@
     </div>
 
     <div class="card">
+      <h2 data-i18n="linkproviders_title">Länkade inloggningssätt</h2>
+      <p class="hint" data-i18n="linkproviders_hint">Koppla fler sätt att logga in på samma konto — t.ex. om du vill kunna logga in med både Google och Microsoft.</p>
+      <div id="oauth-identities-list"></div>
+      <p id="oauth-identities-msg"></p>
+    </div>
+
+    <div class="card">
       <h2 data-i18n="totp_title">Tvåfaktorsinloggning (2FA)</h2>
       <div id="totp-disabled-view">
         <p class="hint" data-i18n="totp_not_enabled">Inte aktiverat.</p>
@@ -245,6 +252,7 @@
         <table class="admin-table"><tbody id="admin-leaderboard-list"></tbody></table>
       </div>
 
+      <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
       <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
     </div>
   </section>
