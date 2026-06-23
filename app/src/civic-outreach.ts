@@ -89,12 +89,19 @@ export async function rejectCivicLetterDraft(env: Env, draftId: string, token: s
   await env.DB.prepare("UPDATE civic_letter_drafts SET status = 'rejected' WHERE id = ?").bind(draftId).run();
 }
 
-export async function setCivicLetterStatus(
-  env: Env,
-  draftId: string,
-  status: "sending" | "done",
-): Promise<void> {
-  await env.DB.prepare("UPDATE civic_letter_drafts SET status = ? WHERE id = ?").bind(status, draftId).run();
+const ALLOWED_STATUS_TRANSITIONS: Record<"sending" | "done", string> = {
+  sending: "approved",
+  done: "sending",
+};
+
+export async function setCivicLetterStatus(env: Env, draftId: string, status: "sending" | "done"): Promise<void> {
+  const requiredCurrentStatus = ALLOWED_STATUS_TRANSITIONS[status];
+  const result = await env.DB.prepare("UPDATE civic_letter_drafts SET status = ? WHERE id = ? AND status = ?")
+    .bind(status, draftId, requiredCurrentStatus)
+    .run();
+  if (result.meta.changes === 0) {
+    throw new Error(`Ogiltig statusövergång till "${status}" — draften finns inte eller har inte status "${requiredCurrentStatus}"`);
+  }
 }
 
 export async function getCivicLetterDraft(env: Env, draftId: string): Promise<CivicLetterDraft | null> {
@@ -123,6 +130,13 @@ export async function getCivicLetterDraft(env: Env, draftId: string): Promise<Ci
     createdAt: row.created_at,
     approvedAt: row.approved_at,
   };
+}
+
+export type CivicLetterDraftPublic = Omit<CivicLetterDraft, "approveToken">;
+
+export function redactApproveToken(draft: CivicLetterDraft): CivicLetterDraftPublic {
+  const { approveToken: _approveToken, ...rest } = draft;
+  return rest;
 }
 
 export async function getApprovedUnsentDraft(env: Env): Promise<CivicLetterDraft | null> {

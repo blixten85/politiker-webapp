@@ -37,6 +37,7 @@ import {
   getCivicLetterDraft,
   setCivicLetterStatus,
   getApprovedUnsentDraft,
+  redactApproveToken,
 } from "./civic-outreach";
 import { sendSystemMail } from "./auth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
@@ -438,19 +439,26 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         if (civicGetMatch && req.method === "GET") {
           const draft = await getCivicLetterDraft(env, civicGetMatch[1]);
           if (!draft) return json({ error: "Hittades inte" }, 404);
-          return json(draft);
+          return json(redactApproveToken(draft));
         }
 
         const civicStatusMatch = url.pathname.match(/^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)\/status$/);
         if (civicStatusMatch && req.method === "POST") {
-          const { status } = await req.json<{ status: "sending" | "done" }>();
-          await setCivicLetterStatus(env, civicStatusMatch[1], status);
+          const { status } = await req.json<{ status: string }>();
+          if (status !== "sending" && status !== "done") {
+            return json({ error: "Ogiltig status — måste vara 'sending' eller 'done'" }, 400);
+          }
+          try {
+            await setCivicLetterStatus(env, civicStatusMatch[1], status);
+          } catch (err) {
+            return json({ error: err instanceof Error ? err.message : "Fel" }, 400);
+          }
           return json({ ok: true });
         }
 
         if (url.pathname === "/api/admin/civic-letter/next-approved" && req.method === "GET") {
           const draft = await getApprovedUnsentDraft(env);
-          return json(draft);
+          return json(draft ? redactApproveToken(draft) : null);
         }
 
         if (url.pathname === "/api/admin/feedback" && req.method === "GET") {
