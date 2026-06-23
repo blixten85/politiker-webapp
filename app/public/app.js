@@ -466,21 +466,76 @@ document.getElementById("create-api-key-form").addEventListener("submit", async 
   }
 });
 
-async function loadAdminPanel() {
-  const accounts = await api("/api/admin/accounts");
-  const accUl = document.getElementById("admin-accounts-list");
-  accUl.innerHTML = "";
-  for (const a of accounts) {
-    const li = document.createElement("li");
-    li.textContent = t("msg_admin_account_row", {
-      email: a.email,
-      adminSuffix: a.is_admin ? t("admin_suffix") : "",
-      verified: a.email_verified ? t("yes_label") : t("no_label"),
-      cap: a.daily_send_cap,
-    });
-    accUl.appendChild(li);
-  }
+let adminStatsRaw = null;
 
+async function loadAdminPanel() {
+  await Promise.all([loadAdminAccounts(), loadAdminFeedback(), loadAdminStats()]);
+}
+
+async function loadAdminAccounts() {
+  const accounts = await api("/api/admin/accounts");
+  const tbody = document.getElementById("admin-accounts-list");
+  tbody.innerHTML = "";
+  for (const a of accounts) {
+    const tr = document.createElement("tr");
+
+    const tdEmail = document.createElement("td");
+    tdEmail.textContent = a.email;
+    tr.appendChild(tdEmail);
+
+    const tdBadges = document.createElement("td");
+    const verifiedBadge = document.createElement("span");
+    verifiedBadge.className = "admin-badge " + (a.email_verified ? "ok" : "warn");
+    verifiedBadge.textContent = a.email_verified ? t("admin_verified_yes") : t("admin_verified_no");
+    tdBadges.appendChild(verifiedBadge);
+    if (a.is_admin) {
+      const adminBadge = document.createElement("span");
+      adminBadge.className = "admin-badge ok";
+      adminBadge.textContent = t("admin_admin_badge");
+      tdBadges.appendChild(adminBadge);
+    }
+    if (a.disabled) {
+      const disabledBadge = document.createElement("span");
+      disabledBadge.className = "admin-badge danger";
+      disabledBadge.textContent = t("admin_disabled_badge");
+      tdBadges.appendChild(disabledBadge);
+    }
+    tr.appendChild(tdBadges);
+
+    const tdCap = document.createElement("td");
+    tdCap.textContent = a.daily_send_cap;
+    tr.appendChild(tdCap);
+
+    const tdActions = document.createElement("td");
+    const resetBtn = document.createElement("button");
+    resetBtn.textContent = t("btn_reset_password");
+    resetBtn.onclick = async () => {
+      await api(`/api/admin/accounts/${a.id}/reset-password`, { method: "POST" });
+      showToast(t("msg_reset_password_sent", { email: a.email }));
+    };
+    tdActions.appendChild(resetBtn);
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.textContent = a.disabled ? t("btn_enable_account") : t("btn_disable_account");
+    toggleBtn.onclick = async () => {
+      const confirmMsg = a.disabled
+        ? t("confirm_enable_account", { email: a.email })
+        : t("confirm_disable_account", { email: a.email });
+      if (!confirm(confirmMsg)) return;
+      await api(`/api/admin/accounts/${a.id}/toggle-disabled`, {
+        method: "POST",
+        body: JSON.stringify({ disabled: !a.disabled }),
+      });
+      loadAdminAccounts();
+    };
+    tdActions.appendChild(toggleBtn);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  }
+}
+
+async function loadAdminFeedback() {
   const feedback = await api("/api/admin/feedback");
   const fbUl = document.getElementById("admin-feedback-list");
   fbUl.innerHTML = "";
@@ -490,6 +545,146 @@ async function loadAdminPanel() {
     fbUl.appendChild(li);
   }
 }
+
+async function loadAdminStats() {
+  adminStatsRaw = await api("/api/admin/stats");
+
+  const totalsDiv = document.getElementById("admin-stats-totals");
+  totalsDiv.innerHTML = "";
+  const boxes = [
+    [t("stat_total_accounts"), adminStatsRaw.totalAccounts],
+    [t("stat_total_letters"), adminStatsRaw.totalLetters],
+    [t("stat_total_sent"), adminStatsRaw.totalSent],
+    [t("stat_total_bounced"), adminStatsRaw.totalBounced],
+  ];
+  for (const [label, n] of boxes) {
+    const box = document.createElement("div");
+    box.className = "stat-box";
+    box.innerHTML = `<span class="n">${n}</span><span class="l">${label}</span>`;
+    totalsDiv.appendChild(box);
+  }
+
+  const years = [...new Set(adminStatsRaw.dailySeries.map((d) => d.day.slice(0, 4)))].sort();
+  const yearSelect = document.getElementById("admin-stats-year");
+  yearSelect.innerHTML = "";
+  const allYearsOpt = document.createElement("option");
+  allYearsOpt.value = "";
+  allYearsOpt.textContent = "—";
+  yearSelect.appendChild(allYearsOpt);
+  for (const y of years) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    yearSelect.appendChild(opt);
+  }
+
+  const monthSelect = document.getElementById("admin-stats-month");
+  if (monthSelect.options.length === 1) {
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, "0");
+      const opt = document.createElement("option");
+      opt.value = mm;
+      opt.textContent = mm;
+      monthSelect.appendChild(opt);
+    }
+  }
+
+  const leaderboardTbody = document.getElementById("admin-leaderboard-list");
+  leaderboardTbody.innerHTML = "";
+  for (const row of adminStatsRaw.leaderboard) {
+    if (row.sentCount === 0) continue;
+    const tr = document.createElement("tr");
+    const tdEmail = document.createElement("td");
+    tdEmail.textContent = row.email;
+    const tdCount = document.createElement("td");
+    tdCount.textContent = row.sentCount;
+    tr.appendChild(tdEmail);
+    tr.appendChild(tdCount);
+    leaderboardTbody.appendChild(tr);
+  }
+
+  renderStatsChart();
+}
+
+function bucketKey(day, granularity) {
+  // day är "YYYY-MM-DD"
+  if (granularity === "day") return day;
+  if (granularity === "month") return day.slice(0, 7);
+  if (granularity === "year") return day.slice(0, 4);
+  // week: ISO-veckonummer, approximerat utan extra bibliotek
+  const d = new Date(day + "T00:00:00Z");
+  const onejan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d - onejan) / 86400000 + onejan.getUTCDay() + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function renderStatsChart() {
+  if (!adminStatsRaw) return;
+  const granularity = document.getElementById("admin-stats-granularity").value;
+  const yearFilter = document.getElementById("admin-stats-year").value;
+  const monthFilter = document.getElementById("admin-stats-month").value;
+
+  let series = adminStatsRaw.dailySeries;
+  if (yearFilter) series = series.filter((d) => d.day.slice(0, 4) === yearFilter);
+  if (monthFilter) series = series.filter((d) => d.day.slice(5, 7) === monthFilter);
+
+  const buckets = new Map();
+  for (const { day, sent } of series) {
+    const key = bucketKey(day, granularity);
+    buckets.set(key, (buckets.get(key) || 0) + sent);
+  }
+  const keys = [...buckets.keys()].sort().slice(-60); // visa max 60 senaste staplarna
+  const values = keys.map((k) => buckets.get(k));
+
+  const canvas = document.getElementById("admin-stats-chart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (keys.length === 0) return;
+
+  const max = Math.max(...values, 1);
+  const padding = 24;
+  const barAreaW = w - padding * 2;
+  const barW = barAreaW / keys.length;
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#006aa7";
+
+  ctx.fillStyle = accentColor;
+  for (let i = 0; i < keys.length; i++) {
+    const barH = (values[i] / max) * (h - padding * 2);
+    ctx.fillRect(padding + i * barW + 1, h - padding - barH, Math.max(barW - 2, 1), barH);
+  }
+
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hint").trim() || "#9aa0a8";
+  ctx.font = "10px sans-serif";
+  ctx.fillText(String(max), 2, padding);
+  ctx.fillText(keys[0], padding, h - 4);
+  if (keys.length > 1) {
+    const lastLabel = keys[keys.length - 1];
+    ctx.fillText(lastLabel, w - padding - ctx.measureText(lastLabel).width, h - 4);
+  }
+}
+
+document.getElementById("admin-stats-granularity").addEventListener("change", renderStatsChart);
+document.getElementById("admin-stats-year").addEventListener("change", renderStatsChart);
+document.getElementById("admin-stats-month").addEventListener("change", renderStatsChart);
+
+document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".admin-tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".admin-tab-panel").forEach((p) => (p.hidden = true));
+    btn.classList.add("active");
+    document.getElementById(`admin-tab-${btn.dataset.tab}`).hidden = false;
+  });
+});
+document.querySelector('.admin-tab-btn[data-tab="accounts"]').classList.add("active");
+
+function downloadExport(section, format) {
+  window.location.href = `/api/admin/export?section=${section}&format=${format}`;
+}
+document.getElementById("admin-export-accounts-btn").addEventListener("click", () => downloadExport("accounts", "csv"));
+document.getElementById("admin-export-feedback-btn").addEventListener("click", () => downloadExport("feedback", "csv"));
+document.getElementById("admin-export-stats-btn").addEventListener("click", () => downloadExport("stats", "csv"));
+document.getElementById("admin-export-all-btn").addEventListener("click", () => downloadExport("all", "json"));
 
 function openFeedbackDialog(type) {
   document.getElementById("feedback-type").value = type;
@@ -503,17 +698,31 @@ document.getElementById("feedback-cancel").addEventListener("click", () => docum
 document.getElementById("feedback-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await api("/api/feedback", {
-    method: "POST",
-    body: JSON.stringify({
-      message: fd.get("message"),
-      type: fd.get("type"),
-      replyTo: fd.get("replyTo") || undefined,
-      context: { url: location.href },
-    }),
-  });
-  document.getElementById("feedback-dialog").close();
-  e.target.reset();
+  const btn = document.getElementById("feedback-submit-btn");
+  const statusMsg = document.getElementById("feedback-status-msg");
+  btn.disabled = true;
+  statusMsg.textContent = t("msg_sending");
+  try {
+    await api("/api/feedback", {
+      method: "POST",
+      body: JSON.stringify({
+        message: fd.get("message"),
+        type: fd.get("type"),
+        replyTo: fd.get("replyTo") || undefined,
+        context: { url: location.href },
+      }),
+    });
+    statusMsg.textContent = t("msg_sent_success");
+    setTimeout(() => {
+      document.getElementById("feedback-dialog").close();
+      e.target.reset();
+      statusMsg.textContent = "";
+    }, 900);
+  } catch (err) {
+    statusMsg.textContent = "❌ " + t("msg_failed_prefix", { error: err.message });
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById("faq-btn").addEventListener("click", () => document.getElementById("faq-dialog").showModal());
