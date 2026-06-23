@@ -876,5 +876,9 @@ document.addEventListener("languagechange", () => {
   }
 
   const me = await api("/api/me");
-  if (me.loggedIn) showApp();
+  if (me.loggedIn) {
+    showApp();
+  } else {
+    document.getElementById("auth-view").hidden = false;
+  }
 })();

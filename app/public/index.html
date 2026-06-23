@@ -28,7 +28,7 @@
 </header>
 
 <main>
-  <section id="auth-view">
+  <section id="auth-view" hidden>
     <div class="card">
       <h2 data-i18n="login_title">Logga in</h2>
       <div class="oauth-buttons">
@@ -119,8 +119,8 @@
           <input type="number" name="port" data-i18n-placeholder="placeholder_smtp_port" placeholder="Port" value="587">
         </div>
         <input type="email" name="fromAddress" data-i18n-placeholder="placeholder_from_address" placeholder="Din e-postadress" required>
-        <input type="text" name="user" autocomplete="username" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
-        <input type="password" name="password" autocomplete="current-password" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
+        <input type="text" name="user" autocomplete="off" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
+        <input type="password" name="password" autocomplete="off" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
         <p class="hint" id="provider-help"></p>
 
         <label data-i18n="label_cap_pct">Hur stor andel av taket vill du använda?</label>
