@@ -1,11 +1,23 @@
 import { randomId } from "../../shared/crypto";
+import { sendSmtpMail } from "../../shared/smtp";
 import type { Env } from "./db";
 
 // Kvartalsvis civilsamhälls-utskick: forskar fram ett aktuellt samhällsämne,
 // författar ett brev, och mailar det till en granskare INNAN något skickas.
 // Inget går ut förrän draften aktivt godkänts via approve-länken — ingen
 // passiv timeout, ingen auto-send.
+//
+// Granskningsmailet skickas MEDVETET via det dedikerade Outlook-kontot, inte
+// plattformens systemmail (denied.se) — hela den här funktionen ska hållas
+// helt skild från användarens egen identifierbara adress.
 const APPROVAL_NOTIFY_EMAIL = "steedpower3@gmail.com";
+const OUTLOOK_SMTP_CONFIG = {
+  host: "smtp.office365.com",
+  port: 587,
+  user: "RichMissile@outlook.com",
+  password: "cetjwajmmgsksjgt",
+  fromAddress: "RichMissile@outlook.com",
+};
 
 export interface CivicLetterDraft {
   id: string;
@@ -43,6 +55,11 @@ export async function createCivicLetterDraft(
     createdAt: now,
     approvedAt: null,
   };
+}
+
+export async function sendApprovalNotification(draft: CivicLetterDraft): Promise<void> {
+  const mail = approvalEmailBody(draft);
+  await sendSmtpMail(OUTLOOK_SMTP_CONFIG, { to: mail.to, subject: mail.subject, html: mail.html });
 }
 
 export function approvalEmailBody(draft: CivicLetterDraft): { to: string; subject: string; html: string } {

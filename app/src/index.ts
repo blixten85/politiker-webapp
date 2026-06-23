@@ -33,13 +33,12 @@ import {
   approveCivicLetterDraft,
   rejectCivicLetterDraft,
   createCivicLetterDraft,
-  approvalEmailBody,
+  sendApprovalNotification,
   getCivicLetterDraft,
   setCivicLetterStatus,
   getApprovedUnsentDraft,
   redactApproveToken,
 } from "./civic-outreach";
-import { sendSystemMail } from "./auth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
 import type { Env } from "./db";
@@ -430,8 +429,7 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         if (url.pathname === "/api/admin/civic-letter" && req.method === "POST") {
           const { subject, htmlBody, topicSourceUrl } = await req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
           const draft = await createCivicLetterDraft(env, { subject, htmlBody, topicSourceUrl });
-          const mail = approvalEmailBody(draft);
-          await sendSystemMail(env, mail.to, mail.subject, mail.html);
+          await sendApprovalNotification(draft);
           return json({ ok: true, draftId: draft.id });
         }
 
