@@ -111,7 +111,7 @@ function initI18n() {
 }
 
 registerTranslations("sv", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politikerkontakt",
   brand_tagline: "Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.",
   nav_faq: "FAQ",
   nav_contact: "Kontakt",
@@ -192,7 +192,7 @@ registerTranslations("sv", {
   btn_send_feedback: "Skicka",
   btn_cancel: "Avbryt",
   faq_title: "Vanliga frågor",
-  faq_q1: "Vad är Politiker-kontakt?",
+  faq_q1: "Vad är Politikerkontakt?",
   faq_a1: "Ett fristående, gratis verktyg som gör det enklare att skriva till kommun-, region- och riksdagspolitiker. Vi har samlat officiella kontaktuppgifter så du inte behöver leta dig fram själv.",
   faq_q2: "Varför måste jag koppla mitt eget mailkonto?",
   faq_a2: "Brevet skickas alltid från din egen adress, aldrig från oss. Det gör att mottagaren kan svara direkt till dig, och att vi aldrig hanterar eller läser dina mottagna svar.",
@@ -248,7 +248,7 @@ registerTranslations("sv", {
 });
 
 registerTranslations("en", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politician Contact",
   brand_tagline: "Write to your municipal, regional and parliamentary representatives — using your own email account.",
   nav_faq: "FAQ",
   nav_contact: "Contact",
@@ -329,7 +329,7 @@ registerTranslations("en", {
   btn_send_feedback: "Send",
   btn_cancel: "Cancel",
   faq_title: "Frequently asked questions",
-  faq_q1: "What is Politiker-kontakt?",
+  faq_q1: "What is Politikerkontakt?",
   faq_a1: "An independent, free tool that makes it easier to write to municipal, regional and parliamentary politicians. We've gathered official contact details so you don't have to search yourself.",
   faq_q2: "Why do I need to connect my own email account?",
   faq_a2: "The letter is always sent from your own address, never from us. That means the recipient can reply directly to you, and we never handle or read the replies you receive.",
@@ -385,7 +385,7 @@ registerTranslations("en", {
 });
 
 registerTranslations("no", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politikerkontakt",
   brand_tagline: "Skriv til kommune-, regions- og stortingspolitikere — via din egen e-postkonto.",
   nav_faq: "FAQ",
   nav_contact: "Kontakt",
@@ -466,7 +466,7 @@ registerTranslations("no", {
   btn_send_feedback: "Send",
   btn_cancel: "Avbryt",
   faq_title: "Ofte stilte spørsmål",
-  faq_q1: "Hva er Politiker-kontakt?",
+  faq_q1: "Hva er Politikerkontakt?",
   faq_a1: "Et uavhengig, gratis verktøy som gjør det enklere å skrive til kommune-, regions- og stortingspolitikere. Vi har samlet offisielle kontaktopplysninger så du ikke trenger å lete selv.",
   faq_q2: "Hvorfor må jeg koble til min egen e-postkonto?",
   faq_a2: "Brevet sendes alltid fra din egen adresse, aldri fra oss. Det gjør at mottakeren kan svare direkte til deg, og vi håndterer eller leser aldri svarene du får.",
@@ -522,7 +522,7 @@ registerTranslations("no", {
 });
 
 registerTranslations("da", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politikerkontakt",
   brand_tagline: "Skriv til kommune-, regions- og folketingspolitikere — via din egen mailkonto.",
   nav_faq: "FAQ",
   nav_contact: "Kontakt",
@@ -603,7 +603,7 @@ registerTranslations("da", {
   btn_send_feedback: "Send",
   btn_cancel: "Annuller",
   faq_title: "Ofte stillede spørgsmål",
-  faq_q1: "Hvad er Politiker-kontakt?",
+  faq_q1: "Hvad er Politikerkontakt?",
   faq_a1: "Et uafhængigt, gratis værktøj der gør det nemmere at skrive til kommune-, regions- og folketingspolitikere. Vi har samlet officielle kontaktoplysninger, så du ikke selv skal lede.",
   faq_q2: "Hvorfor skal jeg forbinde min egen mailkonto?",
   faq_a2: "Brevet sendes altid fra din egen adresse, aldrig fra os. Det betyder, at modtageren kan svare direkte til dig, og vi håndterer eller læser aldrig de svar, du får.",
@@ -659,7 +659,7 @@ registerTranslations("da", {
 });
 
 registerTranslations("fi", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Poliitikkokontakti",
   brand_tagline: "Kirjoita kunta-, alue- ja eduskuntapoliitikoille — omalla sähköpostitililläsi.",
   nav_faq: "UKK",
   nav_contact: "Yhteystiedot",
@@ -740,7 +740,7 @@ registerTranslations("fi", {
   btn_send_feedback: "Lähetä",
   btn_cancel: "Peruuta",
   faq_title: "Usein kysytyt kysymykset",
-  faq_q1: "Mikä on Politiker-kontakt?",
+  faq_q1: "Mikä on Politikerkontakt?",
   faq_a1: "Riippumaton, ilmainen työkalu, joka helpottaa kirjoittamista kunta-, alue- ja eduskuntapoliitikoille. Olemme keränneet viralliset yhteystiedot, jotta sinun ei tarvitse etsiä niitä itse.",
   faq_q2: "Miksi minun täytyy yhdistää oma sähköpostitilini?",
   faq_a2: "Kirje lähetetään aina omasta osoitteestasi, ei koskaan meiltä. Tämä mahdollistaa, että vastaanottaja voi vastata suoraan sinulle, ja me emme koskaan käsittele tai lue saamiasi vastauksia.",
@@ -796,7 +796,7 @@ registerTranslations("fi", {
 });
 
 registerTranslations("is", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Samband við stjórnmálamenn",
   brand_tagline: "Skrifaðu til sveitarstjórnar-, svæðis- og þingmanna — með þínum eigin tölvupósti.",
   nav_faq: "Spurt og svarað",
   nav_contact: "Hafa samband",
@@ -877,7 +877,7 @@ registerTranslations("is", {
   btn_send_feedback: "Senda",
   btn_cancel: "Hætta við",
   faq_title: "Algengar spurningar",
-  faq_q1: "Hvað er Politiker-kontakt?",
+  faq_q1: "Hvað er Politikerkontakt?",
   faq_a1: "Sjálfstætt, ókeypis verkfæri sem gerir auðveldara að skrifa til sveitarstjórnar-, svæðis- og þingmanna. Við höfum safnað opinberum tengiliðaupplýsingum svo þú þurfir ekki að leita sjálf/ur.",
   faq_q2: "Hvers vegna þarf ég að tengja minn eigin tölvupóstaðgang?",
   faq_a2: "Bréfið er alltaf sent frá þínu eigin tölvupóstfangi, aldrei frá okkur. Það gerir viðtakanda kleift að svara þér beint, og við vinnum eða lesum aldrei svörin sem þú færð.",
@@ -933,7 +933,7 @@ registerTranslations("is", {
 });
 
 registerTranslations("de", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politikerkontakt",
   brand_tagline: "Schreiben Sie an Gemeinde-, Regional- und Reichstagspolitiker — über Ihr eigenes E-Mail-Konto.",
   nav_faq: "FAQ",
   nav_contact: "Kontakt",
@@ -1014,7 +1014,7 @@ registerTranslations("de", {
   btn_send_feedback: "Senden",
   btn_cancel: "Abbrechen",
   faq_title: "Häufig gestellte Fragen",
-  faq_q1: "Was ist Politiker-kontakt?",
+  faq_q1: "Was ist Politikerkontakt?",
   faq_a1: "Ein unabhängiges, kostenloses Tool, das es einfacher macht, an Gemeinde-, Regional- und Reichstagspolitiker zu schreiben. Wir haben offizielle Kontaktdaten gesammelt, damit Sie nicht selbst suchen müssen.",
   faq_q2: "Warum muss ich mein eigenes E-Mail-Konto verbinden?",
   faq_a2: "Der Brief wird immer von Ihrer eigenen Adresse gesendet, niemals von uns. Das bedeutet, dass der Empfänger direkt an Sie antworten kann, und wir niemals die Antworten bearbeiten oder lesen, die Sie erhalten.",
@@ -1070,7 +1070,7 @@ registerTranslations("de", {
 });
 
 registerTranslations("fr", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Contact Politiciens",
   brand_tagline: "Écrivez aux élus municipaux, régionaux et parlementaires — via votre propre compte e-mail.",
   nav_faq: "FAQ",
   nav_contact: "Contact",
@@ -1151,7 +1151,7 @@ registerTranslations("fr", {
   btn_send_feedback: "Envoyer",
   btn_cancel: "Annuler",
   faq_title: "Questions fréquentes",
-  faq_q1: "Qu'est-ce que Politiker-kontakt ?",
+  faq_q1: "Qu'est-ce que Politikerkontakt ?",
   faq_a1: "Un outil indépendant et gratuit qui facilite l'écriture aux élus municipaux, régionaux et parlementaires. Nous avons rassemblé les coordonnées officielles afin que vous n'ayez pas à les chercher vous-même.",
   faq_q2: "Pourquoi dois-je connecter mon propre compte e-mail ?",
   faq_a2: "La lettre est toujours envoyée depuis votre propre adresse, jamais depuis nous. Le destinataire peut donc vous répondre directement, et nous ne traitons ni ne lisons jamais les réponses que vous recevez.",
@@ -1207,7 +1207,7 @@ registerTranslations("fr", {
 });
 
 registerTranslations("es", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Contacto con Políticos",
   brand_tagline: "Escribe a políticos municipales, regionales y parlamentarios — usando tu propia cuenta de correo.",
   nav_faq: "Preguntas",
   nav_contact: "Contacto",
@@ -1288,7 +1288,7 @@ registerTranslations("es", {
   btn_send_feedback: "Enviar",
   btn_cancel: "Cancelar",
   faq_title: "Preguntas frecuentes",
-  faq_q1: "¿Qué es Politiker-kontakt?",
+  faq_q1: "¿Qué es Politikerkontakt?",
   faq_a1: "Una herramienta independiente y gratuita que facilita escribir a políticos municipales, regionales y parlamentarios. Hemos reunido los datos de contacto oficiales para que no tengas que buscarlos tú mismo.",
   faq_q2: "¿Por qué debo conectar mi propia cuenta de correo?",
   faq_a2: "La carta siempre se envía desde tu propia dirección, nunca desde nosotros. Esto permite que el destinatario te responda directamente, y nosotros nunca gestionamos ni leemos las respuestas que recibas.",
@@ -1344,7 +1344,7 @@ registerTranslations("es", {
 });
 
 registerTranslations("pl", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Kontakt z Politykami",
   brand_tagline: "Pisz do polityków gminnych, regionalnych i parlamentarnych — za pomocą własnego konta e-mail.",
   nav_faq: "FAQ",
   nav_contact: "Kontakt",
@@ -1425,7 +1425,7 @@ registerTranslations("pl", {
   btn_send_feedback: "Wyślij",
   btn_cancel: "Anuluj",
   faq_title: "Najczęściej zadawane pytania",
-  faq_q1: "Co to jest Politiker-kontakt?",
+  faq_q1: "Co to jest Politikerkontakt?",
   faq_a1: "Niezależne, bezpłatne narzędzie, które ułatwia pisanie do polityków gminnych, regionalnych i parlamentarnych. Zebraliśmy oficjalne dane kontaktowe, abyś nie musiał ich szukać samodzielnie.",
   faq_q2: "Czemu muszę połączyć własne konto e-mail?",
   faq_a2: "List jest zawsze wysyłany z Twojego własnego adresu, nigdy od nas. Dzięki temu odbiorca może odpowiedzieć Ci bezpośrednio, a my nigdy nie przetwarzamy ani nie czytamy otrzymanych odpowiedzi.",
@@ -1481,7 +1481,7 @@ registerTranslations("pl", {
 });
 
 registerTranslations("tr", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Politikacı İletişimi",
   brand_tagline: "Kendi e-posta hesabınızı kullanarak belediye, bölge ve parlamento milletvekillerine yazın.",
   nav_faq: "SSS",
   nav_contact: "İletişim",
@@ -1562,7 +1562,7 @@ registerTranslations("tr", {
   btn_send_feedback: "Gönder",
   btn_cancel: "İptal",
   faq_title: "Sıkça sorulan sorular",
-  faq_q1: "Politiker-kontakt nedir?",
+  faq_q1: "Politikerkontakt nedir?",
   faq_a1: "Belediye, bölge ve parlamento milletvekillerine yazmayı kolaylaştıran bağımsız, ücretsiz bir araç. Kendiniz aramak zorunda kalmamanız için resmi iletişim bilgilerini topladık.",
   faq_q2: "Neden kendi e-posta hesabımı bağlamam gerekiyor?",
   faq_a2: "Mektup her zaman kendi adresinizden gönderilir, asla bizden değil. Bu, alıcının doğrudan size yanıt verebilmesini sağlar ve aldığınız yanıtları asla işlemeyiz ya da okumayız.",
@@ -1618,7 +1618,7 @@ registerTranslations("tr", {
 });
 
 registerTranslations("ru", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Связь с политиками",
   brand_tagline: "Пишите муниципальным, региональным и парламентским политикам — через свою собственную почту.",
   nav_faq: "Вопросы",
   nav_contact: "Контакты",
@@ -1699,7 +1699,7 @@ registerTranslations("ru", {
   btn_send_feedback: "Отправить",
   btn_cancel: "Отмена",
   faq_title: "Часто задаваемые вопросы",
-  faq_q1: "Что такое Politiker-kontakt?",
+  faq_q1: "Что такое Politikerkontakt?",
   faq_a1: "Независимый бесплатный инструмент, который упрощает написание муниципальным, региональным и парламентским политикам. Мы собрали официальные контактные данные, чтобы вам не пришлось искать их самостоятельно.",
   faq_q2: "Почему я должен подключить свою собственную почту?",
   faq_a2: "Письмо всегда отправляется с вашего собственного адреса, никогда не от нас. Это позволяет получателю отвечать напрямую вам, а мы никогда не обрабатываем и не читаем полученные вами ответы.",
@@ -1755,7 +1755,7 @@ registerTranslations("ru", {
 });
 
 registerTranslations("uk", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Зв'язок з політиками",
   brand_tagline: "Пишіть муніципальним, регіональним і парламентським політикам — через власну поштову скриньку.",
   nav_faq: "Питання",
   nav_contact: "Контакти",
@@ -1836,7 +1836,7 @@ registerTranslations("uk", {
   btn_send_feedback: "Надіслати",
   btn_cancel: "Скасувати",
   faq_title: "Часті запитання",
-  faq_q1: "Що таке Politiker-kontakt?",
+  faq_q1: "Що таке Politikerkontakt?",
   faq_a1: "Незалежний, безкоштовний інструмент, який полегшує написання муніципальним, регіональним і парламентським політикам. Ми зібрали офіційні контактні дані, щоб вам не потрібно було шукати їх самостійно.",
   faq_q2: "Чому я маю підключити власну поштову скриньку?",
   faq_a2: "Лист завжди надсилається з вашої власної адреси, ніколи від нас. Це дозволяє отримувачу відповідати безпосередньо вам, і ми ніколи не обробляємо й не читаємо отримані вами відповіді.",
@@ -1892,7 +1892,7 @@ registerTranslations("uk", {
 });
 
 registerTranslations("ar", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "التواصل مع السياسيين",
   brand_tagline: "اكتب إلى سياسيي البلديات والمناطق والبرلمان — باستخدام حساب بريدك الإلكتروني الخاص.",
   nav_faq: "الأسئلة الشائعة",
   nav_contact: "اتصل بنا",
@@ -1973,7 +1973,7 @@ registerTranslations("ar", {
   btn_send_feedback: "إرسال",
   btn_cancel: "إلغاء",
   faq_title: "الأسئلة الشائعة",
-  faq_q1: "ما هو Politiker-kontakt؟",
+  faq_q1: "ما هو Politikerkontakt؟",
   faq_a1: "أداة مستقلة ومجانية تسهّل الكتابة إلى سياسيي البلديات والمناطق والبرلمان. جمعنا بيانات الاتصال الرسمية حتى لا تضطر للبحث عنها بنفسك.",
   faq_q2: "لماذا يجب أن أربط حساب بريدي الخاص؟",
   faq_a2: "تُرسل الرسالة دائمًا من عنوانك الخاص، ولا تُرسل منا أبدًا. هذا يتيح للمستلم الرد عليك مباشرة، ونحن لا نتعامل أو نقرأ الردود التي تتلقاها أبدًا.",
@@ -2029,7 +2029,7 @@ registerTranslations("ar", {
 });
 
 registerTranslations("fa", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "ارتباط با سیاستمداران",
   brand_tagline: "به سیاستمداران شهرداری، منطقه‌ای و پارلمانی بنویسید — با استفاده از حساب ایمیل خودتان.",
   nav_faq: "سوالات متداول",
   nav_contact: "تماس با ما",
@@ -2110,7 +2110,7 @@ registerTranslations("fa", {
   btn_send_feedback: "ارسال",
   btn_cancel: "لغو",
   faq_title: "سوالات متداول",
-  faq_q1: "Politiker-kontakt چیست؟",
+  faq_q1: "Politikerkontakt چیست؟",
   faq_a1: "ابزاری مستقل و رایگان که نوشتن به سیاستمداران شهرداری، منطقه‌ای و پارلمانی را آسان‌تر می‌کند. ما اطلاعات تماس رسمی را جمع‌آوری کرده‌ایم تا خودتان مجبور به جستجو نباشید.",
   faq_q2: "چرا باید حساب ایمیل خودم را وصل کنم؟",
   faq_a2: "نامه همیشه از آدرس خودتان ارسال می‌شود، هرگز از طرف ما. این به گیرنده اجازه می‌دهد مستقیماً به شما پاسخ دهد، و ما هرگز پاسخ‌هایی که دریافت می‌کنید را پردازش یا نمی‌خوانیم.",
@@ -2166,7 +2166,7 @@ registerTranslations("fa", {
 });
 
 registerTranslations("so", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "Xiriirka Siyaasiyiinta",
   brand_tagline: "U qor siyaasiyiinta degmada, gobolka iyo baarlamaanka — adigoo isticmaalaya akoonkaaga email-ka gaarka ah.",
   nav_faq: "Su'aalaha Caanka ah",
   nav_contact: "Nala soo xiriir",
@@ -2247,7 +2247,7 @@ registerTranslations("so", {
   btn_send_feedback: "Dir",
   btn_cancel: "Jooji",
   faq_title: "Su'aalaha inta badan la weydiiyo",
-  faq_q1: "Waa maxay Politiker-kontakt?",
+  faq_q1: "Waa maxay Politikerkontakt?",
   faq_a1: "Aalad madax-bannaan oo bilaash ah oo ka dhigta mid fudud inaad u qorto siyaasiyiinta degmada, gobolka iyo baarlamaanka. Waxaan ururinay xogta xiriirka rasmiga ah si aadan u baahnayn inaad adigu raadiso.",
   faq_q2: "Maxaa loo baahan yahay inaan ku xirto akoonkayga email-ka gaarka ah?",
   faq_a2: "Warqadda had iyo jeer waxaa laga diraa cinwaankaaga gaarka ah, marnaba naga ma diro. Tani waxay u oggolaaneysaa qaadaha inuu si toos ah kuugu jawaabo, mana habayno ama akhrino jawaabaha aad heshid.",
@@ -2303,7 +2303,7 @@ registerTranslations("so", {
 });
 
 registerTranslations("zh", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "政治家联系",
   brand_tagline: "使用您自己的邮箱账户，写信给市镇、地区和议会政治家。",
   nav_faq: "常见问题",
   nav_contact: "联系我们",
@@ -2384,7 +2384,7 @@ registerTranslations("zh", {
   btn_send_feedback: "发送",
   btn_cancel: "取消",
   faq_title: "常见问题",
-  faq_q1: "什么是 Politiker-kontakt？",
+  faq_q1: "什么是 Politikerkontakt？",
   faq_a1: "一个独立的免费工具，让您更轻松地写信给市镇、地区和议会政治家。我们已收集了官方联系方式，您无需自行查找。",
   faq_q2: "为什么我需要连接自己的邮箱账户？",
   faq_a2: "信件始终从您自己的地址发送，绝不会从我们这里发送。这样收件人可以直接回复您，我们也绝不会处理或阅读您收到的回复。",
@@ -2440,7 +2440,7 @@ registerTranslations("zh", {
 });
 
 registerTranslations("hi", {
-  brand_title: "Politiker-kontakt",
+  brand_title: "राजनेता संपर्क",
   brand_tagline: "अपने स्वयं के ईमेल खाते का उपयोग करके नगरपालिका, क्षेत्रीय और संसदीय राजनेताओं को लिखें।",
   nav_faq: "सामान्य प्रश्न",
   nav_contact: "संपर्क करें",
@@ -2521,7 +2521,7 @@ registerTranslations("hi", {
   btn_send_feedback: "भेजें",
   btn_cancel: "रद्द करें",
   faq_title: "अक्सर पूछे जाने वाले प्रश्न",
-  faq_q1: "Politiker-kontakt क्या है?",
+  faq_q1: "Politikerkontakt क्या है?",
   faq_a1: "एक स्वतंत्र, मुफ्त उपकरण जो नगरपालिका, क्षेत्रीय और संसदीय राजनेताओं को लिखना आसान बनाता है। हमने आधिकारिक संपर्क जानकारी इकट्ठा की है ताकि आपको स्वयं खोजना न पड़े।",
   faq_q2: "मुझे अपना स्वयं का ईमेल खाता क्यों जोड़ना होगा?",
   faq_a2: "पत्र हमेशा आपके अपने पते से भेजा जाता है, हमारी तरफ से कभी नहीं। इससे प्राप्तकर्ता सीधे आपको उत्तर दे सकता है, और हम कभी भी आपके प्राप्त उत्तरों को संभालते या पढ़ते नहीं हैं।",
