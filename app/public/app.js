@@ -462,6 +462,15 @@ async function loadSendJobs() {
   }
 }
 
+document.getElementById("totp-copy-secret-btn").addEventListener("click", async () => {
+  const secret = document.getElementById("totp-secret").textContent;
+  await navigator.clipboard.writeText(secret);
+  const btn = document.getElementById("totp-copy-secret-btn");
+  const original = btn.textContent;
+  btn.textContent = t("btn_copied");
+  setTimeout(() => { btn.textContent = original; }, 1500);
+});
+
 document.getElementById("totp-setup-btn").addEventListener("click", async () => {
   const msg = document.getElementById("totp-msg");
   try {

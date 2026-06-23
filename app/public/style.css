@@ -117,6 +117,9 @@ h3 { font-size: 1rem; color: var(--hint); }
 }
 .card:hover { border-color: var(--accent); }
 
+a { color: var(--link); }
+a:hover { color: var(--accent-hover); }
+
 form { display: flex; flex-direction: column; gap: 0.6rem; }
 
 input, select, textarea {
