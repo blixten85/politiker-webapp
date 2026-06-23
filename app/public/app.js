@@ -1,10 +1,6 @@
-const PROVIDER_HELP = {
-  gmail: "Gmail kräver ett app-lösenord (kräver 2-stegsverifiering): myaccount.google.com/apppasswords",
-  outlook: "Outlook/Microsoft 365 kräver ett app-lösenord: account.live.com/proofs/AppPassword",
-  icloud: "iCloud kräver ett app-specifikt lösenord: appleid.apple.com → Säkerhet",
-  yahoo: "Yahoo kräver ett app-lösenord: login.yahoo.com/account/security",
-  generic: "Ange din leverantörs SMTP-server, port, användarnamn och lösenord.",
-};
+function providerHelp(provider) {
+  return t(`provider_help_${provider}`);
+}
 
 let pendingAccountId = null;
 let selectedAreas = new Set();
@@ -52,7 +48,7 @@ async function autoReportError(message, extra = {}) {
         context: { url: location.href, userAgent: navigator.userAgent, ...extra },
       }),
     });
-    showToast("Ett tekniskt fel uppstod och har skickats automatiskt till utvecklaren.");
+    showToast(t("msg_auto_error_reported"));
   } catch {
     // Om till och med felrapporteringen misslyckas finns inget mer att göra klientsidan.
   }
@@ -79,7 +75,7 @@ async function api(path, opts = {}) {
     headers: { "Content-Type": "application/json", ...(opts.headers ?? {}) },
   });
   const data = await resp.json();
-  if (!resp.ok) throw new Error(data.error ?? "Något gick fel");
+  if (!resp.ok) throw new Error(data.error ?? t("msg_generic_error"));
   return data;
 }
 
@@ -93,7 +89,7 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
     });
     pendingAccountId = result.accountId;
     document.getElementById("verify-card").hidden = false;
-    document.getElementById("signup-msg").textContent = "Konto skapat — kolla din inkorg för verifieringskod.";
+    document.getElementById("signup-msg").textContent = t("msg_signup_success");
   } catch (err) {
     document.getElementById("signup-msg").textContent = err.message;
   }
@@ -104,7 +100,7 @@ document.getElementById("verify-form").addEventListener("submit", async (e) => {
   const fd = new FormData(e.target);
   try {
     await api("/api/verify", { method: "POST", body: JSON.stringify({ accountId: pendingAccountId, code: fd.get("code") }) });
-    document.getElementById("verify-msg").textContent = "Verifierad! Du kan nu logga in.";
+    document.getElementById("verify-msg").textContent = t("msg_verify_success");
   } catch (err) {
     document.getElementById("verify-msg").textContent = err.message;
   }
@@ -123,7 +119,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   } catch (err) {
     if (err.message === "TOTP_REQUIRED") {
       document.getElementById("login-totp").hidden = false;
-      msg.textContent = "Ange din 2FA-kod också.";
+      msg.textContent = t("msg_totp_required");
     } else {
       msg.textContent = err.message;
     }
@@ -140,7 +136,7 @@ document.getElementById("forgot-password-form").addEventListener("submit", async
   const msg = document.getElementById("forgot-password-msg");
   try {
     await api("/api/request-password-reset", { method: "POST", body: JSON.stringify({ email: fd.get("email") }) });
-    msg.textContent = "Om adressen finns har en återställningslänk skickats.";
+    msg.textContent = t("msg_reset_link_sent");
   } catch (err) {
     msg.textContent = err.message;
   }
@@ -153,7 +149,7 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
   const token = new URLSearchParams(location.search).get("reset");
   try {
     await api("/api/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword: fd.get("newPassword") }) });
-    msg.textContent = "Lösenordet är ändrat — du kan logga in nu.";
+    msg.textContent = t("msg_password_changed");
     history.replaceState(null, "", "/");
   } catch (err) {
     msg.textContent = err.message;
@@ -171,7 +167,7 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
   const msg = document.getElementById("set-password-msg");
   try {
     await api("/api/set-password", { method: "POST", body: JSON.stringify({ newPassword: fd.get("newPassword") }) });
-    msg.textContent = "Lösenord sparat — du kan nu logga in med e-post + lösenord också.";
+    msg.textContent = t("msg_password_saved");
     e.target.reset();
   } catch (err) {
     msg.textContent = err.message;
@@ -180,14 +176,14 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
 
 document.getElementById("provider-select").addEventListener("change", (e) => {
   document.getElementById("generic-fields").hidden = e.target.value !== "generic";
-  document.getElementById("provider-help").textContent = PROVIDER_HELP[e.target.value] ?? "";
+  document.getElementById("provider-help").textContent = providerHelp(e.target.value) ?? "";
 });
 
 document.getElementById("add-credential-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
   const msg = document.getElementById("credential-msg");
-  msg.textContent = "Testar inloggning mot din mailleverantör...";
+  msg.textContent = t("msg_testing_credential");
   try {
     await api("/api/mail-credentials", {
       method: "POST",
@@ -200,11 +196,11 @@ document.getElementById("add-credential-form").addEventListener("submit", async 
         fromAddress: fd.get("fromAddress"),
       }),
     });
-    msg.textContent = "Mailkonto kopplat!";
+    msg.textContent = t("msg_credential_connected");
     e.target.reset();
     loadMailCredentials();
   } catch (err) {
-    msg.textContent = "Misslyckades: " + err.message;
+    msg.textContent = t("msg_failed_prefix", { error: err.message });
   }
 });
 
@@ -214,10 +210,10 @@ async function loadMailCredentials() {
   ul.innerHTML = "";
   for (const c of list) {
     const li = document.createElement("li");
-    const capText = c.daily_cap ? `, max ${c.daily_cap}/dygn` : "";
+    const capText = c.daily_cap ? t("msg_daily_cap_suffix", { cap: c.daily_cap }) : "";
     li.textContent = `${c.from_address} (${c.provider}${capText}) `;
     const del = document.createElement("button");
-    del.textContent = "Ta bort";
+    del.textContent = t("btn_remove");
     del.onclick = async () => {
       await api(`/api/mail-credentials/${c.id}`, { method: "DELETE" });
       loadMailCredentials();
@@ -272,7 +268,7 @@ document.getElementById("letter-files").addEventListener("change", (e) => {
     attachInput.value = "attach";
     attachInput.checked = true;
     attachLabel.appendChild(attachInput);
-    attachLabel.append(" Bifoga");
+    attachLabel.append(" " + t("btn_attach"));
 
     const extractLabel = document.createElement("label");
     const extractInput = document.createElement("input");
@@ -281,7 +277,7 @@ document.getElementById("letter-files").addEventListener("change", (e) => {
     extractInput.value = "extract";
     extractInput.disabled = isDoc;
     extractLabel.appendChild(extractInput);
-    extractLabel.append(` Använd som brevtext${isDoc ? " (ej möjligt för .doc)" : ""}`);
+    extractLabel.append(` ${t("btn_use_as_text")}${isDoc ? t("hint_not_possible_for_doc") : ""}`);
 
     row.appendChild(span);
     row.appendChild(attachLabel);
@@ -328,17 +324,17 @@ document.getElementById("send-btn").addEventListener("click", async () => {
   const sendBtn = document.getElementById("send-btn");
   const credentials = await loadMailCredentials();
   if (credentials.length === 0) {
-    msg.textContent = "Koppla ett mailkonto först.";
+    msg.textContent = t("msg_connect_mail_first");
     return;
   }
   if (selectedAreas.size === 0) {
-    msg.textContent = "Välj minst en kommun/region.";
+    msg.textContent = t("msg_select_area_first");
     return;
   }
   const html = document.getElementById("letter-body").value;
   const subject = document.getElementById("letter-subject").value;
   if (!html.trim()) {
-    msg.textContent = "Skriv ett brev först.";
+    msg.textContent = t("msg_write_letter_first");
     return;
   }
 
@@ -348,17 +344,17 @@ document.getElementById("send-btn").addEventListener("click", async () => {
     const files = [...document.getElementById("letter-files").files];
     const attachments = [];
     if (files.length > 0) {
-      msg.textContent = "Bearbetar bifogade filer...";
+      msg.textContent = t("msg_processing_files");
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const mode = document.querySelector(`input[name="mode-${file.name}"]:checked`).value;
+        const mode = document.querySelector(`input[name="mode-${i}-${file.name}"]:checked`).value;
         const base64Data = await fileToBase64(file);
         attachments.push({ filename: file.name, contentType: file.type || "application/octet-stream", mode, base64Data });
         setSendProgress(0.1 + 0.4 * ((i + 1) / files.length));
       }
     }
 
-    msg.textContent = "Skickar...";
+    msg.textContent = t("msg_sending");
     setSendProgress(0.7);
     const result = await api("/api/send", {
       method: "POST",
@@ -372,10 +368,10 @@ document.getElementById("send-btn").addEventListener("click", async () => {
     });
     setSendProgress(1);
     letterUnsaved = false;
-    msg.textContent = `Skickar till ${result.totalRecipients} mottagare — se status nedan.`;
+    msg.textContent = t("msg_sending_to_n", { n: result.totalRecipients });
     loadSendJobs();
   } catch (err) {
-    msg.textContent = "Misslyckades: " + err.message;
+    msg.textContent = t("msg_failed_prefix", { error: err.message });
   } finally {
     sendBtn.disabled = false;
     setTimeout(() => setSendProgress(null), 800);
@@ -388,7 +384,13 @@ async function loadSendJobs() {
   ul.innerHTML = "";
   for (const j of jobs) {
     const li = document.createElement("li");
-    li.textContent = `${new Date(j.created_at).toLocaleString("sv-SE")} — ${j.sent_count}/${j.total_recipients} skickade, ${j.bounce_count} fel — status: ${j.status}`;
+    li.textContent = t("msg_sendjob_status", {
+      date: new Date(j.created_at).toLocaleString(currentLocale()),
+      sent: j.sent_count,
+      total: j.total_recipients,
+      bounce: j.bounce_count,
+      status: j.status,
+    });
     ul.appendChild(li);
   }
 }
@@ -415,7 +417,7 @@ document.getElementById("totp-confirm-form").addEventListener("submit", async (e
     await api("/api/totp/confirm", { method: "POST", body: JSON.stringify({ code: fd.get("code") }) });
     document.getElementById("totp-setup-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
-    msg.textContent = "2FA aktiverat!";
+    msg.textContent = t("msg_totp_enabled");
   } catch (err) {
     msg.textContent = err.message;
   }
@@ -433,10 +435,14 @@ async function loadApiKeys() {
   ul.innerHTML = "";
   for (const k of keys) {
     const li = document.createElement("li");
-    const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString("sv-SE") : "aldrig";
-    li.textContent = `${k.name} — skapad ${new Date(k.created_at).toLocaleDateString("sv-SE")}, senast använd: ${lastUsed} `;
+    const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString(currentLocale()) : t("never_used");
+    li.textContent = t("msg_apikey_row", {
+      name: k.name,
+      created: new Date(k.created_at).toLocaleDateString(currentLocale()),
+      lastUsed,
+    }) + " ";
     const del = document.createElement("button");
-    del.textContent = "Återkalla";
+    del.textContent = t("btn_revoke");
     del.onclick = async () => {
       await api(`/api/api-keys/${k.id}`, { method: "DELETE" });
       loadApiKeys();
@@ -452,7 +458,7 @@ document.getElementById("create-api-key-form").addEventListener("submit", async 
   const msg = document.getElementById("api-key-msg");
   try {
     const result = await api("/api/api-keys", { method: "POST", body: JSON.stringify({ name: fd.get("name") }) });
-    msg.textContent = `Ny nyckel (visas bara nu, spara den!): ${result.key}`;
+    msg.textContent = t("msg_new_apikey", { key: result.key });
     e.target.reset();
     loadApiKeys();
   } catch (err) {
@@ -466,7 +472,12 @@ async function loadAdminPanel() {
   accUl.innerHTML = "";
   for (const a of accounts) {
     const li = document.createElement("li");
-    li.textContent = `${a.email}${a.is_admin ? " (admin)" : ""} — verifierad: ${!!a.email_verified}, dygnsgräns: ${a.daily_send_cap}`;
+    li.textContent = t("msg_admin_account_row", {
+      email: a.email,
+      adminSuffix: a.is_admin ? t("admin_suffix") : "",
+      verified: a.email_verified ? t("yes_label") : t("no_label"),
+      cap: a.daily_send_cap,
+    });
     accUl.appendChild(li);
   }
 
@@ -475,14 +486,14 @@ async function loadAdminPanel() {
   fbUl.innerHTML = "";
   for (const f of feedback) {
     const li = document.createElement("li");
-    li.textContent = `${new Date(f.created_at).toLocaleString("sv-SE")}: ${f.message}`;
+    li.textContent = t("msg_admin_feedback_row", { date: new Date(f.created_at).toLocaleString(currentLocale()), message: f.message });
     fbUl.appendChild(li);
   }
 }
 
 function openFeedbackDialog(type) {
   document.getElementById("feedback-type").value = type;
-  document.getElementById("feedback-dialog-title").textContent = type === "contact" ? "Kontakta oss" : "Rapportera fel";
+  document.getElementById("feedback-dialog-title").textContent = type === "contact" ? t("feedback_title_contact") : t("feedback_title_bug");
   document.getElementById("feedback-replyto").hidden = type !== "contact";
   document.getElementById("feedback-dialog").showModal();
 }
@@ -524,6 +535,16 @@ async function showApp() {
   }
   await Promise.all(tasks);
 }
+
+document.addEventListener("languagechange", () => {
+  if (!document.getElementById("app-view").hidden) {
+    loadMailCredentials();
+    renderAreas();
+    loadSendJobs();
+    loadApiKeys();
+    if (!document.getElementById("admin-card").hidden) loadAdminPanel();
+  }
+});
 
 (async function init() {
   const resetToken = new URLSearchParams(location.search).get("reset");
