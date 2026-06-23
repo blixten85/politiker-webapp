@@ -122,6 +122,18 @@
         <input type="text" name="user" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
         <input type="password" name="password" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
         <p class="hint" id="provider-help"></p>
+
+        <label data-i18n="label_cap_pct">Hur stor andel av taket vill du använda?</label>
+        <select name="capPctChoice" id="cap-pct-select">
+          <option value="100" selected>100%</option>
+          <option value="75">75%</option>
+          <option value="50">50%</option>
+          <option value="25">25%</option>
+          <option value="custom" data-i18n="cap_pct_custom">Anpassad %</option>
+        </select>
+        <input type="number" id="cap-pct-custom-input" min="1" max="100" step="1" placeholder="1-100" hidden>
+        <p class="hint" id="cap-pct-preview"></p>
+
         <button type="submit" data-i18n="btn_connect_mail">Koppla mailkonto</button>
       </form>
       <p id="credential-msg"></p>
@@ -275,6 +287,9 @@
 
     <dt data-i18n="faq_q7">Vem ligger bakom det här?</dt>
     <dd data-i18n="faq_a7">Ett privat, ideellt initiativ — inte en myndighet eller ett företag. Kontakta oss gärna om du har frågor.</dd>
+
+    <dt data-i18n="faq_q8">Varför finns det en gräns för hur många brev jag kan skicka per dag?</dt>
+    <dd data-i18n="faq_a8">Din mailleverantör (Gmail, Outlook, iCloud, Yahoo) har egna gränser för hur många mejl ett konto får skicka per dygn. Om du skickar fler riskerar leverantören att tillfälligt blockera eller flagga ditt konto. Vi sätter därför ett tak på 10% under leverantörens kända gräns, så att din vanliga mailanvändning på samma konto inte trängs ut och du har marginal. Du kan själv välja att använda en lägre andel av det taket (t.ex. 50%) om du vill vara extra säker — men aldrig en högre andel än taket tillåter.</dd>
   </dl>
   <menu>
     <button type="button" id="faq-close" data-i18n="btn_close">Stäng</button>

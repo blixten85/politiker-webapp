@@ -174,10 +174,43 @@ document.getElementById("set-password-form").addEventListener("submit", async (e
   }
 });
 
+let providerCeilings = null;
+async function loadProviderCeilings() {
+  if (!providerCeilings) providerCeilings = await api("/api/provider-ceilings");
+  return providerCeilings;
+}
+
+function resolveCapPctChoice() {
+  const choice = document.getElementById("cap-pct-select").value;
+  if (choice !== "custom") return parseInt(choice, 10);
+  const custom = parseInt(document.getElementById("cap-pct-custom-input").value, 10);
+  return Math.min(100, Math.max(1, Number.isFinite(custom) ? custom : 100));
+}
+
+async function updateCapPreview() {
+  const provider = document.getElementById("provider-select").value;
+  const ceilings = await loadProviderCeilings();
+  const info = ceilings[provider];
+  const preview = document.getElementById("cap-pct-preview");
+  if (!info || info.ceiling === null) {
+    preview.textContent = t("msg_cap_preview_unknown");
+    return;
+  }
+  const pct = resolveCapPctChoice();
+  const cap = Math.max(1, Math.floor(info.ceiling * (pct / 100)));
+  preview.textContent = t("msg_cap_preview", { ceiling: info.ceiling, limit: info.providerDailyLimit, pct, cap });
+}
+
 document.getElementById("provider-select").addEventListener("change", (e) => {
   document.getElementById("generic-fields").hidden = e.target.value !== "generic";
   document.getElementById("provider-help").textContent = providerHelp(e.target.value) ?? "";
+  updateCapPreview();
 });
+document.getElementById("cap-pct-select").addEventListener("change", (e) => {
+  document.getElementById("cap-pct-custom-input").hidden = e.target.value !== "custom";
+  updateCapPreview();
+});
+document.getElementById("cap-pct-custom-input").addEventListener("input", updateCapPreview);
 
 document.getElementById("add-credential-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -194,6 +227,7 @@ document.getElementById("add-credential-form").addEventListener("submit", async 
         user: fd.get("user"),
         password: fd.get("password"),
         fromAddress: fd.get("fromAddress"),
+        userCapPct: resolveCapPctChoice(),
       }),
     });
     msg.textContent = t("msg_credential_connected");
@@ -211,7 +245,40 @@ async function loadMailCredentials() {
   for (const c of list) {
     const li = document.createElement("li");
     const capText = c.daily_cap ? t("msg_daily_cap_suffix", { cap: c.daily_cap }) : "";
-    li.textContent = `${c.from_address} (${c.provider}${capText}) `;
+    const textSpan = document.createElement("span");
+    textSpan.textContent = `${c.from_address} (${c.provider}${capText}) `;
+    li.appendChild(textSpan);
+
+    if (c.daily_cap !== null && c.daily_cap !== undefined) {
+      const row = document.createElement("span");
+      row.className = "cred-cap-row";
+      const select = document.createElement("select");
+      for (const pct of [100, 75, 50, 25]) {
+        const opt = document.createElement("option");
+        opt.value = pct;
+        opt.textContent = pct + "%";
+        if (c.user_cap_pct === pct) opt.selected = true;
+        select.appendChild(opt);
+      }
+      if (![100, 75, 50, 25].includes(c.user_cap_pct)) {
+        const opt = document.createElement("option");
+        opt.value = c.user_cap_pct;
+        opt.textContent = c.user_cap_pct + "%";
+        opt.selected = true;
+        select.appendChild(opt);
+      }
+      select.onchange = async () => {
+        const result = await api(`/api/mail-credentials/${c.id}/cap-pct`, {
+          method: "POST",
+          body: JSON.stringify({ userCapPct: parseInt(select.value, 10) }),
+        });
+        showToast(t("msg_cap_updated", { cap: result.dailyCap, pct: select.value }));
+        loadMailCredentials();
+      };
+      row.appendChild(select);
+      li.appendChild(row);
+    }
+
     const del = document.createElement("button");
     del.textContent = t("btn_remove");
     del.onclick = async () => {
@@ -737,7 +804,7 @@ async function showApp() {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
   }
-  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys()];
+  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), updateCapPreview()];
   if (me.isAdmin) {
     document.getElementById("admin-card").hidden = false;
     tasks.push(loadAdminPanel());
