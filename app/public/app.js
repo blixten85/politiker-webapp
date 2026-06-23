@@ -519,6 +519,42 @@ async function loadApiKeys() {
   }
 }
 
+const OAUTH_LINK_PROVIDERS = ["google", "github", "microsoft"];
+
+async function loadOAuthIdentities() {
+  const linked = await api("/api/oauth-identities");
+  const div = document.getElementById("oauth-identities-list");
+  div.innerHTML = "";
+  for (const provider of OAUTH_LINK_PROVIDERS) {
+    const row = document.createElement("p");
+    row.textContent = provider.charAt(0).toUpperCase() + provider.slice(1) + ": ";
+    if (linked.includes(provider)) {
+      const span = document.createElement("span");
+      span.textContent = t("oauth_linked") + " ";
+      const unlink = document.createElement("button");
+      unlink.textContent = t("btn_unlink");
+      unlink.onclick = async () => {
+        const msg = document.getElementById("oauth-identities-msg");
+        try {
+          await api(`/api/oauth-identities/${provider}`, { method: "DELETE" });
+          msg.textContent = "";
+          loadOAuthIdentities();
+        } catch (err) {
+          msg.textContent = err.message;
+        }
+      };
+      row.appendChild(span);
+      row.appendChild(unlink);
+    } else {
+      const link = document.createElement("a");
+      link.href = `/api/oauth-link/${provider}/start`;
+      link.textContent = t("btn_link");
+      row.appendChild(link);
+    }
+    div.appendChild(row);
+  }
+}
+
 document.getElementById("create-api-key-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
@@ -751,6 +787,7 @@ function downloadExport(section, format) {
 document.getElementById("admin-export-accounts-btn").addEventListener("click", () => downloadExport("accounts", "csv"));
 document.getElementById("admin-export-feedback-btn").addEventListener("click", () => downloadExport("feedback", "csv"));
 document.getElementById("admin-export-stats-btn").addEventListener("click", () => downloadExport("stats", "csv"));
+document.getElementById("admin-export-politicians-btn").addEventListener("click", () => downloadExport("politicians", "csv"));
 document.getElementById("admin-export-all-btn").addEventListener("click", () => downloadExport("all", "json"));
 
 function openFeedbackDialog(type) {
@@ -804,7 +841,7 @@ async function showApp() {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
   }
-  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), updateCapPreview()];
+  const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
   if (me.isAdmin) {
     document.getElementById("admin-card").hidden = false;
     tasks.push(loadAdminPanel());
@@ -818,6 +855,7 @@ document.addEventListener("languagechange", () => {
     renderAreas();
     loadSendJobs();
     loadApiKeys();
+    loadOAuthIdentities();
     if (!document.getElementById("admin-card").hidden) loadAdminPanel();
   }
 });

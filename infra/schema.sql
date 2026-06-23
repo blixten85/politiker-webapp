@@ -5,6 +5,7 @@ CREATE TABLE accounts (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
+  password_set_by_user INTEGER NOT NULL DEFAULT 0, -- 0 för konton skapade via OAuth med slumpat oanvändbart lösenord, 1 efter setPassword()
   email_verified INTEGER NOT NULL DEFAULT 0,
   verification_code TEXT,
   verification_expires_at INTEGER,
@@ -60,6 +61,8 @@ CREATE TABLE politicians (
   area_name TEXT NOT NULL,   -- t.ex. "Lysekils kommun", "Region Halland", "Sveriges riksdag"
   area_type TEXT NOT NULL,   -- kommun | region | riksdag | regering
   last_scraped_at INTEGER NOT NULL,
+  verification_status TEXT NOT NULL DEFAULT 'unknown', -- valid | dead | catchall_unverified | unreachable_* | unknown_code_* | error_* — satt av politiker-kontakter/verify/verify_emails.py
+  last_verified_at INTEGER,
   UNIQUE(email, area_name)
 );
 CREATE INDEX idx_politicians_area ON politicians(area_type, area_name);

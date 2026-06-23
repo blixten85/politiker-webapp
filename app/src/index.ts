@@ -28,7 +28,7 @@ import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
-import { getAuthorizeUrl, handleOAuthCallback } from "./oauth";
+import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
 import type { Env } from "./db";
@@ -127,6 +127,37 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         await env.SESSIONS.delete(`oauthmailstate:${state}`);
 
         await addMicrosoftGraphMailCredential(env, stateAccountId, code);
+        return new Response(null, { status: 302, headers: { Location: "https://politiker.denied.se/" } });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
+      }
+    }
+
+    // --- OAuth-LÄNKNING: koppla en ytterligare inloggningsleverantör till ett
+    // REDAN INLOGGAT konto, utan att matcha på e-post eller skapa nya konton
+    // (se oauth.ts: handleOAuthLinkCallback). ---
+    const oauthLinkMatch = url.pathname.match(/^\/api\/oauth-link\/([a-z]+)\/(start|callback)$/);
+    if (oauthLinkMatch) {
+      const [, provider, step] = oauthLinkMatch;
+      try {
+        const sessionToken = getCookie(req, "session");
+        const account = await getAccountFromSession(env, sessionToken);
+        if (!account) return json({ error: "Inte inloggad" }, 401);
+
+        if (step === "start") {
+          const state = randomId();
+          await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          return Response.redirect(getLinkAuthorizeUrl(provider, env, state), 302);
+        }
+
+        const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
+        if (!code || !state) return json({ error: "Saknar code/state" }, 400);
+        const stateAccountId = await env.SESSIONS.get(`oauthlinkstate:${state}`);
+        if (!stateAccountId) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
+        await env.SESSIONS.delete(`oauthlinkstate:${state}`);
+
+        await handleOAuthLinkCallback(provider, env, code, stateAccountId);
         return new Response(null, { status: 302, headers: { Location: "https://politiker.denied.se/" } });
       } catch (err) {
         return json({ error: err instanceof Error ? err.message : "OAuth-fel" }, 400);
@@ -237,6 +268,16 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
       if (url.pathname === "/api/set-password" && req.method === "POST") {
         const { newPassword } = await req.json<{ newPassword: string }>();
         await setPassword(env, accountId, newPassword);
+        return json({ ok: true });
+      }
+
+      if (url.pathname === "/api/oauth-identities" && req.method === "GET") {
+        return json(await getOAuthIdentities(env, accountId));
+      }
+
+      const unlinkMatch = url.pathname.match(/^\/api\/oauth-identities\/([a-z]+)$/);
+      if (unlinkMatch && req.method === "DELETE") {
+        await unlinkOAuthIdentity(env, accountId, unlinkMatch[1]);
         return json({ ok: true });
       }
 
