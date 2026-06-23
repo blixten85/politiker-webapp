@@ -45,7 +45,8 @@ CREATE TABLE mail_credentials (
   encrypted_password TEXT NOT NULL, -- AES-GCM, nyckel = Wrangler secret MAIL_CRED_KEY
   from_address TEXT NOT NULL,
   verified_at INTEGER, -- sätts efter lyckad SMTP AUTH-testhandskakning / OAuth-koppling
-  daily_cap INTEGER, -- leverantörsspecifik dygnsgräns med säkerhetsmarginal, satt vid tillägg
+  daily_cap INTEGER, -- = floor(leverantörens hårdkodade tak * user_cap_pct / 100), heltal
+  user_cap_pct INTEGER NOT NULL DEFAULT 100, -- användarens egna val av andel av taket (1-100)
   oauth_access_token TEXT, -- krypterad, endast för provider = microsoft_graph
   oauth_refresh_token TEXT, -- krypterad, används för att förnya access_token
   oauth_token_expires_at INTEGER,
