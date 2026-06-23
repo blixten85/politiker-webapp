@@ -48,9 +48,9 @@
       <p class="hint" data-i18n="apple_soon">Apple-inloggning kommer snart.</p>
       <div class="divider" data-i18n="divider_or">eller</div>
       <form id="login-form">
-        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
-        <input type="password" name="password" data-i18n-placeholder="placeholder_password" placeholder="Lösenord" required>
-        <input type="text" name="totpCode" id="login-totp" data-i18n-placeholder="placeholder_totp_code" placeholder="6-siffrig 2FA-kod" hidden>
+        <input type="email" name="email" autocomplete="username" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <input type="password" name="password" autocomplete="current-password" data-i18n-placeholder="placeholder_password" placeholder="Lösenord" required>
+        <input type="text" name="totpCode" id="login-totp" autocomplete="one-time-code" data-i18n-placeholder="placeholder_totp_code" placeholder="6-siffrig 2FA-kod" hidden>
         <button type="submit" data-i18n="btn_login">Logga in</button>
       </form>
       <button id="forgot-password-btn" class="link-btn" data-i18n="forgot_password_link">Glömt lösenord?</button>
@@ -60,7 +60,7 @@
     <div class="card" id="forgot-password-card" hidden>
       <h2 data-i18n="forgot_password_title">Återställ lösenord</h2>
       <form id="forgot-password-form">
-        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <input type="email" name="email" autocomplete="username" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
         <button type="submit" data-i18n="btn_send_reset_link">Skicka återställningslänk</button>
       </form>
       <p id="forgot-password-msg"></p>
@@ -69,7 +69,7 @@
     <div class="card" id="reset-password-card" hidden>
       <h2 data-i18n="reset_password_title">Sätt nytt lösenord</h2>
       <form id="reset-password-form">
-        <input type="password" name="newPassword" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <input type="password" name="newPassword" autocomplete="new-password" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
         <button type="submit" data-i18n="btn_save_new_password">Spara nytt lösenord</button>
       </form>
       <p id="reset-password-msg"></p>
@@ -78,8 +78,8 @@
     <div class="card">
       <h2 data-i18n="signup_title">Skapa konto</h2>
       <form id="signup-form">
-        <input type="email" name="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
-        <input type="password" name="password" data-i18n-placeholder="placeholder_password_min" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
+        <input type="email" name="email" autocomplete="username" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <input type="password" name="password" autocomplete="new-password" data-i18n-placeholder="placeholder_password_min" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
         <button type="submit" data-i18n="btn_signup">Skapa konto</button>
       </form>
       <p id="signup-msg"></p>
@@ -119,8 +119,8 @@
           <input type="number" name="port" data-i18n-placeholder="placeholder_smtp_port" placeholder="Port" value="587">
         </div>
         <input type="email" name="fromAddress" data-i18n-placeholder="placeholder_from_address" placeholder="Din e-postadress" required>
-        <input type="text" name="user" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
-        <input type="password" name="password" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
+        <input type="text" name="user" autocomplete="username" data-i18n-placeholder="placeholder_username" placeholder="Användarnamn (oftast samma som e-post)" required>
+        <input type="password" name="password" autocomplete="current-password" data-i18n-placeholder="placeholder_app_password" placeholder="Lösenord / app-lösenord" required>
         <p class="hint" id="provider-help"></p>
 
         <label data-i18n="label_cap_pct">Hur stor andel av taket vill du använda?</label>
@@ -143,7 +143,7 @@
       <h2 data-i18n="setpw_title">Sätt/byt lösenord</h2>
       <p class="hint" data-i18n="setpw_hint">Skapade du kontot via Google/GitHub/Microsoft? Här kan du sätta ett lösenord också, så du kan logga in på fler sätt.</p>
       <form id="set-password-form">
-        <input type="password" name="newPassword" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
+        <input type="password" name="newPassword" autocomplete="new-password" data-i18n-placeholder="placeholder_new_password" placeholder="Nytt lösenord (minst 10 tecken)" required minlength="10">
         <button type="submit" data-i18n="btn_save_password">Spara lösenord</button>
       </form>
       <p id="set-password-msg"></p>
@@ -165,6 +165,7 @@
       <div id="totp-setup-view" hidden>
         <p class="hint" data-i18n="totp_setup_hint">Lägg till denna hemlighet manuellt i din autentiseringsapp (Google Authenticator, Authy, m.fl.):</p>
         <code id="totp-secret"></code>
+        <button type="button" id="totp-copy-secret-btn" data-i18n="btn_copy">Kopiera</button>
         <form id="totp-confirm-form">
           <input type="text" name="code" data-i18n-placeholder="placeholder_app_code" placeholder="6-siffrig kod från appen" required>
           <button type="submit" data-i18n="btn_confirm_enable">Bekräfta och aktivera</button>
