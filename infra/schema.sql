@@ -28,7 +28,8 @@ CREATE TABLE oauth_identities (
   provider TEXT NOT NULL, -- google | github | microsoft | apple
   provider_user_id TEXT NOT NULL,
   created_at INTEGER NOT NULL,
-  UNIQUE(provider, provider_user_id)
+  UNIQUE(provider, provider_user_id),
+  UNIQUE(account_id, provider)
 );
 
 -- Två typer av mailkoppling i samma tabell:
@@ -61,7 +62,7 @@ CREATE TABLE politicians (
   area_name TEXT NOT NULL,   -- t.ex. "Lysekils kommun", "Region Halland", "Sveriges riksdag"
   area_type TEXT NOT NULL,   -- kommun | region | riksdag | regering
   last_scraped_at INTEGER NOT NULL,
-  verification_status TEXT NOT NULL DEFAULT 'unknown', -- valid | dead | catchall_unverified | unreachable_* | unknown_code_* | error_* — satt av politiker-kontakter/verify/verify_emails.py
+  verification_status TEXT NOT NULL DEFAULT 'unknown', -- unknown | valid_via_send | dead_via_send (satt i realtid av sender/src/index.ts vid riktiga utskick) | valid | dead | catchall_unverified | unreachable_* | unknown_code_* | error_* (historiskt satt av politiker-kontakter/verify/verify_emails.py, ej längre i drift — port 25 blockerad både i Cloudflare Workers och hos mp100:s leverantör)
   last_verified_at INTEGER,
   UNIQUE(email, area_name)
 );
@@ -112,6 +113,20 @@ CREATE TABLE send_log (
   sent_at INTEGER NOT NULL
 );
 CREATE INDEX idx_send_log_account_date ON send_log(account_id, sent_at);
+
+-- Granskningskö för civilsamhälls-brev (kvartalsvis, anonymt avsändarkonto).
+-- Inget skickas förrän status='approved' satts via en token-länk i ett
+-- granskningsmail — ingen passiv timeout, ingen auto-send.
+CREATE TABLE civic_letter_drafts (
+  id TEXT PRIMARY KEY,
+  subject TEXT NOT NULL,
+  html_body TEXT NOT NULL,
+  topic_source_url TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending | approved | rejected | sending | done
+  approve_token TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  approved_at INTEGER
+);
 
 CREATE TABLE feedback (
   id TEXT PRIMARY KEY,
