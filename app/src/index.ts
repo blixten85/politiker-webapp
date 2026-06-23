@@ -429,7 +429,7 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         if (url.pathname === "/api/admin/civic-letter" && req.method === "POST") {
           const { subject, htmlBody, topicSourceUrl } = await req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
           const draft = await createCivicLetterDraft(env, { subject, htmlBody, topicSourceUrl });
-          await sendApprovalNotification(draft);
+          await sendApprovalNotification(env, draft);
           return json({ ok: true, draftId: draft.id });
         }
 

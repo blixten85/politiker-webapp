@@ -11,13 +11,9 @@ import type { Env } from "./db";
 // plattformens systemmail (denied.se) — hela den här funktionen ska hållas
 // helt skild från användarens egen identifierbara adress.
 const APPROVAL_NOTIFY_EMAIL = "anders.eriksson@denied.se";
-const OUTLOOK_SMTP_CONFIG = {
-  host: "smtp.office365.com",
-  port: 587,
-  user: "RichMissile@outlook.com",
-  password: "REDACTED_LEAKED_PASSWORD_ROTATED",
-  fromAddress: "RichMissile@outlook.com",
-};
+const OUTLOOK_SMTP_HOST = "smtp.office365.com";
+const OUTLOOK_SMTP_PORT = 587;
+const OUTLOOK_SMTP_USER = "RichMissile@outlook.com";
 
 export interface CivicLetterDraft {
   id: string;
@@ -57,9 +53,19 @@ export async function createCivicLetterDraft(
   };
 }
 
-export async function sendApprovalNotification(draft: CivicLetterDraft): Promise<void> {
+export async function sendApprovalNotification(env: Env, draft: CivicLetterDraft): Promise<void> {
+  if (!env.CIVIC_OUTLOOK_PASSWORD) throw new Error("CIVIC_OUTLOOK_PASSWORD är inte konfigurerad (wrangler secret)");
   const mail = approvalEmailBody(draft);
-  await sendSmtpMail(OUTLOOK_SMTP_CONFIG, { to: mail.to, subject: mail.subject, html: mail.html });
+  await sendSmtpMail(
+    {
+      host: OUTLOOK_SMTP_HOST,
+      port: OUTLOOK_SMTP_PORT,
+      user: OUTLOOK_SMTP_USER,
+      password: env.CIVIC_OUTLOOK_PASSWORD,
+      fromAddress: OUTLOOK_SMTP_USER,
+    },
+    { to: mail.to, subject: mail.subject, html: mail.html },
+  );
 }
 
 export function approvalEmailBody(draft: CivicLetterDraft): { to: string; subject: string; html: string } {
