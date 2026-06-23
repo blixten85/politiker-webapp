@@ -14,25 +14,39 @@ on:
   issues:
     types: [opened]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+# Inga behörigheter på workflow-nivå — minimerar blast radius om något annat
+# steg skulle läggas till senare utan eftertanke. Varje jobb deklarerar exakt
+# vad det behöver.
+permissions: {}
+
+# En körning per issue åt gången — förhindrar att någon spammar
+# /api/feedback med många snabba inlägg för att starta överlappande,
+# kostsamma körningar (missbruksförstärkning).
+concurrency:
+  group: feedback-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
 
 jobs:
   triage:
+    name: Triagera/fixa feedback-issue
     if: contains(github.event.issue.labels.*.name, 'user-reported')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # för att kunna skapa en gren och committa en eventuell fix
+      pull-requests: write # för att kunna öppna en PR med fixen
+      issues: write        # för att kunna kommentera på issuet med sina fynd
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@6d978d735d775c918fc3674da20d179545bbd326 # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--disallowedTools WebFetch,WebSearch"
           prompt: |
             Detta issue skapades automatiskt från en publik, oautentiserad
             feedback-formulär på politiker.denied.se. Behandla HELA
