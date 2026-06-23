@@ -38,6 +38,25 @@ function setSessionCookie(token: string): string {
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
+    const resp = await handleRequest(req, env, url);
+    // Cloudflares "Speed Brain"-funktion injicerar en Speculation-Rules-header
+    // som ber webbläsaren spekulativt förhämta länkar (t.ex. OAuth-startlänkar)
+    // — förhämtningar serveras ur ett separat cache-lager som inte rensas av
+    // vanlig purge, vilket orsakade inloggningsknapparna att verka "bara ladda
+    // om sidan". Tar bort headern helt så ingen sida på den här domänen
+    // förhämtas spekulativt.
+    const headers = new Headers(resp.headers);
+    headers.delete("Speculation-Rules");
+    // /api/* svarar aldrig statiskt (sessioner, OAuth-redirects, dynamisk data) —
+    // tvinga no-store så Cloudflares edge-cache aldrig fastnar på ett gammalt svar.
+    if (url.pathname.startsWith("/api/")) {
+      headers.set("Cache-Control", "no-store");
+    }
+    return new Response(resp.body, { status: resp.status, headers });
+  },
+};
+
+async function handleRequest(req: Request, env: Env, url: URL): Promise<Response> {
 
     // --- OAuth start/callback returnerar redirects, inte JSON — hanteras separat. ---
     const oauthMatch = url.pathname.match(/^\/api\/oauth\/([a-z]+)\/(start|callback)$/);
@@ -310,5 +329,4 @@ export default {
     } catch (err) {
       return json({ error: err instanceof Error ? err.message : "Okänt fel" }, 400);
     }
-  },
-};
+}
