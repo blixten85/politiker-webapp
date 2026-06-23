@@ -57,7 +57,7 @@ function toCsv(rows: Record<string, unknown>[]): string {
 
 export async function exportAdminData(
   env: Env,
-  section: "accounts" | "feedback" | "stats" | "all",
+  section: "accounts" | "feedback" | "stats" | "politicians" | "all",
   format: "csv" | "json",
 ): Promise<{ filename: string; content: string; contentType: string }> {
   const accountsRows = async () => {
@@ -72,6 +72,14 @@ export async function exportAdminData(
     ).all<Record<string, unknown>>();
     return results;
   };
+  // Politiker-tabellen är helt separat från konton — innehåller ALDRIG
+  // användardata, bara offentliga tjänsteadresser till folkvalda.
+  const politiciansRows = async () => {
+    const { results } = await env.DB.prepare(
+      "SELECT id, name, email, area_name, area_type, last_scraped_at FROM politicians ORDER BY area_type, area_name, name",
+    ).all<Record<string, unknown>>();
+    return results;
+  };
 
   let data: Record<string, unknown> | Record<string, unknown>[];
   let baseName: string;
@@ -82,13 +90,16 @@ export async function exportAdminData(
   } else if (section === "feedback") {
     data = await feedbackRows();
     baseName = "feedback";
+  } else if (section === "politicians") {
+    data = await politiciansRows();
+    baseName = "politiker";
   } else if (section === "stats") {
     const stats = await getAdminStats(env);
     data = format === "csv" ? stats.dailySeries : (stats as unknown as Record<string, unknown>);
     baseName = "statistik";
   } else {
-    const [accounts, feedback, stats] = await Promise.all([accountsRows(), feedbackRows(), getAdminStats(env)]);
-    data = { accounts, feedback, stats };
+    const [accounts, feedback, stats, politicians] = await Promise.all([accountsRows(), feedbackRows(), getAdminStats(env), politiciansRows()]);
+    data = { accounts, feedback, stats, politicians };
     baseName = "allt";
   }
 
