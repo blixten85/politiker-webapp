@@ -89,6 +89,56 @@ export async function rejectCivicLetterDraft(env: Env, draftId: string, token: s
   await env.DB.prepare("UPDATE civic_letter_drafts SET status = 'rejected' WHERE id = ?").bind(draftId).run();
 }
 
+const ALLOWED_STATUS_TRANSITIONS: Record<"sending" | "done", string> = {
+  sending: "approved",
+  done: "sending",
+};
+
+export async function setCivicLetterStatus(env: Env, draftId: string, status: "sending" | "done"): Promise<void> {
+  const requiredCurrentStatus = ALLOWED_STATUS_TRANSITIONS[status];
+  const result = await env.DB.prepare("UPDATE civic_letter_drafts SET status = ? WHERE id = ? AND status = ?")
+    .bind(status, draftId, requiredCurrentStatus)
+    .run();
+  if (result.meta.changes === 0) {
+    throw new Error(`Ogiltig statusövergång till "${status}" — draften finns inte eller har inte status "${requiredCurrentStatus}"`);
+  }
+}
+
+export async function getCivicLetterDraft(env: Env, draftId: string): Promise<CivicLetterDraft | null> {
+  const row = await env.DB.prepare(
+    "SELECT id, subject, html_body, topic_source_url, status, approve_token, created_at, approved_at FROM civic_letter_drafts WHERE id = ?",
+  )
+    .bind(draftId)
+    .first<{
+      id: string;
+      subject: string;
+      html_body: string;
+      topic_source_url: string | null;
+      status: string;
+      approve_token: string;
+      created_at: number;
+      approved_at: number | null;
+    }>();
+  if (!row) return null;
+  return {
+    id: row.id,
+    subject: row.subject,
+    htmlBody: row.html_body,
+    topicSourceUrl: row.topic_source_url,
+    status: row.status as CivicLetterDraft["status"],
+    approveToken: row.approve_token,
+    createdAt: row.created_at,
+    approvedAt: row.approved_at,
+  };
+}
+
+export type CivicLetterDraftPublic = Omit<CivicLetterDraft, "approveToken">;
+
+export function redactApproveToken(draft: CivicLetterDraft): CivicLetterDraftPublic {
+  const { approveToken: _approveToken, ...rest } = draft;
+  return rest;
+}
+
 export async function getApprovedUnsentDraft(env: Env): Promise<CivicLetterDraft | null> {
   const row = await env.DB.prepare(
     "SELECT id, subject, html_body, topic_source_url, status, approve_token, created_at, approved_at FROM civic_letter_drafts WHERE status = 'approved' ORDER BY approved_at ASC LIMIT 1",

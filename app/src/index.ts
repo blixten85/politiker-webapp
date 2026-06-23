@@ -29,7 +29,16 @@ import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
 import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
-import { approveCivicLetterDraft, rejectCivicLetterDraft, createCivicLetterDraft, approvalEmailBody } from "./civic-outreach";
+import {
+  approveCivicLetterDraft,
+  rejectCivicLetterDraft,
+  createCivicLetterDraft,
+  approvalEmailBody,
+  getCivicLetterDraft,
+  setCivicLetterStatus,
+  getApprovedUnsentDraft,
+  redactApproveToken,
+} from "./civic-outreach";
 import { sendSystemMail } from "./auth";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
@@ -424,6 +433,32 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           const mail = approvalEmailBody(draft);
           await sendSystemMail(env, mail.to, mail.subject, mail.html);
           return json({ ok: true, draftId: draft.id });
+        }
+
+        const civicGetMatch = url.pathname.match(/^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)$/);
+        if (civicGetMatch && req.method === "GET") {
+          const draft = await getCivicLetterDraft(env, civicGetMatch[1]);
+          if (!draft) return json({ error: "Hittades inte" }, 404);
+          return json(redactApproveToken(draft));
+        }
+
+        const civicStatusMatch = url.pathname.match(/^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)\/status$/);
+        if (civicStatusMatch && req.method === "POST") {
+          const { status } = await req.json<{ status: string }>();
+          if (status !== "sending" && status !== "done") {
+            return json({ error: "Ogiltig status — måste vara 'sending' eller 'done'" }, 400);
+          }
+          try {
+            await setCivicLetterStatus(env, civicStatusMatch[1], status);
+          } catch (err) {
+            return json({ error: err instanceof Error ? err.message : "Fel" }, 400);
+          }
+          return json({ ok: true });
+        }
+
+        if (url.pathname === "/api/admin/civic-letter/next-approved" && req.method === "GET") {
+          const draft = await getApprovedUnsentDraft(env);
+          return json(draft ? redactApproveToken(draft) : null);
         }
 
         if (url.pathname === "/api/admin/feedback" && req.method === "GET") {
