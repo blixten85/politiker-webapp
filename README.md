@@ -1,18 +1,29 @@
 # Politiker-webapp
 
 Gratis verktyg där medborgare kan skapa konto, koppla sitt **eget** mailkonto
-(Gmail/Outlook/iCloud/generisk SMTP), välja kommuner/regioner/riksdag/regering
-att kontakta, och skicka personaliserade brev till sina folkvalda — utan att
-plattformen själv blir avsändare.
+(Gmail/Outlook/iCloud/generisk SMTP, eller logga in passwordlöst med Microsoft
+Graph), välja kommuner/regioner/riksdag/regering att kontakta, och skicka
+personaliserade brev till sina folkvalda — utan att plattformen själv blir
+avsändare. Live på [politiker.denied.se](https://politiker.denied.se).
 
-Se `~/.claude/plans/virtual-inventing-bear.md` för bakgrund/arkitekturbeslut.
+## Funktioner
+
+- **Konto**: e-post+lösenord eller OAuth-inloggning (Google, GitHub, Microsoft), TOTP 2FA, glömt lösenord
+- **Mailkoppling**: Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller Microsoft Graph utan lösenord
+- **Mottagarval**: sökbar lista över kommuner, regioner, riksdag och regering
+- **Brev**: HTML/textredigerare, ämnesrad (full åäö/UTF-8-stöd), bilagor (PDF/txt/doc/docx, automatisk konvertering till brevtext)
+- **Flerspråkigt gränssnitt**: 18 språk (svenska, engelska, nordiska språk, tyska, franska, spanska, polska, turkiska, ryska, ukrainska, arabiska, persiska, somaliska, kinesiska, hindi) — automatisk detektion + manuellt val, hela gränssnittet inklusive dynamiska meddelanden
+- **API-nycklar**: programmatisk åtkomst (`Authorization: Bearer <nyckel>`) som alternativ till webbläsarinloggning
+- **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering
+- **Admin-panel**: konton + feedback-översikt för admin-konton
+- **Automatisk felrapportering**: oväntade JS-fel skickas till `/api/feedback` utan att användaren behöver göra något
 
 ## Struktur
 
-- `app/` — huvud-Worker: statisk frontend + API (auth, mail-credentials, mottagarval, brev, feedback)
-- `sender/` — Queue consumer-Worker: faktisk SMTP-sändning via `cloudflare:sockets`
-- `shared/` — kod som delas mellan de två (kryptering, SMTP-klient, typer)
-- `infra/` — Cloudflare-provisionering (`cf-api.sh`, `schema.sql`, `cloudflare-resources.json`)
+- `app/` — huvud-Worker: statisk frontend (`public/`, inkl. `i18n.js`) + API (auth, mail-credentials, mottagarval, brev, feedback, API-nycklar, admin)
+- `sender/` — Queue consumer-Worker: faktisk SMTP-/Graph-sändning
+- `shared/` — kod som delas mellan de två (kryptering, SMTP-klient, TOTP, Graph-mail, typer)
+- `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`)
 
 ## Sätta upp lokalt
 
@@ -33,18 +44,42 @@ openssl rand -base64 32   # generera MAIL_CRED_KEY
 cd app && npx wrangler secret put MAIL_CRED_KEY
 npx wrangler secret put SYSTEM_SMTP_PASSWORD
 npx wrangler secret put GITHUB_FEEDBACK_TOKEN
+npx wrangler secret put OAUTH_GOOGLE_CLIENT_SECRET
+npx wrangler secret put OAUTH_GITHUB_CLIENT_SECRET
+npx wrangler secret put OAUTH_MICROSOFT_CLIENT_SECRET
 npx wrangler deploy
 
 cd ../sender && npx wrangler secret put MAIL_CRED_KEY   # samma värde som ovan
+npx wrangler secret put OAUTH_MICROSOFT_CLIENT_SECRET    # samma värde som ovan, för tokenförnyelse
 npx wrangler deploy
 ```
 
 ## Status
 
-Live på politiker.denied.se. Signup/verifiering/login/mailkoppling/D1-synk
-verifierat end-to-end 2026-06-22 (16 073 politiker, 257 områden synkade).
+Live på politiker.denied.se. Inloggning med e-post, Google, GitHub och
+Microsoft är fullt konfigurerad och verifierad live, liksom
+passwordlös mailkoppling via Microsoft Graph.
 
-Kända Workers-specifika fallgropar som hittades och fixades under verifiering:
+**Avsiktligt inte byggt** (väntar på donationsintäkter för att täcka kostnad):
+- **Apple-inloggning** — kräver betalt Apple Developer-konto (99 USD/år) + JWT-signerad client secret.
+- **Gmail-OAuth för mailsändning** — kräver Googles CASA-säkerhetsgranskning (några hundra till tusentals USD, återkommande årligen).
+
+### Driftsövervakning
+
+Två oberoende hälsokontroller, ingen beroende av den andra eller av
+operatörens egen server:
+- Lokal cron-rutin på operatörens server (full skrivåtkomst, mejlar status)
+- Molnbaserad daglig rutin (`politiker-webapp-cloud-healthcheck`, läsbehörighet
+  endast) som postar till Slack
+
+En tredje molnrutin (`politiker-webapp-token-maintenance`, veckovis) håller
+Cloudflare API-tokens förnyade automatiskt och varnar i Slack om den
+GitHub-token som inte kan roteras programmatiskt (GitHub saknar API för
+att skapa/rotera personliga åtkomsttokens) börjar närma sig sin utgång.
+
+### Kända Workers-specifika fallgropar
+
+Hittade och fixade under utveckling/drift:
 - PBKDF2 i Workers' WebCrypto stödjer max 100 000 iterationer (inte t.ex. 210 000).
 - `socket.startTls()` kräver att writer/reader släpps med `.releaseLock()`
   innan anropet — `.close()` håller kvar låset och TLS-uppgraderingen kastar fel.
@@ -55,13 +90,10 @@ Kända Workers-specifika fallgropar som hittades och fixades under verifiering:
 - Kontot har Cloudflare Access (Zero Trust) med default-deny — en egen
   Access-app med "bypass"-policy (`everyone`) krävdes för att göra
   politiker.denied.se publik, utan att röra de andra apparnas privata policies.
-
-## Väntar på manuella steg (kräver inloggning hos tredjepartstjänster)
-
-Koden är klar för dessa, men inaktiv tills riktiga Client ID/Secret finns:
-
-- **Google-inloggning** (`/api/oauth/google/start`) — skapa OAuth-app i Google Cloud Console, redirect URI `https://politiker.denied.se/api/oauth/google/callback`. `OAUTH_GOOGLE_CLIENT_ID` (var) + `OAUTH_GOOGLE_CLIENT_SECRET` (secret) i `app`.
-- **GitHub-inloggning** (`/api/oauth/github/start`) — github.com/settings/developers, redirect URI `.../api/oauth/github/callback`. Samma var/secret-mönster.
-- **Microsoft-inloggning + mailsändning** (`/api/oauth/microsoft/start` samt `/api/oauth-mail/microsoft/start`) — portal.azure.com → App registrations. Behöver **två** redirect URIs registrerade på samma app: `.../api/oauth/microsoft/callback` (inloggning) och `.../api/oauth-mail/microsoft/callback` (mailsändning via Graph, kräver `Mail.Send` + `offline_access`-behörighet). `OAUTH_MICROSOFT_CLIENT_ID` behövs i **både** `app` (var) och `sender` (var, för tokenförnyelse) — `OAUTH_MICROSOFT_CLIENT_SECRET` som secret i båda.
-- **Apple-inloggning** — avsiktligt inte byggd än. Kräver betalt Apple Developer-konto (99 USD/år) + JWT-signerad client secret. Görs när det finns donationsintäkter att täcka kostnaden med.
-- **Gmail-OAuth för mailsändning** (motsvarande Microsoft Graph-flödet, men för Gmail) — avsiktligt inte byggd. Kräver Googles CASA-säkerhetsgranskning (några hundra till tusentals USD, återkommande årligen) för `gmail.send`-scopet. Görs när det finns donationsintäkter, om alls.
+- **`run_worker_first` krävs för `/api/*`-vägar** när `not_found_handling`
+  är satt till `single-page-application` — annars kan Cloudflares
+  static-asset-lager servera SPA-fallbacken direkt för API-anrop **utan att
+  Workern körs alls**, vilket i kombination med Cloudflares "Speed Brain"
+  (spekulativ förhämtning av länkar) orsakade att OAuth-inloggningsknappar
+  tystnade och bara verkade ladda om sidan, fast i ett cache-lager som inte
+  rensas av vanlig `purge_cache`.
