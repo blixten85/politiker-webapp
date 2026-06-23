@@ -10,7 +10,7 @@ import type { Env } from "./db";
 // Granskningsmailet skickas MEDVETET via det dedikerade Outlook-kontot, inte
 // plattformens systemmail (denied.se) — hela den här funktionen ska hållas
 // helt skild från användarens egen identifierbara adress.
-const APPROVAL_NOTIFY_EMAIL = "steedpower3@gmail.com";
+const APPROVAL_NOTIFY_EMAIL = "anders.eriksson@denied.se";
 const OUTLOOK_SMTP_CONFIG = {
   host: "smtp.office365.com",
   port: 587,
