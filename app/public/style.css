@@ -190,9 +190,9 @@ button:disabled { background: var(--hint); border-color: var(--hint); opacity: 0
 .area-group-list { padding-left: 0.5rem; }
 .area-group-list label, #area-groups label { display: block; padding: 0.15rem 0; }
 
-#exclude-details { margin-top: 0.8rem; }
-#exclude-details summary { cursor: pointer; color: var(--link); }
-#party-exclude-list label, #exclude-search-results label { display: block; padding: 0.15rem 0; }
+#exclude-details, #role-filter-details { margin-top: 0.8rem; }
+#exclude-details summary, #role-filter-details summary { cursor: pointer; color: var(--link); }
+#party-exclude-list label, #exclude-search-results label, #role-filter-list label { display: block; padding: 0.15rem 0; }
 #exclude-search { margin-top: 0.5rem; }
 #excluded-list li button { margin-left: 0.5rem; }
 

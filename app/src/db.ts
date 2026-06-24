@@ -82,6 +82,19 @@ export async function listParties(db: D1Database) {
   return results;
 }
 
+// Distinkta befattningar per område — bara rader där befattning faktiskt
+// är känd. Används för att låta användaren begränsa till t.ex. bara
+// "Ordförande" inom valda områden.
+export async function listRoles(db: D1Database) {
+  const { results } = await db
+    .prepare(
+      `SELECT area_type, area_name, role, COUNT(*) as count FROM politicians
+       WHERE role IS NOT NULL GROUP BY area_type, area_name, role ORDER BY area_type, area_name, role`,
+    )
+    .all();
+  return results;
+}
+
 // Sökning bland politiker inom redan valda områden — används för att
 // låta användaren plocka ut och exkludera enskilda mottagare ur en
 // annars bred kategori-/områdesmarkering.
@@ -104,6 +117,7 @@ export async function getRecipientsForAreas(
   areaNames: string[],
   excludeParties: string[] = [],
   excludeEmails: string[] = [],
+  includeRoles: string[] = [],
 ) {
   if (areaNames.length === 0) return [];
   const areaPlaceholders = areaNames.map(() => "?").join(",");
@@ -117,6 +131,10 @@ export async function getRecipientsForAreas(
   if (excludeEmails.length > 0) {
     sql += ` AND email NOT IN (${excludeEmails.map(() => "?").join(",")})`;
     params.push(...excludeEmails);
+  }
+  if (includeRoles.length > 0) {
+    sql += ` AND role IN (${includeRoles.map(() => "?").join(",")})`;
+    params.push(...includeRoles);
   }
 
   const { results } = await db

@@ -14,6 +14,7 @@ export async function createAndEnqueueSendJob(
     areaNames: string[];
     excludeParties?: string[];
     excludeEmails?: string[];
+    includeRoles?: string[];
   },
 ): Promise<{ sendJobId: string; totalRecipients: number }> {
   const account = await env.DB.prepare("SELECT daily_send_cap FROM accounts WHERE id = ?").bind(accountId).first<{ daily_send_cap: number }>();
@@ -22,7 +23,13 @@ export async function createAndEnqueueSendJob(
   const credential = await getMailCredential(env.DB, input.mailCredentialId);
   if (!credential || credential.account_id !== accountId) throw new Error("Mailkoppling saknas");
 
-  const recipients = await getRecipientsForAreas(env.DB, input.areaNames, input.excludeParties ?? [], input.excludeEmails ?? []);
+  const recipients = await getRecipientsForAreas(
+    env.DB,
+    input.areaNames,
+    input.excludeParties ?? [],
+    input.excludeEmails ?? [],
+    input.includeRoles ?? [],
+  );
   if (recipients.length === 0) throw new Error("Inga mottagare matchar valda områden");
 
   const alreadySentToday = await countSentToday(env.DB, accountId);
