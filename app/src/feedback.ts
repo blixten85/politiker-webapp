@@ -36,6 +36,8 @@ export async function submitFeedback(
             "---",
             `Konto: ${input.accountId ?? "ej inloggad"}`,
             input.context ? `Kontext: \`\`\`json\n${JSON.stringify(input.context, null, 2)}\n\`\`\`` : "",
+            "",
+            "@claude",
           ].join("\n"),
           labels: ["feedback", "user-reported"],
         }),

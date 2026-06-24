@@ -28,6 +28,7 @@ import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
+import { draftLetter } from "./draft-letter";
 import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
 import {
   approveCivicLetterDraft,
@@ -379,6 +380,30 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         const { userCapPct } = await req.json<{ userCapPct: number }>();
         const result = await updateMailCredentialCapPct(env, accountId, capPctMatch[1], userCapPct);
         return json(result);
+      }
+
+      if (url.pathname === "/api/draft-letter" && req.method === "POST") {
+        // Litet dygnstak — anropet kostar pengar (LLM + websökning) per
+        // gång, oberoende av om mottagarlistan/utskicket annars är fritt.
+        // OBS: best-effort, inte en hård spärr — KV är eventually consistent
+        // och count+put är inte atomiskt, så några samtidiga requests kan i
+        // teorin slinka förbi gränsen. Acceptabelt för ett kostnadsskydd i
+        // den här skalan; en Durable Object skulle krävas för en hård gräns.
+        const DAILY_DRAFT_LIMIT = 10;
+        const rateLimitKey = `draft-rate:${accountId}:${new Date().toISOString().slice(0, 10)}`;
+        const currentCount = parseInt((await env.SESSIONS.get(rateLimitKey)) ?? "0", 10);
+        if (currentCount >= DAILY_DRAFT_LIMIT) {
+          return json({ error: `Max ${DAILY_DRAFT_LIMIT} AI-utkast per dygn, prova igen imorgon.` }, 429);
+        }
+
+        const { topic, areaType } = await req.json<{ topic?: string; areaType?: string }>();
+        try {
+          const result = await draftLetter(env, { topic, areaType });
+          await env.SESSIONS.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 60 * 60 * 24 });
+          return json(result);
+        } catch (err) {
+          return json({ error: err instanceof Error ? err.message : "Okänt fel" }, 502);
+        }
       }
 
       if (url.pathname === "/api/send" && req.method === "POST") {

@@ -59,10 +59,23 @@ async function autoReportError(message, extra = {}) {
   }
 }
 
+// Webbläsartillägg injicerar egen kod på sidan, och fel DÄRIFRÅN dyker upp i
+// samma globala error/unhandledrejection-händelser som våra egna — utan att
+// vara något vi kan göra något åt (vi har ingen insyn i tilläggets kod).
+// Webkit/Firefox/Chrome maskar eller döper om käll-URL:en till tilläggets
+// egna protokoll i det fallet, vilket vi kan filtrera bort innan rapportering.
+const EXTERNAL_SCRIPT_MARKERS = ["-extension://", "webkit-masked-url", "safari-web-extension"];
+function looksLikeExternalScript(filename, stack) {
+  const text = `${filename ?? ""} ${stack ?? ""}`;
+  return EXTERNAL_SCRIPT_MARKERS.some((marker) => text.includes(marker));
+}
+
 window.addEventListener("error", (e) => {
+  if (looksLikeExternalScript(e.filename, e.error?.stack)) return;
   autoReportError(e.message, { stack: e.error?.stack });
 });
 window.addEventListener("unhandledrejection", (e) => {
+  if (looksLikeExternalScript(null, e.reason?.stack)) return;
   autoReportError(String(e.reason?.message ?? e.reason), { stack: e.reason?.stack });
 });
 
@@ -563,6 +576,39 @@ window.addEventListener("beforeunload", (e) => {
   if (letterUnsaved) {
     e.preventDefault();
     e.returnValue = "";
+  }
+});
+
+document.getElementById("ai-draft-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("ai-draft-btn");
+  const status = document.getElementById("ai-draft-status");
+  const topic = document.getElementById("ai-draft-topic").value.trim();
+
+  // Grov gissning av mottagartyp för ton, baserat på vilka områden som är
+  // markerade — bara en hint, behöver inte vara exakt.
+  const typeCounts = {};
+  for (const a of allAreas) {
+    if (selectedAreas.has(a.area_name)) typeCounts[a.area_type] = (typeCounts[a.area_type] ?? 0) + 1;
+  }
+  const areaType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
+
+  btn.disabled = true;
+  status.textContent = t("msg_ai_draft_loading");
+  try {
+    const result = await api("/api/draft-letter", {
+      method: "POST",
+      body: JSON.stringify({ topic: topic || undefined, areaType }),
+    });
+    document.getElementById("letter-subject").value = result.subject;
+    document.getElementById("letter-body").value = result.htmlBody;
+    document.getElementById("letter-body").dispatchEvent(new Event("input"));
+    status.textContent = result.sources.length
+      ? t("msg_ai_draft_done_with_sources", { count: result.sources.length })
+      : t("msg_ai_draft_done");
+  } catch (err) {
+    status.textContent = err.message;
+  } finally {
+    btn.disabled = false;
   }
 });
 
