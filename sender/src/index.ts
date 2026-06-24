@@ -2,11 +2,16 @@ import { decryptSecret, encryptSecret, randomId } from "../../shared/crypto";
 import { sendSmtpMail, SmtpError } from "../../shared/smtp";
 import { sendGraphMail, refreshMicrosoftToken } from "../../shared/graph-mail";
 import type { SendJobMessage } from "../../shared/types";
+import { messagesPerMinuteFor } from "../../shared/provider-rates";
+import { CredentialRateLimiter } from "./rate-limiter";
+
+export { CredentialRateLimiter };
 
 interface Env {
   DB: D1Database;
   ATTACHMENTS: R2Bucket;
   MAIL_CRED_KEY: string;
+  RATE_LIMITER: DurableObjectNamespace;
   OAUTH_MICROSOFT_CLIENT_ID?: string;
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
 }
@@ -25,6 +30,48 @@ interface CredentialRow {
 
 const BOUNCE_ABORT_RATE = 25; // % — samma typ av kretsbrytare som send_daily_batch.sh
 const MIN_FOR_RATE_CHECK = 10;
+
+// Frågar credentialns Durable Object om det finns en "token" att skicka med
+// just nu — DELAD mellan ALLA jobb som använder samma mailkonto (oavsett
+// vilken kö-invocation som frågar, tack vare DO:ns serialisering), så två
+// jobb mot samma konto aldrig tillsammans överskrider leverantörens takt.
+// Olika mailkonton har varsin DO-instans och konkurrerar aldrig om samma kvot.
+async function acquireSendSlot(env: Env, credentialId: string, provider: string): Promise<{ granted: boolean; retryAfterMs?: number }> {
+  const refillPerMinute = messagesPerMinuteFor(provider);
+  const id = env.RATE_LIMITER.idFromName(credentialId);
+  const stub = env.RATE_LIMITER.get(id);
+  const resp = await stub.fetch("https://rate-limiter/acquire", {
+    method: "POST",
+    body: JSON.stringify({ capacity: refillPerMinute, refillPerMinute }),
+  });
+  return resp.json<{ granted: boolean; retryAfterMs?: number }>();
+}
+
+// MAX_WAIT_MS: hur länge EN meddelandebehandling väntar in-process på en
+// ledig token innan den ger upp och lämnar tillbaka meddelandet till kön.
+// Avsiktligt rymligt (4 min) eftersom queue()-invocations tillåts köra
+// betydligt längre än ett vanligt HTTP-svar, och varje gång vi istället
+// måste falla tillbaka på queueMsg.retry() förbrukar det en av meddelandets
+// begränsade max_retries-försök trots att inget faktiskt misslyckats —
+// ju mer vi kan absorbera här inne, desto mindre risk att ett legitimt
+// mejl ger upp permanent bara på grund av en tillfällig backlog.
+const MAX_WAIT_MS = 4 * 60 * 1000;
+const POLL_INTERVAL_CAP_MS = 15_000;
+
+async function waitForSendSlot(env: Env, credentialId: string, provider: string): Promise<boolean> {
+  const deadline = Date.now() + MAX_WAIT_MS;
+  while (true) {
+    const slot = await acquireSendSlot(env, credentialId, provider);
+    if (slot.granted) return true;
+    const waitMs = Math.min(slot.retryAfterMs ?? 1000, POLL_INTERVAL_CAP_MS);
+    if (Date.now() + waitMs > deadline) return false;
+    await sleep(waitMs);
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export default {
   async queue(batch: MessageBatch<SendJobMessage>, env: Env): Promise<void> {
@@ -81,6 +128,17 @@ async function processJobMessages(
     const queueMsg = batch.messages.find((qm) => qm.body === m)!;
     if (aborted) {
       queueMsg.retry(); // låt resten vänta till nästa batch / manuell granskning
+      continue;
+    }
+
+    if (!(await waitForSendSlot(env, credentialId, credentialRow.provider))) {
+      // Väntat förbi taket utan att få en token — ovanligt (stor backlog +
+      // låg takt). queueMsg.retry() här (inte ack) så meddelandet kommer
+      // tillbaka senare istället för att tappas, men det förbrukar tyvärr en
+      // av meddelandets max_retries trots att inget faktiskt misslyckades —
+      // se MAX_WAIT_MS-kommentaren ovanför waitForSendSlot för varför taket
+      // satts generöst för att göra detta sällsynt.
+      queueMsg.retry({ delaySeconds: 30 });
       continue;
     }
 

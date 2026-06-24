@@ -14,9 +14,14 @@
   "queues": {
     "consumers": [
       {
+        // max_retries höjt 3 -> 10: riktiga SMTP-fel ackas direkt (aldrig
+        // retry, se index.ts) så detta påverkar dem inte — det ger bara
+        // extra marginal åt den sällsynta fallback-vägen där
+        // waitForSendSlot() gett upp efter MAX_WAIT_MS och meddelandet
+        // läggs tillbaka i kön för att vänta in en ledig rate-limit-token.
         "queue": "politiker-send-jobs",
         "max_batch_size": 10,
-        "max_retries": 3,
+        "max_retries": 10,
         "max_concurrency": 5
       }
     ]
@@ -25,6 +30,20 @@
     {
       "binding": "ATTACHMENTS",
       "bucket_name": "politiker-webapp-attachments"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "class_name": "CredentialRateLimiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CredentialRateLimiter"]
     }
   ],
   "vars": {
