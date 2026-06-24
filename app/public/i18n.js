@@ -291,6 +291,8 @@ registerTranslations("sv", {
   msg_cap_updated: "Ny gräns: {cap} brev/dag ({pct}%)",
   faq_q8: "Varför finns det en gräns för hur många brev jag kan skicka per dag?",
   faq_a8: "Din mailleverantör (Gmail, Outlook, iCloud, Yahoo) har egna gränser för hur många mejl ett konto får skicka per dygn. Om du skickar fler riskerar leverantören att tillfälligt blockera eller flagga ditt konto. Vi sätter därför ett tak på 10% under leverantörens kända gräns, så att din vanliga mailanvändning på samma konto inte trängs ut och du har marginal. Du kan själv välja att använda en lägre andel av det taket (t.ex. 50%) om du vill vara extra säker — men aldrig en högre andel än taket tillåter.",
+  faq_q9: "Vilken information har ni om politikerna, och kan jag filtrera utskicket?",
+  faq_a9: "Vi har samlat namn, mailadress och område (kommun/region/riksdag/regering/EU) för alla folkvalda, och där det är känt även parti och befattning (t.ex. ordförande, ledamot). Du kan kombinera fritt i mottagarväljaren: skicka till en hel kategori (t.ex. alla EU-parlamentariker), begränsa till en specifik befattning (t.ex. bara ordförande i alla kommuner), exkludera ett parti, eller plocka bort enskilda mottagare — innan du skickar.",
 });
 
 registerTranslations("en", {
@@ -477,6 +479,8 @@ registerTranslations("en", {
   msg_cap_updated: "New cap: {cap} letters/day ({pct}%)",
   faq_q8: "Why is there a limit on how many letters I can send per day?",
   faq_a8: "Your mail provider (Gmail, Outlook, iCloud, Yahoo) has its own limits on how many emails an account can send per day. Sending more risks your provider temporarily blocking or flagging your account. We therefore set a cap at 10% below the provider's known limit, so your normal email use on the same account isn't crowded out and you have margin. You can choose to use a lower share of that cap yourself (e.g. 50%) if you want extra safety — but never a higher share than the cap allows.",
+  faq_q9: "What information do you have on the politicians, and can I filter who I send to?",
+  faq_a9: "We've gathered name, email and area (municipality/region/parliament/government/EU) for all elected officials, and where known, also party and role (e.g. chair, member). You can combine these freely in the recipient picker: send to a whole category (e.g. all MEPs), restrict to a specific role (e.g. only chairs across all municipalities), exclude a party, or remove individual recipients — before sending.",
 });
 
 registerTranslations("no", {
@@ -663,6 +667,8 @@ registerTranslations("no", {
   msg_cap_updated: "Ny grense: {cap} brev/dag ({pct}%)",
   faq_q8: "Hvorfor finnes det en grense for hvor mange brev jeg kan sende per dag?",
   faq_a8: "Din e-postleverandør (Gmail, Outlook, iCloud, Yahoo) har egne grenser for hvor mange e-poster en konto kan sende per dag. Sender du flere, risikerer du at leverandøren midlertidig blokkerer eller flagger kontoen din. Vi setter derfor et tak på 10% under leverandørens kjente grense, slik at din vanlige e-postbruk på samme konto ikke trenges ut, og du har margin. Du kan selv velge å bruke en lavere andel av taket (f.eks. 50%) hvis du vil være ekstra trygg — men aldri en høyere andel enn taket tillater.",
+  faq_q9: "Hvilken informasjon har dere om politikerne, og kan jeg filtrere utsendelsen?",
+  faq_a9: "Vi har samlet navn, e-post og område (kommune/region/storting/regjering/EU) for alle folkevalgte, og der det er kjent også parti og rolle (f.eks. leder, medlem). Du kan kombinere fritt i mottakervelgeren: send til en hel kategori (f.eks. alle EU-parlamentarikere), begrens til en bestemt rolle (f.eks. bare ledere i alle kommuner), utelat et parti, eller fjern enkelte mottakere — før du sender.",
 });
 
 registerTranslations("da", {
@@ -849,6 +855,8 @@ registerTranslations("da", {
   msg_cap_updated: "Ny grænse: {cap} breve/dag ({pct}%)",
   faq_q8: "Hvorfor er der en grænse for, hvor mange breve jeg kan sende per dag?",
   faq_a8: "Din mailudbyder (Gmail, Outlook, iCloud, Yahoo) har egne grænser for, hvor mange e-mails en konto kan sende per dag. Sender du flere, risikerer du, at udbyderen midlertidigt blokerer eller markerer din konto. Vi sætter derfor et loft på 10% under udbyderens kendte grænse, så din normale mailbrug på samme konto ikke fortrænges, og du har margin. Du kan selv vælge at bruge en lavere andel af det loft (f.eks. 50%), hvis du vil være ekstra sikker — men aldrig en højere andel end loftet tillader.",
+  faq_q9: "Hvilke oplysninger har I om politikerne, og kan jeg filtrere udsendelsen?",
+  faq_a9: "Vi har samlet navn, e-mail og område (kommune/region/folketing/regering/EU) for alle folkevalgte, og hvor det er kendt også parti og rolle (f.eks. formand, medlem). Du kan kombinere frit i modtagervælgeren: send til en hel kategori (f.eks. alle MEP'er), begræns til en bestemt rolle (f.eks. kun formænd i alle kommuner), udeluk et parti, eller fjern enkelte modtagere — før du sender.",
 });
 
 registerTranslations("fi", {
@@ -1035,6 +1043,8 @@ registerTranslations("fi", {
   msg_cap_updated: "Uusi raja: {cap} kirjettä/vrk ({pct}%)",
   faq_q8: "Miksi on rajoitus, kuinka monta kirjettä voin lähettää päivässä?",
   faq_a8: "Sähköpostipalveluntarjoajallasi (Gmail, Outlook, iCloud, Yahoo) on omat rajansa sille, kuinka monta sähköpostia tili voi lähettää päivässä. Jos lähetät enemmän, palveluntarjoaja voi väliaikaisesti estää tai merkitä tilisi. Asetamme siksi rajan 10% palveluntarjoajan tunnetun rajan alapuolelle, jotta tavallinen sähköpostin käyttösi samalla tilillä ei häiriinny ja sinulla on liikkumavaraa. Voit itse valita käyttää pienempää osuutta tästä rajasta (esim. 50%), jos haluat olla erityisen varovainen — mutta ei koskaan suurempaa osuutta kuin raja sallii.",
+  faq_q9: "Mitä tietoja teillä on poliitikoista, ja voinko suodattaa lähetystä?",
+  faq_a9: "Olemme keränneet nimen, sähköpostin ja alueen (kunta/maakunta/eduskunta/hallitus/EU) kaikille valituille edustajille, ja tunnetuissa tapauksissa myös puolueen ja tehtävän (esim. puheenjohtaja, jäsen). Voit yhdistellä näitä vapaasti vastaanottajavalitsimessa: lähetä kokonaiselle kategorialle (esim. kaikille EU-parlamentaarikoille), rajaa tiettyyn tehtävään (esim. vain puheenjohtajat kaikissa kunnissa), sulje pois puolue, tai poista yksittäisiä vastaanottajia — ennen lähettämistä.",
 });
 
 registerTranslations("is", {
@@ -1221,6 +1231,8 @@ registerTranslations("is", {
   msg_cap_updated: "Ný mörk: {cap} bréf/dag ({pct}%)",
   faq_q8: "Hvers vegna er takmörkun á því hversu mörg bréf ég get sent á dag?",
   faq_a8: "Tölvupóstveitandinn þinn (Gmail, Outlook, iCloud, Yahoo) hefur eigin mörk fyrir hversu mörg tölvupóst aðgangur getur sent á dag. Ef þú sendir fleiri áhættar þú að veitandinn loki tímabundið eða merki aðgang þinn. Við setjum því þak 10% undir þekktum mörkum veitandans, svo venjuleg tölvupóstnotkun þín á sama aðgangi verði ekki útrýmt og þú hafir svigrúm. Þú getur sjálf/ur valið að nota lægra hlutfall af því þaki (t.d. 50%) ef þú vilt vera extra öruggur — en aldrei hærra hlutfall en þakið leyfir.",
+  faq_q9: "Hvaða upplýsingar hafið þið um stjórnmálamennina, og get ég sigtað sendinguna?",
+  faq_a9: "Við höfum safnað nafni, tölvupósti og svæði (sveitarfélag/svæði/þing/ríkisstjórn/ESB) fyrir alla kjörna fulltrúa, og þar sem það er vitað einnig flokk og stöðu (t.d. formaður, fulltrúi). Þú getur sameinað þetta frjálslega í viðtakendavalinu: senda til heils flokks (t.d. allra ESB-þingmanna), takmarka við ákveðna stöðu (t.d. bara formenn í öllum sveitarfélögum), útiloka flokk, eða fjarlægja einstaka viðtakendur — áður en þú sendir.",
 });
 
 registerTranslations("de", {
@@ -1407,6 +1419,8 @@ registerTranslations("de", {
   msg_cap_updated: "Neue Obergrenze: {cap} Briefe/Tag ({pct}%)",
   faq_q8: "Warum gibt es ein Limit, wie viele Briefe ich pro Tag senden kann?",
   faq_a8: "Ihr E-Mail-Anbieter (Gmail, Outlook, iCloud, Yahoo) hat eigene Limits, wie viele E-Mails ein Konto pro Tag senden kann. Senden Sie mehr, riskieren Sie, dass der Anbieter Ihr Konto vorübergehend blockiert oder markiert. Wir setzen daher eine Obergrenze von 10% unter dem bekannten Anbieterlimit, damit Ihre normale E-Mail-Nutzung auf demselben Konto nicht verdrängt wird und Sie Spielraum haben. Sie können selbst einen niedrigeren Anteil dieser Obergrenze nutzen (z.B. 50%), wenn Sie zusätzliche Sicherheit möchten — aber niemals einen höheren Anteil, als die Obergrenze erlaubt.",
+  faq_q9: "Welche Informationen habt ihr über die Politiker, und kann ich den Versand filtern?",
+  faq_a9: "Wir haben Name, E-Mail und Gebiet (Kommune/Region/Parlament/Regierung/EU) für alle gewählten Vertreter gesammelt, und wo bekannt auch Partei und Funktion (z. B. Vorsitzender, Mitglied). Du kannst das frei in der Empfängerauswahl kombinieren: an eine ganze Kategorie senden (z. B. alle EU-Abgeordneten), auf eine bestimmte Funktion beschränken (z. B. nur Vorsitzende in allen Kommunen), eine Partei ausschließen oder einzelne Empfänger entfernen — vor dem Senden.",
 });
 
 registerTranslations("fr", {
@@ -1593,6 +1607,8 @@ registerTranslations("fr", {
   msg_cap_updated: "Nouveau plafond : {cap} lettres/jour ({pct}%)",
   faq_q8: "Pourquoi y a-t-il une limite au nombre de lettres que je peux envoyer par jour ?",
   faq_a8: "Votre fournisseur de messagerie (Gmail, Outlook, iCloud, Yahoo) a ses propres limites sur le nombre d'e-mails qu'un compte peut envoyer par jour. En envoyer davantage risque de faire bloquer ou signaler temporairement votre compte par le fournisseur. Nous fixons donc un plafond à 10% sous la limite connue du fournisseur, afin que votre usage normal de messagerie sur le même compte ne soit pas évincé et que vous ayez une marge. Vous pouvez choisir d'utiliser vous-même une part inférieure de ce plafond (par ex. 50%) si vous souhaitez plus de sécurité — mais jamais une part supérieure à ce que le plafond permet.",
+  faq_q9: "Quelles informations avez-vous sur les politiciens, et puis-je filtrer l'envoi ?",
+  faq_a9: "Nous avons rassemblé le nom, l'e-mail et la zone (commune/région/parlement/gouvernement/UE) de tous les élus, et lorsque c'est connu, également le parti et la fonction (par ex. président, membre). Vous pouvez combiner cela librement dans le sélecteur de destinataires : envoyer à toute une catégorie (par ex. tous les eurodéputés), limiter à une fonction spécifique (par ex. uniquement les présidents dans toutes les communes), exclure un parti, ou retirer des destinataires individuels — avant l'envoi.",
 });
 
 registerTranslations("es", {
@@ -1779,6 +1795,8 @@ registerTranslations("es", {
   msg_cap_updated: "Nuevo límite: {cap} cartas/día ({pct}%)",
   faq_q8: "¿Por qué hay un límite de cuántas cartas puedo enviar al día?",
   faq_a8: "Tu proveedor de correo (Gmail, Outlook, iCloud, Yahoo) tiene sus propios límites de cuántos correos puede enviar una cuenta al día. Enviar más arriesga que el proveedor bloquee o marque temporalmente tu cuenta. Por eso establecemos un límite del 10% por debajo del límite conocido del proveedor, para que tu uso normal de correo en la misma cuenta no se vea desplazado y tengas margen. Puedes elegir usar tú mismo una parte menor de ese límite (p.ej. 50%) si quieres más seguridad — pero nunca una parte mayor de la que el límite permite.",
+  faq_q9: "¿Qué información tenéis sobre los políticos, y puedo filtrar el envío?",
+  faq_a9: "Hemos recopilado nombre, correo electrónico y área (municipio/región/parlamento/gobierno/UE) de todos los cargos electos, y cuando se conoce, también el partido y el cargo (p. ej. presidente, miembro). Puedes combinar esto libremente en el selector de destinatarios: enviar a toda una categoría (p. ej. todos los eurodiputados), limitar a un cargo específico (p. ej. solo presidentes en todos los municipios), excluir un partido, o quitar destinatarios individuales — antes de enviar.",
 });
 
 registerTranslations("pl", {
@@ -1965,6 +1983,8 @@ registerTranslations("pl", {
   msg_cap_updated: "Nowy limit: {cap} listów/dzień ({pct}%)",
   faq_q8: "Czemu istnieje limit liczby listów, które mogę wysłać dziennie?",
   faq_a8: "Twój dostawca poczty (Gmail, Outlook, iCloud, Yahoo) ma własne limity liczby e-maili, które konto może wysłać dziennie. Wysyłając więcej, ryzykujesz tymczasowe zablokowanie lub oflagowanie konta przez dostawcę. Dlatego ustawiamy limit na 10% poniżej znanego limitu dostawcy, aby Twoje normalne korzystanie z poczty na tym samym koncie nie zostało wypchnięte i miałeś margines. Możesz sam wybrać niższą część tego limitu (np. 50%), jeśli chcesz dodatkowego bezpieczeństwa — ale nigdy wyższą część, niż limit pozwala.",
+  faq_q9: "Jakie informacje mają Państwo o politykach i czy mogę filtrować wysyłkę?",
+  faq_a9: "Zebraliśmy imię i nazwisko, e-mail oraz obszar (gmina/region/parlament/rząd/UE) dla wszystkich wybranych przedstawicieli, a tam gdzie znane, także partię i funkcję (np. przewodniczący, członek). Możesz to swobodnie kombinować w wyborze odbiorców: wysłać do całej kategorii (np. wszystkich europosłów), ograniczyć do konkretnej funkcji (np. tylko przewodniczących we wszystkich gminach), wykluczyć partię lub usunąć poszczególnych odbiorców — przed wysłaniem.",
 });
 
 registerTranslations("tr", {
@@ -2151,6 +2171,8 @@ registerTranslations("tr", {
   msg_cap_updated: "Yeni sınır: günde {cap} mektup (%{pct})",
   faq_q8: "Günde kaç mektup gönderebileceğime neden bir sınır var?",
   faq_a8: "E-posta sağlayıcınızın (Gmail, Outlook, iCloud, Yahoo) bir hesabın günde kaç e-posta gönderebileceğine dair kendi sınırları vardır. Daha fazla gönderirseniz, sağlayıcının hesabınızı geçici olarak engelleme veya işaretleme riski vardır. Bu nedenle, aynı hesaptaki normal e-posta kullanımınızın dışlanmaması ve bir marjınız olması için sağlayıcının bilinen sınırının %10 altında bir sınır belirliyoruz. Daha fazla güvenlik istiyorsanız bu sınırın daha düşük bir bölümünü (örn. %50) kendiniz seçebilirsiniz — ama sınırın izin verdiğinden daha yüksek bir bölümü asla.",
+  faq_q9: "Politikacılar hakkında hangi bilgilere sahipsiniz ve gönderimi filtreleyebilir miyim?",
+  faq_a9: "Tüm seçilmiş yetkililer için ad, e-posta ve bölge (belediye/bölge/parlamento/hükümet/AB) bilgilerini topladık ve bilindiği durumlarda parti ve görevi de (örn. başkan, üye). Alıcı seçicide bunları özgürce birleştirebilirsiniz: tüm bir kategoriye gönderin (örn. tüm AP üyeleri), belirli bir göreve sınırlayın (örn. tüm belediyelerde sadece başkanlar), bir partiyi hariç tutun veya bireysel alıcıları kaldırın — göndermeden önce.",
 });
 
 registerTranslations("ru", {
@@ -2337,6 +2359,8 @@ registerTranslations("ru", {
   msg_cap_updated: "Новый лимит: {cap} писем/день ({pct}%)",
   faq_q8: "Почему есть ограничение на количество писем, которые я могу отправить в день?",
   faq_a8: "Ваш почтовый провайдер (Gmail, Outlook, iCloud, Yahoo) имеет собственные ограничения на количество писем, которые аккаунт может отправить в день. Отправка большего количества рискует тем, что провайдер временно заблокирует или пометит ваш аккаунт. Поэтому мы устанавливаем лимит на 10% ниже известного лимита провайдера, чтобы ваше обычное использование почты на том же аккаунте не было вытеснено, и у вас был запас. Вы можете сами выбрать использовать более низкую долю этого лимита (например, 50%), если хотите дополнительной безопасности — но никогда более высокую долю, чем позволяет лимит.",
+  faq_q9: "Какая у вас информация о политиках, и могу ли я фильтровать рассылку?",
+  faq_a9: "Мы собрали имя, email и область (муниципалитет/регион/парламент/правительство/ЕС) для всех избранных представителей, а где известно — также партию и должность (например, председатель, член). Вы можете свободно комбинировать это в выборе получателей: отправить целой категории (например, всем депутатам Европарламента), ограничить определённой должностью (например, только председателям во всех муниципалитетах), исключить партию или убрать отдельных получателей — перед отправкой.",
 });
 
 registerTranslations("uk", {
@@ -2523,6 +2547,8 @@ registerTranslations("uk", {
   msg_cap_updated: "Новий ліміт: {cap} листів/день ({pct}%)",
   faq_q8: "Чому є обмеження на кількість листів, які я можу надіслати за день?",
   faq_a8: "Ваш поштовий провайдер (Gmail, Outlook, iCloud, Yahoo) має власні обмеження на кількість листів, які акаунт може надіслати за день. Надсилаючи більше, ви ризикуєте, що провайдер тимчасово заблокує або позначить ваш акаунт. Тому ми встановлюємо ліміт на 10% нижче відомого лімту провайдера, щоб ваше звичайне використання пошти на тому самому акаунті не було витіснене, і у вас був запас. Ви можете самі обрати використовувати нижчу частку цього лімту (напр. 50%), якщо хочете додаткової безпеки — але ніколи вищу частку, ніж дозволяє ліміт.",
+  faq_q9: "Яку інформацію ви маєте про політиків, і чи можу я фільтрувати розсилку?",
+  faq_a9: "Ми зібрали ім'я, email та область (муніципалітет/регіон/парламент/уряд/ЄС) для всіх обраних представників, а де відомо — також партію та посаду (наприклад, голова, член). Ви можете вільно комбінувати це у виборі отримувачів: надіслати цілій категорії (наприклад, усім депутатам Європарламенту), обмежити певною посадою (наприклад, лише головам в усіх муніципалітетах), виключити партію або видалити окремих отримувачів — перед надсиланням.",
 });
 
 registerTranslations("ar", {
@@ -2709,6 +2735,8 @@ registerTranslations("ar", {
   msg_cap_updated: "الحد الجديد: {cap} رسالة/يوم ({pct}%)",
   faq_q8: "لماذا يوجد حد لعدد الرسائل التي يمكنني إرسالها يوميًا؟",
   faq_a8: "مزود البريد الإلكتروني الخاص بك (Gmail، Outlook، iCloud، Yahoo) لديه حدوده الخاصة لعدد الرسائل التي يمكن لحساب إرسالها يوميًا. إرسال المزيد يعرضك لخطر حظر أو وضع علامة على حسابك مؤقتًا من قبل المزود. لذلك نضع حدًا أقل بـ10% من الحد المعروف للمزود، حتى لا يُزاحم استخدامك العادي للبريد على نفس الحساب وتحصل على هامش. يمكنك اختيار استخدام نسبة أقل من هذا الحد بنفسك (مثل 50%) إذا كنت تريد أمانًا إضافيًا — ولكن أبدًا نسبة أعلى مما يسمح به الحد.",
+  faq_q9: "ما المعلومات التي تملكونها عن السياسيين، وهل يمكنني تصفية الإرسال؟",
+  faq_a9: "قمنا بجمع الاسم والبريد الإلكتروني والمنطقة (البلدية/المنطقة/البرلمان/الحكومة/الاتحاد الأوروبي) لجميع المسؤولين المنتخبين، وعند معرفته أيضًا الحزب والمنصب (مثل الرئيس، العضو). يمكنك الجمع بين هذه بحرية في أداة اختيار المستلمين: الإرسال إلى فئة كاملة (مثل جميع نواب البرلمان الأوروبي)، التقييد بمنصب معين (مثل فقط الرؤساء في جميع البلديات)، استثناء حزب، أو إزالة مستلمين فرديين — قبل الإرسال.",
 });
 
 registerTranslations("fa", {
@@ -2895,6 +2923,8 @@ registerTranslations("fa", {
   msg_cap_updated: "سقف جدید: {cap} نامه در روز (٪{pct})",
   faq_q8: "چرا محدودیتی برای تعداد نامه‌هایی که می‌توانم در روز ارسال کنم وجود دارد؟",
   faq_a8: "ارائه‌دهنده ایمیل شما (Gmail، Outlook، iCloud، Yahoo) محدودیت‌های خاص خود را برای تعداد ایمیل‌هایی که یک حساب می‌تواند در روز ارسال کند دارد. ارسال بیشتر، خطر مسدود شدن یا علامت‌گذاری موقت حساب شما توسط ارائه‌دهنده را افزایش می‌دهد. بنابراین ما سقفی ۱۰٪ پایین‌تر از حد شناخته‌شده ارائه‌دهنده تعیین می‌کنیم، تا استفاده عادی شما از ایمیل در همان حساب کنار گذاشته نشود و حاشیه‌ای داشته باشید. شما می‌توانید خودتان سهم کمتری از این سقف (مثلاً ۵۰٪) را برای امنیت بیشتر انتخاب کنید — اما هرگز سهمی بیشتر از آنچه سقف اجازه می‌دهد.",
+  faq_q9: "چه اطلاعاتی درباره سیاستمداران دارید، و آیا می‌توانم ارسال را فیلتر کنم؟",
+  faq_a9: "ما نام، ایمیل و منطقه (شهرداری/منطقه/پارلمان/دولت/اتحادیه اروپا) همه نمایندگان منتخب را جمع‌آوری کرده‌ایم، و در صورت شناخته‌شدن، حزب و سمت (مثل رئیس، عضو) را نیز. می‌توانید این‌ها را آزادانه در انتخابگر گیرندگان ترکیب کنید: ارسال به یک دسته کامل (مثلاً همه نمایندگان پارلمان اروپا)، محدود کردن به یک سمت خاص (مثلاً فقط روسا در همه شهرداری‌ها)، حذف یک حزب، یا حذف گیرندگان جداگانه — قبل از ارسال.",
 });
 
 registerTranslations("so", {
@@ -3081,6 +3111,8 @@ registerTranslations("so", {
   msg_cap_updated: "Xadka cusub: {cap} warqadood/maalin ({pct}%)",
   faq_q8: "Maxaa loo baahan yahay xad ku saabsan immisa warqadood ee aan maalin kasta diri karo?",
   faq_a8: "Bixiyaha email-kaaga (Gmail, Outlook, iCloud, Yahoo) wuxuu leeyahay xaddidaad gaar ah oo ku saabsan immisa email akoonku uu diri karo maalin kasta. Haddii aad dirto in ka badan, waxaa jira khatar ah in bixiyuhu si ku meel gaar ah u xanniba ama calaamadeeyo akoonkaaga. Sidaa darteed waxaan dejinaa xad 10% ka hooseeya xadka la yaqaan ee bixiyaha, si isticmaalkaaga caadiga ah ee email-ka ee isla akoonka aanu loo saarin oo aad u lahaato boos dhaaf ah. Waxaad keligaa dooran kartaa inaad isticmaalo qayb ka yar xadkaas (tusaale 50%) haddii aad rabto ammaan dheeraad ah — laakiin marnaba qayb ka badan inta xadku oggol yahay.",
+  faq_q9: "Macluumaadkee ayaad ku haysaan siyaasiyiinta, oo ma kala saari karaa diritaanka?",
+  faq_a9: "Waxaan ku ururinay magaca, emailka iyo gobolka (degmada/gobolka/baarlamaanka/dawladda/EU) dhammaan shaqsiyaadka la doortay, halka la ogyahay sidoo kale xubinnimada iyo doorka (tusaale, guddoomiye, xubin). Waxaad si xor ah uga isku darsan kartaa kuwan dooratayaasha helayaal: u dir qaybta oo dhan (tusaale, dhammaan xubnaha baarlamaanka Yurub), ku xaddidan doorka gaarka ah (tusaale, kaliya guddoomiyayaasha degmooyinka oo dhan), ka saar xubinnimo, ama ka saar helayaal gaar ah — ka hor diritaanka.",
 });
 
 registerTranslations("zh", {
@@ -3267,6 +3299,8 @@ registerTranslations("zh", {
   msg_cap_updated: "新上限：每天 {cap} 封信（{pct}%）",
   faq_q8: "为什么每天能发送的信件数量有限制？",
   faq_a8: "您的邮箱服务商（Gmail、Outlook、iCloud、Yahoo）对每个账户每天可发送的邮件数量有自己的限制。发送过多可能导致服务商暂时封锁或标记您的账户。因此我们将上限设置为比服务商已知限制低10%，这样您在同一账户上的正常邮件使用不会被挤占，并留有余地。如果您想要额外的安全保障，可以自行选择使用该上限的较低比例（例如50%）——但永远不能超过上限允许的比例。",
+  faq_q9: "你们有哪些政界人士的信息，我可以筛选发送对象吗？",
+  faq_a9: "我们收集了所有民选代表的姓名、邮箱和区域（市镇/地区/议会/政府/欧盟），在已知的情况下还包括党派和职位（如主席、成员）。您可以在收件人选择器中自由组合：发送给整个类别（如所有欧洲议会议员）、限制为特定职位（如所有市镇中仅主席）、排除某个党派，或移除个别收件人——发送前均可操作。",
 });
 
 registerTranslations("hi", {
@@ -3453,4 +3487,6 @@ registerTranslations("hi", {
   msg_cap_updated: "नई सीमा: {cap} पत्र/दिन ({pct}%)",
   faq_q8: "मैं प्रतिदिन कितने पत्र भेज सकता हूँ, इस पर सीमा क्यों है?",
   faq_a8: "आपके मेल प्रदाता (Gmail, Outlook, iCloud, Yahoo) की अपनी सीमाएँ हैं कि एक खाता प्रतिदिन कितने ईमेल भेज सकता है। अधिक भेजने से प्रदाता द्वारा आपके खाते को अस्थायी रूप से अवरुद्ध या चिह्नित करने का जोखिम है। इसलिए हम प्रदाता की ज्ञात सीमा से 10% कम सीमा निर्धारित करते हैं, ताकि उसी खाते पर आपका सामान्य मेल उपयोग बाधित न हो और आपके पास मार्जिन हो। यदि आप अतिरिक्त सुरक्षा चाहते हैं तो आप स्वयं इस सीमा का कम हिस्सा (जैसे 50%) उपयोग करना चुन सकते हैं — लेकिन सीमा जितनी अनुमति देती है उससे अधिक हिस्सा कभी नहीं।",
+  faq_q9: "आपके पास राजनेताओं के बारे में कौन सी जानकारी है, और क्या मैं भेजने को फ़िल्टर कर सकता हूँ?",
+  faq_a9: "हमने सभी निर्वाचित प्रतिनिधियों के लिए नाम, ईमेल और क्षेत्र (नगरपालिका/क्षेत्र/संसद/सरकार/EU) एकत्र किया है, और जहाँ ज्ञात हो वहाँ पार्टी और पद (जैसे अध्यक्ष, सदस्य) भी। आप प्राप्तकर्ता चयनकर्ता में इन्हें स्वतंत्र रूप से जोड़ सकते हैं: पूरी श्रेणी को भेजें (जैसे सभी EU सांसद), किसी विशेष पद तक सीमित करें (जैसे सभी नगरपालिकाओं में केवल अध्यक्ष), किसी पार्टी को बाहर रखें, या व्यक्तिगत प्राप्तकर्ताओं को हटाएं — भेजने से पहले।",
 });

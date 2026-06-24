@@ -377,6 +377,15 @@ function renderRoleFilterList() {
   const div = document.getElementById("role-filter-list");
   div.innerHTML = "";
   const relevant = allRoles.filter((r) => selectedAreas.has(r.area_name));
+
+  // Ta bort befattningar ur valet som inte längre är relevanta (t.ex. om
+  // användaren avmarkerade ett område) — annars filtreras mottagare tyst
+  // bort enligt en roll som inte längre syns/går att avmarkera i UI:t.
+  const relevantRoleNames = new Set(relevant.map((r) => r.role));
+  for (const role of [...includedRoles]) {
+    if (!relevantRoleNames.has(role)) includedRoles.delete(role);
+  }
+
   if (relevant.length === 0) return;
 
   const byRole = new Map();
