@@ -60,7 +60,8 @@ CREATE TABLE politicians (
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   area_name TEXT NOT NULL,   -- t.ex. "Lysekils kommun", "Region Halland", "Sveriges riksdag"
-  area_type TEXT NOT NULL,   -- kommun | region | riksdag | regering
+  area_type TEXT NOT NULL,   -- kommun | region | riksdag | regering | eu
+  party TEXT,                -- partibeteckning, om känd (idag bara EU-parlamentariker)
   last_scraped_at INTEGER NOT NULL,
   verification_status TEXT NOT NULL DEFAULT 'unknown', -- unknown | valid_via_send | dead_via_send (satt i realtid av sender/src/index.ts vid riktiga utskick) | valid | dead | catchall_unverified | unreachable_* | unknown_code_* | error_* (historiskt satt av politiker-kontakter/verify/verify_emails.py, ej längre i drift — port 25 blockerad både i Cloudflare Workers och hos mp100:s leverantör)
   last_verified_at INTEGER,

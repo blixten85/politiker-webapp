@@ -181,7 +181,17 @@
     <div class="card">
       <h2 data-i18n="recipients_title">Välj mottagare</h2>
       <input type="text" id="area-filter" data-i18n-placeholder="placeholder_search_area" placeholder="Sök kommun/region...">
-      <div id="area-list"></div>
+      <div id="area-groups"></div>
+      <p class="hint" id="recipient-count-preview"></p>
+
+      <details id="exclude-details">
+        <summary data-i18n="exclude_section_title">Exkludera specifika mottagare</summary>
+        <div id="party-exclude-list"></div>
+        <input type="text" id="exclude-search" data-i18n-placeholder="placeholder_exclude_search" placeholder="Sök person att exkludera...">
+        <div id="exclude-search-results"></div>
+        <p class="hint" data-i18n="excluded_list_title">Exkluderade:</p>
+        <ul id="excluded-list"></ul>
+      </details>
     </div>
 
     <div class="card">
