@@ -385,6 +385,10 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
       if (url.pathname === "/api/draft-letter" && req.method === "POST") {
         // Litet dygnstak — anropet kostar pengar (LLM + websökning) per
         // gång, oberoende av om mottagarlistan/utskicket annars är fritt.
+        // OBS: best-effort, inte en hård spärr — KV är eventually consistent
+        // och count+put är inte atomiskt, så några samtidiga requests kan i
+        // teorin slinka förbi gränsen. Acceptabelt för ett kostnadsskydd i
+        // den här skalan; en Durable Object skulle krävas för en hård gräns.
         const DAILY_DRAFT_LIMIT = 10;
         const rateLimitKey = `draft-rate:${accountId}:${new Date().toISOString().slice(0, 10)}`;
         const currentCount = parseInt((await env.SESSIONS.get(rateLimitKey)) ?? "0", 10);

@@ -42,21 +42,33 @@ Inkludera "[förnamn]" exakt en gång, där en personlig hälsning naturligt pas
 Svara ENDAST med ett JSON-objekt på exakt denna form, ingen övrig text:
 {"subject": "kort ämnesrad", "htmlBody": "<p>brevtext med HTML-stycken</p>"}`;
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: [{ role: "user", content: "Skriv brevutkastet enligt instruktionerna." }],
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
-    }),
-  });
+  let resp: Response;
+  try {
+    resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: "user", content: "Skriv brevutkastet enligt instruktionerna." }],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
+      }),
+      // Websökning kan dra ut på tiden — ge upp ordentligt innan Workerns
+      // egen wall-time-gräns träffas, så felet syns som ett tydligt 502
+      // istället för att hela requesten dör tyst.
+      signal: AbortSignal.timeout(25_000),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      throw new Error("Anthropic-anropet tog för lång tid (websökning) — försök igen");
+    }
+    throw err;
+  }
 
   if (!resp.ok) {
     const errText = await resp.text();
@@ -80,14 +92,28 @@ Svara ENDAST med ett JSON-objekt på exakt denna form, ingen övrig text:
     }
   }
 
-  const textBlock = data.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
-  if (!textBlock) throw new Error("AI-svaret innehöll ingen text");
+  // Med web_search aktiverat kan modellen lägga in textblock FÖRE det
+  // faktiska svaret (t.ex. en kort kommentar innan den söker) — gå igenom
+  // alla textblock och använd det SISTA som faktiskt innehåller ett giltigt
+  // {subject, htmlBody}-objekt, inte bara det första textblocket.
+  const textBlocks = data.content.filter((b) => b.type === "text") as Array<{ type: "text"; text: string }>;
+  if (textBlocks.length === 0) throw new Error("AI-svaret innehöll ingen text");
 
-  const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Kunde inte tolka AI-svaret som JSON");
+  let parsed: { subject?: string; htmlBody?: string } | null = null;
+  for (const block of [...textBlocks].reverse()) {
+    const jsonMatch = block.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) continue;
+    try {
+      const candidate = JSON.parse(jsonMatch[0]) as { subject?: string; htmlBody?: string };
+      if (candidate.subject && candidate.htmlBody) {
+        parsed = candidate;
+        break;
+      }
+    } catch {
+      continue;
+    }
+  }
+  if (!parsed) throw new Error("Kunde inte tolka AI-svaret som ett giltigt brevutkast");
 
-  const parsed = JSON.parse(jsonMatch[0]) as { subject?: string; htmlBody?: string };
-  if (!parsed.subject || !parsed.htmlBody) throw new Error("AI-svaret saknade ämne eller brevtext");
-
-  return { subject: parsed.subject, htmlBody: parsed.htmlBody, sources: [...new Set(sources)] };
+  return { subject: parsed.subject!, htmlBody: parsed.htmlBody!, sources: [...new Set(sources)] };
 }
