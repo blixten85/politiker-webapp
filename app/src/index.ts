@@ -23,7 +23,7 @@ import {
   getCeiling,
   MICROSOFT_GRAPH_DAILY_LIMIT,
 } from "./mail-credentials";
-import { listAreas, listParties, searchPoliticiansInAreas } from "./db";
+import { listAreas, listParties, listRoles, searchPoliticiansInAreas } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
@@ -335,6 +335,10 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         return json(await listParties(env.DB));
       }
 
+      if (url.pathname === "/api/roles" && req.method === "GET") {
+        return json(await listRoles(env.DB));
+      }
+
       if (url.pathname === "/api/politicians/search" && req.method === "GET") {
         const areaNames = url.searchParams.getAll("areaName");
         const q = url.searchParams.get("q") ?? "";
@@ -385,6 +389,7 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           areaNames: string[];
           excludeParties?: string[];
           excludeEmails?: string[];
+          includeRoles?: string[];
           attachments?: AttachmentInput[];
         }>();
         const letterId = randomId();
@@ -406,6 +411,7 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           areaNames: input.areaNames,
           excludeParties: input.excludeParties,
           excludeEmails: input.excludeEmails,
+          includeRoles: input.includeRoles,
         });
         return json(result);
       }

@@ -1,21 +1,35 @@
 # Politiker-webapp
 
 Gratis verktyg där medborgare kan skapa konto, koppla sitt **eget** mailkonto
-(Gmail/Outlook/iCloud/generisk SMTP, eller logga in passwordlöst med Microsoft
-Graph), välja kommuner/regioner/riksdag/regering att kontakta, och skicka
-personaliserade brev till sina folkvalda — utan att plattformen själv blir
-avsändare. Live på [politiker.denied.se](https://politiker.denied.se).
+(Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller logga in passwordlöst med
+Microsoft Graph), välja vilka folkvalda de vill kontakta, och skicka
+personaliserade brev — utan att plattformen själv blir avsändare. Live på
+[politiker.denied.se](https://politiker.denied.se).
+
+## Vilka politiker finns med?
+
+- **EU**: alla 718 ledamöter i Europaparlamentet, samtliga 27 medlemsländer, med parti
+- **Riksdagen**: alla 349 nuvarande ledamöter, med parti
+- **Regeringen**: 11 departement (registratorsadresser — inga personliga mailadresser till statsråd finns/publiceras)
+- **Region**: alla 21 regioner
+- **Kommun**: alla 290 kommuner
+
+För kommun/region är parti och befattning (t.ex. "Ordförande") tillagt
+där det går att fastställa — antingen direkt vid skrapning (mailto/troman/
+netpublicator, ~94% av kommunerna) eller via matchning mot Valmyndighetens
+öppna data om nuvarande ledamöter. Se `politiker-kontakter`-repot för
+skrapningslogiken.
 
 ## Funktioner
 
-- **Konto**: e-post+lösenord eller OAuth-inloggning (Google, GitHub, Microsoft), TOTP 2FA, glömt lösenord
-- **Mailkoppling**: Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller Microsoft Graph utan lösenord
-- **Mottagarval**: sökbar lista över kommuner, regioner, riksdag och regering
+- **Konto**: e-post+lösenord eller OAuth-inloggning (Google, GitHub, Microsoft), TOTP 2FA, glömt lösenord, länka fler inloggningssätt till samma konto efteråt
+- **Mailkoppling**: Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller Microsoft Graph utan lösenord — med ett hårdkodat säkerhetstak (10% under leverantörens kända gräns) som användaren själv kan sänka ytterligare
+- **Mottagarval**: gruppering per nivå (kommun/region/riksdag/regering/EU) med "Välj alla"/"Avmarkera alla", begränsning till en specifik befattning (t.ex. bara ordförande), exkludering av ett parti eller enskilda mottagare, levande räknare av hur många som faktiskt träffas av valet
 - **Brev**: HTML/textredigerare, ämnesrad (full åäö/UTF-8-stöd), bilagor (PDF/txt/doc/docx, automatisk konvertering till brevtext)
 - **Flerspråkigt gränssnitt**: 18 språk (svenska, engelska, nordiska språk, tyska, franska, spanska, polska, turkiska, ryska, ukrainska, arabiska, persiska, somaliska, kinesiska, hindi) — automatisk detektion + manuellt val, hela gränssnittet inklusive dynamiska meddelanden
 - **API-nycklar**: programmatisk åtkomst (`Authorization: Bearer <nyckel>`) som alternativ till webbläsarinloggning
-- **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering
-- **Admin-panel**: konton + feedback-översikt för admin-konton
+- **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering — FAQ förklarar bland annat exakt vilken politikerdata som finns och hur mottagarfiltren kombineras
+- **Admin-panel**: konton, feedback, statistik (med diagram), export (CSV/JSON) per sektion eller allt i ett — samt en separat, fristående export av politiker-listan
 - **Automatisk felrapportering**: oväntade JS-fel skickas till `/api/feedback` utan att användaren behöver göra något
 
 ## Struktur

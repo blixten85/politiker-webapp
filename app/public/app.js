@@ -8,6 +8,8 @@ let allAreas = [];
 let allParties = [];
 let excludedParties = new Set();
 let excludedRecipients = new Map(); // email -> name
+let allRoles = [];
+let includedRoles = new Set(); // tom = ingen begränsning (alla befattningar)
 
 // Tema: mörkt som standard, växlingsbart till ljust/system, sparas lokalt.
 const THEME_ORDER = ["dark", "light", "system"];
@@ -297,6 +299,7 @@ async function loadMailCredentials() {
 async function loadAreas() {
   allAreas = await api("/api/areas");
   allParties = await api("/api/parties");
+  allRoles = await api("/api/roles");
   renderAreas();
 }
 
@@ -353,6 +356,7 @@ function renderAreas() {
         if (cb.checked) selectedAreas.add(a.area_name);
         else selectedAreas.delete(a.area_name);
         renderPartyExcludeList();
+        renderRoleFilterList();
         updateRecipientCountPreview();
       };
       label.appendChild(cb);
@@ -364,9 +368,45 @@ function renderAreas() {
   }
 
   renderPartyExcludeList();
+  renderRoleFilterList();
   updateRecipientCountPreview();
 }
 document.getElementById("area-filter").addEventListener("input", renderAreas);
+
+function renderRoleFilterList() {
+  const div = document.getElementById("role-filter-list");
+  div.innerHTML = "";
+  const relevant = allRoles.filter((r) => selectedAreas.has(r.area_name));
+
+  // Ta bort befattningar ur valet som inte längre är relevanta (t.ex. om
+  // användaren avmarkerade ett område) — annars filtreras mottagare tyst
+  // bort enligt en roll som inte längre syns/går att avmarkera i UI:t.
+  const relevantRoleNames = new Set(relevant.map((r) => r.role));
+  for (const role of [...includedRoles]) {
+    if (!relevantRoleNames.has(role)) includedRoles.delete(role);
+  }
+
+  if (relevant.length === 0) return;
+
+  const byRole = new Map();
+  for (const r of relevant) {
+    byRole.set(r.role, (byRole.get(r.role) ?? 0) + r.count);
+  }
+  for (const [role, count] of byRole) {
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = includedRoles.has(role);
+    cb.onchange = () => {
+      if (cb.checked) includedRoles.add(role);
+      else includedRoles.delete(role);
+      updateRecipientCountPreview();
+    };
+    label.appendChild(cb);
+    label.append(` ${role} (${count})`);
+    div.appendChild(label);
+  }
+}
 
 function renderPartyExcludeList() {
   const div = document.getElementById("party-exclude-list");
@@ -447,8 +487,17 @@ document.getElementById("exclude-search").addEventListener("input", (e) => {
 
 function updateRecipientCountPreview() {
   let total = 0;
-  for (const a of allAreas) {
-    if (selectedAreas.has(a.area_name)) total += a.count;
+  if (includedRoles.size > 0) {
+    // Befattning begränsar mottagarna till just dessa roller — räkna ihop
+    // det istället för totalen per område (parti-exkludering ovanpå det
+    // är en ungefärlig förhandsvisning, servern räknar exakt vid skicka).
+    for (const r of allRoles) {
+      if (selectedAreas.has(r.area_name) && includedRoles.has(r.role)) total += r.count;
+    }
+  } else {
+    for (const a of allAreas) {
+      if (selectedAreas.has(a.area_name)) total += a.count;
+    }
   }
   let excludedByParty = 0;
   for (const p of allParties) {
@@ -574,6 +623,7 @@ document.getElementById("send-btn").addEventListener("click", async () => {
         areaNames: [...selectedAreas],
         excludeParties: [...excludedParties],
         excludeEmails: [...excludedRecipients.keys()],
+        includeRoles: [...includedRoles],
         attachments: attachments.length > 0 ? attachments : undefined,
       }),
     });
