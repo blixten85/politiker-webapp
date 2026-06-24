@@ -566,6 +566,39 @@ window.addEventListener("beforeunload", (e) => {
   }
 });
 
+document.getElementById("ai-draft-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("ai-draft-btn");
+  const status = document.getElementById("ai-draft-status");
+  const topic = document.getElementById("ai-draft-topic").value.trim();
+
+  // Grov gissning av mottagartyp för ton, baserat på vilka områden som är
+  // markerade — bara en hint, behöver inte vara exakt.
+  const typeCounts = {};
+  for (const a of allAreas) {
+    if (selectedAreas.has(a.area_name)) typeCounts[a.area_type] = (typeCounts[a.area_type] ?? 0) + 1;
+  }
+  const areaType = Object.keys(typeCounts).sort((a, b) => typeCounts[b] - typeCounts[a])[0];
+
+  btn.disabled = true;
+  status.textContent = t("msg_ai_draft_loading");
+  try {
+    const result = await api("/api/draft-letter", {
+      method: "POST",
+      body: JSON.stringify({ topic: topic || undefined, areaType }),
+    });
+    document.getElementById("letter-subject").value = result.subject;
+    document.getElementById("letter-body").value = result.htmlBody;
+    document.getElementById("letter-body").dispatchEvent(new Event("input"));
+    status.textContent = result.sources.length
+      ? t("msg_ai_draft_done_with_sources", { count: result.sources.length })
+      : t("msg_ai_draft_done");
+  } catch (err) {
+    status.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 function setSendProgress(fraction) {
   const bar = document.getElementById("send-progress");
   const fill = document.getElementById("send-progress-fill");
