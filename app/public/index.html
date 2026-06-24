@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Politikerkontakt — skriv till dina folkvalda</title>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div class="se-banner" aria-hidden="true"></div>
@@ -17,6 +18,8 @@
     </div>
   </div>
   <nav class="header-links">
+    <button id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
+    <button id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
     <button id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
     <button id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
     <button id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
@@ -96,6 +99,88 @@
   </section>
 
   <section id="app-view" hidden>
+    <div id="landing-view"></div>
+
+    <div id="wizard-view" hidden>
+      <div class="wizard-steps-indicator">
+        <span class="wizard-step-dot" data-step="1" data-i18n="wizard_step1_label">1. Mottagare</span>
+        <span class="wizard-step-dot" data-step="2" data-i18n="wizard_step2_label">2. Brev</span>
+        <span class="wizard-step-dot" data-step="3" data-i18n="wizard_step3_label">3. Granska</span>
+      </div>
+
+      <div class="card" id="wizard-step-1">
+        <h2 data-i18n="recipients_title">Välj mottagare</h2>
+        <div id="area-type-cards"></div>
+        <p class="hint" id="recipient-count-preview"></p>
+
+        <details id="advanced-details">
+          <summary data-i18n="advanced_section_title">Avancerat: enskilda områden, befattning, parti</summary>
+
+          <input type="text" id="area-filter" data-i18n-placeholder="placeholder_search_area" placeholder="Sök kommun/region...">
+          <div id="area-groups"></div>
+
+          <details id="role-filter-details">
+            <summary data-i18n="role_filter_section_title">Begränsa till viss befattning</summary>
+            <p class="hint" data-i18n="role_filter_hint">T.ex. bara "Ordförande" i alla valda områden. Lämna allt avmarkerat för att inte begränsa.</p>
+            <div id="role-filter-list"></div>
+          </details>
+
+          <details id="exclude-details">
+            <summary data-i18n="exclude_section_title">Exkludera specifika mottagare</summary>
+            <div id="party-exclude-list"></div>
+            <input type="text" id="exclude-search" data-i18n-placeholder="placeholder_exclude_search" placeholder="Sök person att exkludera...">
+            <div id="exclude-search-results"></div>
+            <p class="hint" data-i18n="excluded_list_title">Exkluderade:</p>
+            <ul id="excluded-list"></ul>
+          </details>
+        </details>
+
+        <div class="wizard-nav">
+          <button type="button" class="btn-primary" id="step1-next-btn" data-i18n="wizard_next">Nästa</button>
+        </div>
+      </div>
+
+      <div class="card" id="wizard-step-2" hidden>
+        <h2 data-i18n="letter_title">Skriv brevet</h2>
+        <p class="hint" data-i18n="letter_hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
+
+        <details id="ai-draft-details">
+          <summary data-i18n="ai_draft_section_title">AI-hjälp: researcha ämne och föreslå ett utkast</summary>
+          <p class="hint" data-i18n="ai_draft_hint">Beskriv vad du vill ta upp (valfritt — lämna tomt för ett aktuellt, relevant ämne). AI:n söker på webben och föreslår ett utkast som DU läser igenom, redigerar och skickar under ditt eget namn — inget skickas automatiskt.</p>
+          <input type="text" id="ai-draft-topic" data-i18n-placeholder="placeholder_ai_draft_topic" data-i18n-aria-label="aria_ai_draft_topic" placeholder="t.ex. kollektivtrafik, skolan, bostadsbrist…" aria-label="Ämne för AI-utkast">
+          <button id="ai-draft-btn" type="button" data-i18n="btn_ai_draft">Föreslå brevutkast</button>
+          <p class="hint" id="ai-draft-status"></p>
+        </details>
+
+        <input type="text" id="letter-subject" data-i18n-placeholder="placeholder_subject" placeholder="Ämne (valfritt — åäö fungerar)">
+        <textarea id="letter-body" rows="12" data-i18n-placeholder="placeholder_letter_body" placeholder="Skriv ditt brev här..."></textarea>
+
+        <p class="hint" data-i18n="attachments_hint">Bifoga filer (PDF, txt, doc, docx) — max 10 MB per fil. ".doc" kan bara bifogas, inte användas som brevtext.</p>
+        <input type="file" id="letter-files" multiple accept=".pdf,.txt,.doc,.docx">
+        <div id="file-mode-list"></div>
+
+        <div class="wizard-nav">
+          <button type="button" class="link-btn" id="step2-back-btn" data-i18n="wizard_back">Tillbaka</button>
+          <button type="button" class="btn-primary" id="step2-next-btn" data-i18n="wizard_next">Nästa</button>
+        </div>
+      </div>
+
+      <div class="card" id="wizard-step-3" hidden>
+        <h2 data-i18n="review_title">Granska & skicka</h2>
+        <div id="review-summary"></div>
+        <p class="hint" id="review-no-mail-warning" hidden data-i18n="review_no_mail_warning">Du måste koppla ett mailkonto innan du kan skicka — gör det under Inställningar.</p>
+
+        <button id="send-btn" data-i18n="btn_send">Skicka till valda mottagare</button>
+        <div class="progress-bar" id="send-progress" hidden><div class="progress-bar-fill" id="send-progress-fill"></div></div>
+        <p id="send-msg"></p>
+
+        <div class="wizard-nav">
+          <button type="button" class="link-btn" id="step3-back-btn" data-i18n="wizard_back">Tillbaka</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-view" hidden>
     <div class="card">
       <h2 data-i18n="mailaccount_title">Ditt mailkonto</h2>
       <p class="hint" data-i18n="mailaccount_hint">Du loggar in mot ditt EGET mailkonto (Gmail/Outlook/iCloud/annat) — brevet skickas från din egen adress, vi rör aldrig dina inloggningsuppgifter eller svaren du får.</p>
@@ -179,52 +264,6 @@
     </div>
 
     <div class="card">
-      <h2 data-i18n="recipients_title">Välj mottagare</h2>
-      <input type="text" id="area-filter" data-i18n-placeholder="placeholder_search_area" placeholder="Sök kommun/region...">
-      <div id="area-groups"></div>
-      <p class="hint" id="recipient-count-preview"></p>
-
-      <details id="role-filter-details">
-        <summary data-i18n="role_filter_section_title">Begränsa till viss befattning</summary>
-        <p class="hint" data-i18n="role_filter_hint">T.ex. bara "Ordförande" i alla valda områden. Lämna allt avmarkerat för att inte begränsa.</p>
-        <div id="role-filter-list"></div>
-      </details>
-
-      <details id="exclude-details">
-        <summary data-i18n="exclude_section_title">Exkludera specifika mottagare</summary>
-        <div id="party-exclude-list"></div>
-        <input type="text" id="exclude-search" data-i18n-placeholder="placeholder_exclude_search" placeholder="Sök person att exkludera...">
-        <div id="exclude-search-results"></div>
-        <p class="hint" data-i18n="excluded_list_title">Exkluderade:</p>
-        <ul id="excluded-list"></ul>
-      </details>
-    </div>
-
-    <div class="card">
-      <h2 data-i18n="letter_title">Skriv brevet</h2>
-      <p class="hint" data-i18n="letter_hint">Klistra in ditt brev (HTML eller vanlig text). "Hej [förnamn]!" läggs till automatiskt för varje mottagare.</p>
-
-      <details id="ai-draft-details">
-        <summary data-i18n="ai_draft_section_title">AI-hjälp: researcha ämne och föreslå ett utkast</summary>
-        <p class="hint" data-i18n="ai_draft_hint">Beskriv vad du vill ta upp (valfritt — lämna tomt för ett aktuellt, relevant ämne). AI:n söker på webben och föreslår ett utkast som DU läser igenom, redigerar och skickar under ditt eget namn — inget skickas automatiskt.</p>
-        <input type="text" id="ai-draft-topic" data-i18n-placeholder="placeholder_ai_draft_topic" data-i18n-aria-label="aria_ai_draft_topic" placeholder="t.ex. kollektivtrafik, skolan, bostadsbrist…" aria-label="Ämne för AI-utkast">
-        <button id="ai-draft-btn" type="button" data-i18n="btn_ai_draft">Föreslå brevutkast</button>
-        <p class="hint" id="ai-draft-status"></p>
-      </details>
-
-      <input type="text" id="letter-subject" data-i18n-placeholder="placeholder_subject" placeholder="Ämne (valfritt — åäö fungerar)">
-      <textarea id="letter-body" rows="12" data-i18n-placeholder="placeholder_letter_body" placeholder="Skriv ditt brev här..."></textarea>
-
-      <p class="hint" data-i18n="attachments_hint">Bifoga filer (PDF, txt, doc, docx) — max 10 MB per fil. ".doc" kan bara bifogas, inte användas som brevtext.</p>
-      <input type="file" id="letter-files" multiple accept=".pdf,.txt,.doc,.docx">
-      <div id="file-mode-list"></div>
-
-      <button id="send-btn" data-i18n="btn_send">Skicka till valda mottagare</button>
-      <div class="progress-bar" id="send-progress" hidden><div class="progress-bar-fill" id="send-progress-fill"></div></div>
-      <p id="send-msg"></p>
-    </div>
-
-    <div class="card">
       <h2 data-i18n="sendstatus_title">Status på dina utskick</h2>
       <ul id="send-jobs-list"></ul>
     </div>
@@ -280,6 +319,7 @@
 
       <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
       <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+    </div>
     </div>
   </section>
 </main>

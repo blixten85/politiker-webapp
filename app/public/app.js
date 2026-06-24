@@ -316,6 +316,34 @@ async function loadAreas() {
   renderAreas();
 }
 
+// De 5 övergripande mottagarkorten (EU/Riksdag/Regering/Region/Kommun) —
+// nytt i steg 1, presentationslager i en egen modul. Klick väljer/avväljer
+// ALLA områden av den typen, samma beteende som "Välj alla"/"Avmarkera
+// alla" i den detaljerade Avancerat-listan nedanför.
+async function renderAreaTypeCards() {
+  const container = document.getElementById("area-type-cards");
+  if (!container) return;
+  const { renderAreaTypeCards: render } = await import("/components/step-select-recipients.js");
+  const areasByType = new Map();
+  for (const a of allAreas) {
+    if (!areasByType.has(a.area_type)) areasByType.set(a.area_type, []);
+    areasByType.get(a.area_type).push(a);
+  }
+  render(container, {
+    areasByType,
+    selectedAreas,
+    t,
+    onToggleType: (_areaType, areas, select) => {
+      for (const a of areas) {
+        if (select) selectedAreas.add(a.area_name);
+        else selectedAreas.delete(a.area_name);
+      }
+      renderAreas();
+      updateRecipientCountPreview();
+    },
+  });
+}
+
 function renderAreas() {
   const filter = document.getElementById("area-filter").value.toLowerCase();
   const div = document.getElementById("area-groups");
@@ -382,6 +410,7 @@ function renderAreas() {
 
   renderPartyExcludeList();
   renderRoleFilterList();
+  renderAreaTypeCards();
   updateRecipientCountPreview();
 }
 document.getElementById("area-filter").addEventListener("input", renderAreas);
@@ -518,43 +547,13 @@ function updateRecipientCountPreview() {
   }
   const finalCount = Math.max(0, total - excludedByParty - excludedRecipients.size);
   document.getElementById("recipient-count-preview").textContent = t("msg_recipient_count_preview", { count: finalCount });
+  return finalCount;
 }
 
-document.getElementById("letter-files").addEventListener("change", (e) => {
+document.getElementById("letter-files").addEventListener("change", async (e) => {
   const container = document.getElementById("file-mode-list");
-  container.innerHTML = "";
-  for (let i = 0; i < e.target.files.length; i++) {
-    const file = e.target.files[i];
-    const row = document.createElement("div");
-    const isDoc = file.name.toLowerCase().endsWith(".doc");
-    const modeName = `mode-${i}-${file.name}`;
-
-    const span = document.createElement("span");
-    span.textContent = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
-
-    const attachLabel = document.createElement("label");
-    const attachInput = document.createElement("input");
-    attachInput.type = "radio";
-    attachInput.name = modeName;
-    attachInput.value = "attach";
-    attachInput.checked = true;
-    attachLabel.appendChild(attachInput);
-    attachLabel.append(" " + t("btn_attach"));
-
-    const extractLabel = document.createElement("label");
-    const extractInput = document.createElement("input");
-    extractInput.type = "radio";
-    extractInput.name = modeName;
-    extractInput.value = "extract";
-    extractInput.disabled = isDoc;
-    extractLabel.appendChild(extractInput);
-    extractLabel.append(` ${t("btn_use_as_text")}${isDoc ? t("hint_not_possible_for_doc") : ""}`);
-
-    row.appendChild(span);
-    row.appendChild(attachLabel);
-    row.appendChild(extractLabel);
-    container.appendChild(row);
-  }
+  const { renderFileModeList } = await import("/components/step-compose.js");
+  renderFileModeList(container, e.target.files, { t });
 });
 
 function fileToBase64(file) {
@@ -1081,6 +1080,83 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
 document.getElementById("faq-btn").addEventListener("click", () => document.getElementById("faq-dialog").showModal());
 document.getElementById("faq-close").addEventListener("click", () => document.getElementById("faq-dialog").close());
 
+// Landningssida → wizard (3 steg) → inställningar. Tre toppnivå-vyer inom
+// #app-view, bara en synlig åt gången. Inställningar (mailkonto/2FA/API-
+// nycklar/admin) är medvetet SKILDA från wizarden — de hör till kontot,
+// inte till "skapa och skicka ett brev"-flödet.
+let currentStep = 1;
+
+function hideAllAppViews() {
+  document.getElementById("landing-view").hidden = true;
+  document.getElementById("wizard-view").hidden = true;
+  document.getElementById("settings-view").hidden = true;
+}
+
+async function showLandingView() {
+  hideAllAppViews();
+  document.getElementById("landing-view").hidden = false;
+  document.getElementById("home-btn").hidden = true;
+  document.getElementById("settings-btn").hidden = false;
+  const { renderLanding } = await import("/components/step-landing.js");
+  renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
+}
+
+function startWizard() {
+  hideAllAppViews();
+  document.getElementById("wizard-view").hidden = false;
+  document.getElementById("home-btn").hidden = false;
+  document.getElementById("settings-btn").hidden = false;
+  goToStep(1);
+}
+
+function showSettingsView() {
+  hideAllAppViews();
+  document.getElementById("settings-view").hidden = false;
+  document.getElementById("home-btn").hidden = false;
+  document.getElementById("settings-btn").hidden = true;
+}
+
+function goToStep(n) {
+  currentStep = n;
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`wizard-step-${i}`).hidden = i !== n;
+  }
+  document.querySelectorAll(".wizard-step-dot").forEach((dot) => {
+    dot.classList.toggle("active", Number(dot.dataset.step) === n);
+  });
+  if (n === 3) renderReviewStep();
+}
+
+async function renderReviewStep() {
+  const recipientCount = updateRecipientCountPreview();
+
+  const typesSet = new Set();
+  for (const a of allAreas) {
+    if (selectedAreas.has(a.area_name)) typesSet.add(a.area_type);
+  }
+  const typeLabels = [...typesSet].map((ty) => t(`area_type_${ty}`) ?? ty);
+
+  const { renderReview } = await import("/components/step-review.js");
+  renderReview(document.getElementById("review-summary"), {
+    recipientCount,
+    typeLabels,
+    subject: document.getElementById("letter-subject").value,
+    bodyHtml: document.getElementById("letter-body").value,
+    t,
+  });
+
+  const credentials = await loadMailCredentials();
+  document.getElementById("review-no-mail-warning").hidden = credentials.length > 0;
+  document.getElementById("send-btn").disabled = credentials.length === 0;
+}
+
+document.getElementById("home-btn").addEventListener("click", showLandingView);
+document.getElementById("settings-btn").addEventListener("click", showSettingsView);
+document.getElementById("step1-next-btn").addEventListener("click", () => goToStep(2));
+document.getElementById("step2-back-btn").addEventListener("click", () => goToStep(1));
+document.getElementById("step2-next-btn").addEventListener("click", () => goToStep(3));
+document.getElementById("step3-back-btn").addEventListener("click", () => goToStep(2));
+
 async function showApp() {
   document.getElementById("auth-view").hidden = true;
   document.getElementById("app-view").hidden = false;
@@ -1096,6 +1172,7 @@ async function showApp() {
     tasks.push(loadAdminPanel());
   }
   await Promise.all(tasks);
+  showLandingView();
 }
 
 document.addEventListener("languagechange", () => {
@@ -1107,6 +1184,8 @@ document.addEventListener("languagechange", () => {
     loadApiKeys();
     loadOAuthIdentities();
     if (!document.getElementById("admin-card").hidden) loadAdminPanel();
+    if (!document.getElementById("landing-view").hidden) showLandingView();
+    if (currentStep === 3 && !document.getElementById("wizard-view").hidden) renderReviewStep();
   }
 });
 
