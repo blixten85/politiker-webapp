@@ -40,11 +40,16 @@ async function acquireSendSlot(env: Env, credentialId: string, provider: string)
   const refillPerMinute = messagesPerMinuteFor(provider);
   const id = env.RATE_LIMITER.idFromName(credentialId);
   const stub = env.RATE_LIMITER.get(id);
-  const resp = await stub.fetch("https://rate-limiter/acquire", {
-    method: "POST",
-    body: JSON.stringify({ capacity: refillPerMinute, refillPerMinute }),
-  });
-  return resp.json<{ granted: boolean; retryAfterMs?: number }>();
+  try {
+    const resp = await stub.fetch("https://rate-limiter/acquire", {
+      method: "POST",
+      body: JSON.stringify({ capacity: 1, refillPerMinute }),
+    });
+    return resp.json<{ granted: boolean; retryAfterMs?: number }>();
+  } catch (err) {
+    // DO-anrop eller parse misslyckades — neka slot så anroparen kan retrya
+    return { granted: false, retryAfterMs: 1000 };
+  }
 }
 
 // MAX_WAIT_MS: hur länge EN meddelandebehandling väntar in-process på en
