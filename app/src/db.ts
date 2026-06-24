@@ -62,17 +62,66 @@ export async function verifyAccountEmail(db: D1Database, accountId: string, code
 
 export async function listAreas(db: D1Database) {
   const { results } = await db
-    .prepare("SELECT DISTINCT area_name, area_type FROM politicians ORDER BY area_type, area_name")
+    .prepare(
+      "SELECT area_name, area_type, COUNT(*) as count FROM politicians GROUP BY area_name, area_type ORDER BY area_type, area_name",
+    )
     .all();
   return results;
 }
 
-export async function getRecipientsForAreas(db: D1Database, areaNames: string[]) {
+// Distinkta partier per område — bara rader där parti faktiskt är känt
+// (idag bara EU-parlamentariker). Används för att låta användaren
+// exkludera ett parti ur en annars bred kategori-markering.
+export async function listParties(db: D1Database) {
+  const { results } = await db
+    .prepare(
+      `SELECT area_type, area_name, party, COUNT(*) as count FROM politicians
+       WHERE party IS NOT NULL GROUP BY area_type, area_name, party ORDER BY area_type, area_name, party`,
+    )
+    .all();
+  return results;
+}
+
+// Sökning bland politiker inom redan valda områden — används för att
+// låta användaren plocka ut och exkludera enskilda mottagare ur en
+// annars bred kategori-/områdesmarkering.
+export async function searchPoliticiansInAreas(db: D1Database, areaNames: string[], query: string) {
   if (areaNames.length === 0) return [];
   const placeholders = areaNames.map(() => "?").join(",");
   const { results } = await db
-    .prepare(`SELECT name, email, area_name FROM politicians WHERE area_name IN (${placeholders})`)
-    .bind(...areaNames)
+    .prepare(
+      `SELECT name, email, area_name, party FROM politicians
+       WHERE area_name IN (${placeholders}) AND name LIKE ?
+       ORDER BY name LIMIT 50`,
+    )
+    .bind(...areaNames, `%${query}%`)
+    .all<{ name: string; email: string; area_name: string; party: string | null }>();
+  return results;
+}
+
+export async function getRecipientsForAreas(
+  db: D1Database,
+  areaNames: string[],
+  excludeParties: string[] = [],
+  excludeEmails: string[] = [],
+) {
+  if (areaNames.length === 0) return [];
+  const areaPlaceholders = areaNames.map(() => "?").join(",");
+  let sql = `SELECT name, email, area_name FROM politicians WHERE area_name IN (${areaPlaceholders})`;
+  const params: unknown[] = [...areaNames];
+
+  if (excludeParties.length > 0) {
+    sql += ` AND (party IS NULL OR party NOT IN (${excludeParties.map(() => "?").join(",")}))`;
+    params.push(...excludeParties);
+  }
+  if (excludeEmails.length > 0) {
+    sql += ` AND email NOT IN (${excludeEmails.map(() => "?").join(",")})`;
+    params.push(...excludeEmails);
+  }
+
+  const { results } = await db
+    .prepare(sql)
+    .bind(...params)
     .all<{ name: string; email: string; area_name: string }>();
   return results;
 }

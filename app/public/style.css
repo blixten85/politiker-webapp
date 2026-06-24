@@ -182,8 +182,19 @@ button:disabled { background: var(--hint); border-color: var(--hint); opacity: 0
 .divider::before { left: 0; }
 .divider::after { right: 0; }
 
-#area-list { max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
-#area-list label { display: block; padding: 0.15rem 0; }
+#area-groups { max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
+.area-group { margin-bottom: 0.8rem; }
+.area-group:last-child { margin-bottom: 0; }
+.area-group-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+.area-group-header button { font-size: 0.75rem; padding: 0.15rem 0.5rem; }
+.area-group-list { padding-left: 0.5rem; }
+.area-group-list label, #area-groups label { display: block; padding: 0.15rem 0; }
+
+#exclude-details { margin-top: 0.8rem; }
+#exclude-details summary { cursor: pointer; color: var(--link); }
+#party-exclude-list label, #exclude-search-results label { display: block; padding: 0.15rem 0; }
+#exclude-search { margin-top: 0.5rem; }
+#excluded-list li button { margin-left: 0.5rem; }
 
 ul { list-style: none; padding: 0; margin: 0.5rem 0; }
 li { padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; }

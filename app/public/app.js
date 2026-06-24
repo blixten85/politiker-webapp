@@ -5,6 +5,9 @@ function providerHelp(provider) {
 let pendingAccountId = null;
 let selectedAreas = new Set();
 let allAreas = [];
+let allParties = [];
+let excludedParties = new Set();
+let excludedRecipients = new Map(); // email -> name
 
 // Tema: mörkt som standard, växlingsbart till ljust/system, sparas lokalt.
 const THEME_ORDER = ["dark", "light", "system"];
@@ -293,28 +296,167 @@ async function loadMailCredentials() {
 
 async function loadAreas() {
   allAreas = await api("/api/areas");
+  allParties = await api("/api/parties");
   renderAreas();
 }
 
 function renderAreas() {
   const filter = document.getElementById("area-filter").value.toLowerCase();
-  const div = document.getElementById("area-list");
+  const div = document.getElementById("area-groups");
   div.innerHTML = "";
-  for (const a of allAreas.filter((a) => a.area_name.toLowerCase().includes(filter))) {
+
+  const filtered = allAreas.filter((a) => a.area_name.toLowerCase().includes(filter));
+  const byType = new Map();
+  for (const a of filtered) {
+    if (!byType.has(a.area_type)) byType.set(a.area_type, []);
+    byType.get(a.area_type).push(a);
+  }
+
+  for (const [areaType, areas] of byType) {
+    const group = document.createElement("div");
+    group.className = "area-group";
+
+    const header = document.createElement("div");
+    header.className = "area-group-header";
+    const title = document.createElement("strong");
+    title.textContent = `${areaType} (${areas.length})`;
+    header.appendChild(title);
+
+    const selectAllBtn = document.createElement("button");
+    selectAllBtn.type = "button";
+    selectAllBtn.textContent = t("btn_select_all");
+    selectAllBtn.onclick = () => {
+      for (const a of areas) selectedAreas.add(a.area_name);
+      renderAreas();
+      updateRecipientCountPreview();
+    };
+    const deselectAllBtn = document.createElement("button");
+    deselectAllBtn.type = "button";
+    deselectAllBtn.textContent = t("btn_deselect_all");
+    deselectAllBtn.onclick = () => {
+      for (const a of areas) selectedAreas.delete(a.area_name);
+      renderAreas();
+      updateRecipientCountPreview();
+    };
+    header.appendChild(selectAllBtn);
+    header.appendChild(deselectAllBtn);
+    group.appendChild(header);
+
+    const list = document.createElement("div");
+    list.className = "area-group-list";
+    for (const a of areas) {
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = selectedAreas.has(a.area_name);
+      cb.onchange = () => {
+        if (cb.checked) selectedAreas.add(a.area_name);
+        else selectedAreas.delete(a.area_name);
+        renderPartyExcludeList();
+        updateRecipientCountPreview();
+      };
+      label.appendChild(cb);
+      label.append(` ${a.area_name} (${a.count})`);
+      list.appendChild(label);
+    }
+    group.appendChild(list);
+    div.appendChild(group);
+  }
+
+  renderPartyExcludeList();
+  updateRecipientCountPreview();
+}
+document.getElementById("area-filter").addEventListener("input", renderAreas);
+
+function renderPartyExcludeList() {
+  const div = document.getElementById("party-exclude-list");
+  div.innerHTML = "";
+  const relevant = allParties.filter((p) => selectedAreas.has(p.area_name));
+  if (relevant.length === 0) return;
+
+  const byParty = new Map();
+  for (const p of relevant) {
+    byParty.set(p.party, (byParty.get(p.party) ?? 0) + p.count);
+  }
+  for (const [party, count] of byParty) {
     const label = document.createElement("label");
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = selectedAreas.has(a.area_name);
+    cb.checked = excludedParties.has(party);
     cb.onchange = () => {
-      if (cb.checked) selectedAreas.add(a.area_name);
-      else selectedAreas.delete(a.area_name);
+      if (cb.checked) excludedParties.add(party);
+      else excludedParties.delete(party);
+      updateRecipientCountPreview();
     };
     label.appendChild(cb);
-    label.append(` ${a.area_name} (${a.area_type})`);
+    label.append(` ${t("label_exclude_party", { party, count })}`);
     div.appendChild(label);
   }
 }
-document.getElementById("area-filter").addEventListener("input", renderAreas);
+
+function renderExcludedList() {
+  const ul = document.getElementById("excluded-list");
+  ul.innerHTML = "";
+  for (const [email, name] of excludedRecipients) {
+    const li = document.createElement("li");
+    li.textContent = `${name} <${email}> `;
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = t("btn_remove");
+    removeBtn.onclick = () => {
+      excludedRecipients.delete(email);
+      renderExcludedList();
+      updateRecipientCountPreview();
+    };
+    li.appendChild(removeBtn);
+    ul.appendChild(li);
+  }
+}
+
+let excludeSearchTimeout = null;
+document.getElementById("exclude-search").addEventListener("input", (e) => {
+  clearTimeout(excludeSearchTimeout);
+  const q = e.target.value.trim();
+  const resultsDiv = document.getElementById("exclude-search-results");
+  if (q.length < 2 || selectedAreas.size === 0) {
+    resultsDiv.innerHTML = "";
+    return;
+  }
+  excludeSearchTimeout = setTimeout(async () => {
+    const params = new URLSearchParams({ q });
+    for (const a of selectedAreas) params.append("areaName", a);
+    const results = await api(`/api/politicians/search?${params.toString()}`);
+    resultsDiv.innerHTML = "";
+    for (const r of results) {
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = excludedRecipients.has(r.email);
+      cb.onchange = () => {
+        if (cb.checked) excludedRecipients.set(r.email, r.name);
+        else excludedRecipients.delete(r.email);
+        renderExcludedList();
+        updateRecipientCountPreview();
+      };
+      label.appendChild(cb);
+      label.append(` ${r.name} (${r.area_name}${r.party ? ", " + r.party : ""})`);
+      resultsDiv.appendChild(label);
+    }
+  }, 300);
+});
+
+function updateRecipientCountPreview() {
+  let total = 0;
+  for (const a of allAreas) {
+    if (selectedAreas.has(a.area_name)) total += a.count;
+  }
+  let excludedByParty = 0;
+  for (const p of allParties) {
+    if (selectedAreas.has(p.area_name) && excludedParties.has(p.party)) excludedByParty += p.count;
+  }
+  const finalCount = Math.max(0, total - excludedByParty - excludedRecipients.size);
+  document.getElementById("recipient-count-preview").textContent = t("msg_recipient_count_preview", { count: finalCount });
+}
 
 document.getElementById("letter-files").addEventListener("change", (e) => {
   const container = document.getElementById("file-mode-list");
@@ -430,6 +572,8 @@ document.getElementById("send-btn").addEventListener("click", async () => {
         subject: subject || undefined,
         mailCredentialId: credentials[0].id,
         areaNames: [...selectedAreas],
+        excludeParties: [...excludedParties],
+        excludeEmails: [...excludedRecipients.keys()],
         attachments: attachments.length > 0 ? attachments : undefined,
       }),
     });
@@ -862,6 +1006,7 @@ document.addEventListener("languagechange", () => {
   if (!document.getElementById("app-view").hidden) {
     loadMailCredentials();
     renderAreas();
+    renderExcludedList();
     loadSendJobs();
     loadApiKeys();
     loadOAuthIdentities();

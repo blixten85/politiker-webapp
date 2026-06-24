@@ -6,7 +6,15 @@ import type { SendJobMessage } from "../../shared/types";
 export async function createAndEnqueueSendJob(
   env: Env,
   accountId: string,
-  input: { letterId: string; htmlBody: string; subject?: string; mailCredentialId: string; areaNames: string[] },
+  input: {
+    letterId: string;
+    htmlBody: string;
+    subject?: string;
+    mailCredentialId: string;
+    areaNames: string[];
+    excludeParties?: string[];
+    excludeEmails?: string[];
+  },
 ): Promise<{ sendJobId: string; totalRecipients: number }> {
   const account = await env.DB.prepare("SELECT daily_send_cap FROM accounts WHERE id = ?").bind(accountId).first<{ daily_send_cap: number }>();
   if (!account) throw new Error("Konto saknas");
@@ -14,7 +22,7 @@ export async function createAndEnqueueSendJob(
   const credential = await getMailCredential(env.DB, input.mailCredentialId);
   if (!credential || credential.account_id !== accountId) throw new Error("Mailkoppling saknas");
 
-  const recipients = await getRecipientsForAreas(env.DB, input.areaNames);
+  const recipients = await getRecipientsForAreas(env.DB, input.areaNames, input.excludeParties ?? [], input.excludeEmails ?? []);
   if (recipients.length === 0) throw new Error("Inga mottagare matchar valda områden");
 
   const alreadySentToday = await countSentToday(env.DB, accountId);
