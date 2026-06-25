@@ -20,6 +20,7 @@
   <nav class="header-links">
     <button id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
     <button id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
+    <button id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
     <button id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
     <button id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
     <button id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
@@ -279,47 +280,50 @@
       <p id="api-key-msg"></p>
     </div>
 
-    <div class="card" id="admin-card" hidden>
-      <h2 data-i18n="admin_title">Admin</h2>
-      <div class="admin-tabs">
-        <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
-        <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
-        <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
-      </div>
-
-      <div class="admin-tab-panel" id="admin-tab-accounts">
-        <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-        <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
-      </div>
-
-      <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
-        <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-        <ul id="admin-feedback-list"></ul>
-      </div>
-
-      <div class="admin-tab-panel" id="admin-tab-stats" hidden>
-        <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-        <div id="admin-stats-totals" class="admin-stats-totals"></div>
-        <div class="admin-stats-controls">
-          <select id="admin-stats-granularity">
-            <option value="day" data-i18n="stats_day">Dag</option>
-            <option value="week" data-i18n="stats_week">Vecka</option>
-            <option value="month" selected data-i18n="stats_month">Månad</option>
-            <option value="year" data-i18n="stats_year">År</option>
-          </select>
-          <select id="admin-stats-year"></select>
-          <select id="admin-stats-month">
-            <option value="" data-i18n="stats_all_months">Alla månader</option>
-          </select>
-        </div>
-        <canvas id="admin-stats-chart" width="640" height="220"></canvas>
-        <h3 data-i18n="stats_leaderboard">Topplista per konto</h3>
-        <table class="admin-table"><tbody id="admin-leaderboard-list"></tbody></table>
-      </div>
-
-      <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
-      <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
     </div>
+
+    <div id="admin-view" hidden>
+      <div class="card" id="admin-card">
+        <h2 data-i18n="admin_title">Admin</h2>
+        <div class="admin-tabs">
+          <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
+          <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
+          <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
+        </div>
+
+        <div class="admin-tab-panel" id="admin-tab-accounts">
+          <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
+        </div>
+
+        <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
+          <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <ul id="admin-feedback-list"></ul>
+        </div>
+
+        <div class="admin-tab-panel" id="admin-tab-stats" hidden>
+          <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <div id="admin-stats-totals" class="admin-stats-totals"></div>
+          <div class="admin-stats-controls">
+            <select id="admin-stats-granularity">
+              <option value="day" data-i18n="stats_day">Dag</option>
+              <option value="week" data-i18n="stats_week">Vecka</option>
+              <option value="month" selected data-i18n="stats_month">Månad</option>
+              <option value="year" data-i18n="stats_year">År</option>
+            </select>
+            <select id="admin-stats-year"></select>
+            <select id="admin-stats-month">
+              <option value="" data-i18n="stats_all_months">Alla månader</option>
+            </select>
+          </div>
+          <canvas id="admin-stats-chart" width="640" height="220"></canvas>
+          <h3 data-i18n="stats_leaderboard">Topplista per konto</h3>
+          <table class="admin-table"><tbody id="admin-leaderboard-list"></tbody></table>
+        </div>
+
+        <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
+        <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+      </div>
     </div>
   </section>
 </main>
