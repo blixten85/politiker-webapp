@@ -1134,10 +1134,13 @@ document.getElementById("faq-close").addEventListener("click", () => document.ge
 // inte till "skapa och skicka ett brev"-flödet.
 let currentStep = 1;
 
+let isAdminUser = false;
+
 function hideAllAppViews() {
   document.getElementById("landing-view").hidden = true;
   document.getElementById("wizard-view").hidden = true;
   document.getElementById("settings-view").hidden = true;
+  document.getElementById("admin-view").hidden = true;
 }
 
 async function showLandingView() {
@@ -1145,6 +1148,7 @@ async function showLandingView() {
   document.getElementById("landing-view").hidden = false;
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
+  document.getElementById("admin-btn").hidden = !isAdminUser;
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
 }
@@ -1154,6 +1158,7 @@ function startWizard() {
   document.getElementById("wizard-view").hidden = false;
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
+  document.getElementById("admin-btn").hidden = !isAdminUser;
   goToStep(1);
 }
 
@@ -1162,6 +1167,16 @@ function showSettingsView() {
   document.getElementById("settings-view").hidden = false;
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
+  document.getElementById("admin-btn").hidden = !isAdminUser;
+}
+
+function showAdminView() {
+  hideAllAppViews();
+  document.getElementById("admin-view").hidden = false;
+  document.getElementById("home-btn").hidden = false;
+  document.getElementById("settings-btn").hidden = false;
+  document.getElementById("admin-btn").hidden = true;
+  loadAdminPanel();
 }
 
 function goToStep(n) {
@@ -1221,14 +1236,13 @@ async function showApp() {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
   }
+  isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
-  if (me.isAdmin) {
-    document.getElementById("admin-card").hidden = false;
-    tasks.push(loadAdminPanel());
-  }
   await Promise.all(tasks);
   showLandingView();
 }
+
+document.getElementById("admin-btn").addEventListener("click", showAdminView);
 
 document.addEventListener("languagechange", () => {
   if (!document.getElementById("app-view").hidden) {
@@ -1238,7 +1252,7 @@ document.addEventListener("languagechange", () => {
     loadSendJobs();
     loadApiKeys();
     loadOAuthIdentities();
-    if (!document.getElementById("admin-card").hidden) loadAdminPanel();
+    if (!document.getElementById("admin-view").hidden) loadAdminPanel();
     if (!document.getElementById("landing-view").hidden) showLandingView();
     if (currentStep === 3 && !document.getElementById("wizard-view").hidden) renderReviewStep();
   }
