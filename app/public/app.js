@@ -1205,6 +1205,13 @@ document.getElementById("step2-back-btn").addEventListener("click", () => goToSt
 document.getElementById("step2-next-btn").addEventListener("click", () => goToStep(3));
 document.getElementById("step3-back-btn").addEventListener("click", () => goToStep(2));
 
+// Stegindikatorerna är klickbara — låt användaren hoppa fritt mellan 1-3
+// istället för att tvinga sekventiell Nästa/Tillbaka-navigering. Inget
+// valideringskrav mellan stegen (samma data finns redan oavsett ordning).
+document.querySelectorAll(".wizard-step-dot").forEach((dot) => {
+  dot.addEventListener("click", () => goToStep(Number(dot.dataset.step)));
+});
+
 async function showApp() {
   document.getElementById("auth-view").hidden = true;
   document.getElementById("app-view").hidden = false;
