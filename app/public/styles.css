@@ -1,0 +1,217 @@
+/* Wizard-specifik design (landningssida, 3-stegsflöde, granskning) — egen,
+   medvetet ljus och avskild färgpalett, oberoende av style.css:s mörka/ljusa
+   temaväxling. Inställningar/inloggning/FAQ/admin fortsätter använda
+   style.css och dess temahantering oförändrat; bara de nya wizard-vyerna
+   (#landing-view, #wizard-view) styrs härifrån. Ingen mörkt-tema-variant
+   för dessa i v1 — medveten avgränsning, kan läggas till senare. */
+
+:root {
+  --wiz-bg: #f8fafc;
+  --wiz-primary: #1d4ed8;
+  --wiz-primary-dark: #1e40af;
+  --wiz-text: #0f172a;
+  --wiz-text-dim: #64748b;
+  --wiz-card: #ffffff;
+  --wiz-border: #e2e8f0;
+  --wiz-r: 14px;
+}
+
+#landing-view,
+#wizard-view {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  background: var(--wiz-bg);
+  color: var(--wiz-text);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ── Landningssida ─────────────────────────────────────────────────────── */
+
+.landing-hero {
+  text-align: center;
+  padding: 48px 16px 32px;
+}
+
+.landing-hero h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--wiz-text);
+}
+
+.landing-desc {
+  font-size: 1.1rem;
+  color: var(--wiz-text-dim);
+  max-width: 480px;
+  margin: 0 auto 28px;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  background: var(--wiz-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: var(--wiz-primary-dark); }
+.btn-primary:disabled { background: var(--wiz-border); color: var(--wiz-text-dim); cursor: not-allowed; }
+
+.btn-large { padding: 16px 40px; font-size: 1.1rem; }
+
+.landing-steps {
+  background: var(--wiz-card);
+  border: 1px solid var(--wiz-border);
+  border-radius: var(--wiz-r);
+  padding: 24px 28px;
+  margin-top: 24px;
+}
+
+.landing-steps h2 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: var(--wiz-text);
+}
+
+.landing-steps-list {
+  margin: 0;
+  padding-left: 1.4rem;
+  color: var(--wiz-text);
+  line-height: 1.8;
+}
+
+/* ── Stegindikator ─────────────────────────────────────────────────────── */
+
+.wizard-steps-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.wizard-step-dot {
+  font-size: 0.85rem;
+  color: var(--wiz-text-dim);
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: var(--wiz-card);
+  border: 1px solid var(--wiz-border);
+}
+
+.wizard-step-dot.active {
+  color: #fff;
+  background: var(--wiz-primary);
+  border-color: var(--wiz-primary);
+  font-weight: 600;
+}
+
+/* ── Generella wizard-kort ────────────────────────────────────────────── */
+
+#wizard-view .card {
+  background: var(--wiz-card);
+  border: 1px solid var(--wiz-border);
+  border-radius: var(--wiz-r);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+#wizard-view .card h2 {
+  color: var(--wiz-text);
+  margin-bottom: 8px;
+}
+
+#wizard-view .hint {
+  color: var(--wiz-text-dim);
+  font-size: 0.9rem;
+}
+
+#wizard-view input[type="text"],
+#wizard-view textarea {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--wiz-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--wiz-text);
+  font-size: 1rem;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.wizard-nav .btn-primary { margin-left: auto; }
+
+/* ── Steg 1: mottagarkort ─────────────────────────────────────────────── */
+
+.area-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.area-type-card {
+  background: #fff;
+  border: 2px solid var(--wiz-border);
+  border-radius: var(--wiz-r);
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.area-type-card:hover { border-color: var(--wiz-primary); }
+
+.area-type-card.selected {
+  border-color: var(--wiz-primary);
+  background: #eff6ff;
+}
+
+.area-type-card.partial {
+  border-color: var(--wiz-primary);
+  border-style: dashed;
+}
+
+.area-type-card-label {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--wiz-text);
+}
+
+.area-type-card-count {
+  color: var(--wiz-text-dim);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ── Steg 3: granska ──────────────────────────────────────────────────── */
+
+.review-summary p { margin-bottom: 10px; color: var(--wiz-text); }
+
+.review-body-preview {
+  border: 1px solid var(--wiz-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fafbfc;
+}
+
+/* ── Mobil ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .landing-hero h1 { font-size: 1.6rem; }
+  #wizard-view .card { padding: 18px; }
+  .area-type-grid { grid-template-columns: repeat(2, 1fr); }
+}
