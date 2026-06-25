@@ -4,6 +4,10 @@ function providerHelp(provider) {
 
 let pendingAccountId = null;
 let selectedAreas = new Set();
+// Vilka områdesgrupper (eu/riksdag/regering/region/kommun) som är hopfällda
+// i Avancerat-listan — börjar tom (allt utfällt) tills första renderAreas()
+// sätter ett rimligt default (stora grupper som kommun hopfällda från start).
+let collapsedAreaGroups = new Set();
 let allAreas = [];
 let allParties = [];
 let excludedParties = new Set();
@@ -313,6 +317,17 @@ async function loadAreas() {
   allAreas = await api("/api/areas");
   allParties = await api("/api/parties");
   allRoles = await api("/api/roles");
+
+  // Standard: stora grupper (kommun/region, hundratals rader) hopfällda från
+  // start så Avancerat-listan inte kräver en lång skroll bara för att öppnas
+  // — mindre grupper (EU/riksdag/regering) får vara utfällda direkt.
+  const COLLAPSE_THRESHOLD = 30;
+  const countByType = new Map();
+  for (const a of allAreas) countByType.set(a.area_type, (countByType.get(a.area_type) ?? 0) + 1);
+  for (const [areaType, count] of countByType) {
+    if (count > COLLAPSE_THRESHOLD) collapsedAreaGroups.add(areaType);
+  }
+
   renderAreas();
 }
 
@@ -362,8 +377,26 @@ function renderAreas() {
 
     const header = document.createElement("div");
     header.className = "area-group-header";
+
+    // Vid aktiv sökning forceras gruppen utfälld, annars syns inte
+    // träffarna bara för att gruppen råkar vara hopfälld sedan tidigare.
+    const collapsed = !filter && collapsedAreaGroups.has(areaType);
+    const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "area-group-toggle" + (collapsed ? "" : " expanded");
+    toggleBtn.setAttribute("aria-label", t("aria_toggle_group"));
+    toggleBtn.textContent = "▶";
+    toggleBtn.onclick = () => {
+      if (collapsedAreaGroups.has(areaType)) collapsedAreaGroups.delete(areaType);
+      else collapsedAreaGroups.add(areaType);
+      renderAreas();
+    };
+    header.appendChild(toggleBtn);
+
     const title = document.createElement("strong");
     title.textContent = `${areaType} (${areas.length})`;
+    title.style.cursor = "pointer";
+    title.onclick = () => toggleBtn.onclick();
     header.appendChild(title);
 
     const selectAllBtn = document.createElement("button");
@@ -388,6 +421,7 @@ function renderAreas() {
 
     const list = document.createElement("div");
     list.className = "area-group-list";
+    list.hidden = collapsed;
     for (const a of areas) {
       const label = document.createElement("label");
       const cb = document.createElement("input");
@@ -420,32 +454,46 @@ function renderRoleFilterList() {
   div.innerHTML = "";
   const relevant = allRoles.filter((r) => selectedAreas.has(r.area_name));
 
+  // Gruppera på normaliserad nyckel (lower+trim) — samma roll skriven med
+  // olika skiftläge ("Ledamot"/"ledamot"/"LEDAMOT") ska bli EN kryssruta,
+  // inte en per stavning. includedRoles lagrar därför role_key, inte den
+  // visade textens exakta skiftläge — annars matchar inte skicka-filtret
+  // (som också jämför normaliserat, se db.ts) mot alla varianter.
+  const byKey = new Map();
+  for (const r of relevant) {
+    const existing = byKey.get(r.role_key);
+    if (existing) {
+      existing.count += r.count;
+      if (r.count > existing.topCount) {
+        existing.label = r.role;
+        existing.topCount = r.count;
+      }
+    } else {
+      byKey.set(r.role_key, { label: r.role, count: r.count, topCount: r.count });
+    }
+  }
+
   // Ta bort befattningar ur valet som inte längre är relevanta (t.ex. om
   // användaren avmarkerade ett område) — annars filtreras mottagare tyst
   // bort enligt en roll som inte längre syns/går att avmarkera i UI:t.
-  const relevantRoleNames = new Set(relevant.map((r) => r.role));
-  for (const role of [...includedRoles]) {
-    if (!relevantRoleNames.has(role)) includedRoles.delete(role);
+  for (const roleKey of [...includedRoles]) {
+    if (!byKey.has(roleKey)) includedRoles.delete(roleKey);
   }
 
   if (relevant.length === 0) return;
 
-  const byRole = new Map();
-  for (const r of relevant) {
-    byRole.set(r.role, (byRole.get(r.role) ?? 0) + r.count);
-  }
-  for (const [role, count] of byRole) {
+  for (const [roleKey, { label: roleLabel, count }] of byKey) {
     const label = document.createElement("label");
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = includedRoles.has(role);
+    cb.checked = includedRoles.has(roleKey);
     cb.onchange = () => {
-      if (cb.checked) includedRoles.add(role);
-      else includedRoles.delete(role);
+      if (cb.checked) includedRoles.add(roleKey);
+      else includedRoles.delete(roleKey);
       updateRecipientCountPreview();
     };
     label.appendChild(cb);
-    label.append(` ${role} (${count})`);
+    label.append(` ${roleLabel} (${count})`);
     div.appendChild(label);
   }
 }
