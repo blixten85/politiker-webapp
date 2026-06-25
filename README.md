@@ -24,8 +24,10 @@ skrapningslogiken.
 
 - **Konto**: e-post+lösenord eller OAuth-inloggning (Google, GitHub, Microsoft), TOTP 2FA, glömt lösenord, länka fler inloggningssätt till samma konto efteråt
 - **Mailkoppling**: Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller Microsoft Graph utan lösenord — med ett hårdkodat säkerhetstak (10% under leverantörens kända gräns) som användaren själv kan sänka ytterligare
-- **Mottagarval**: gruppering per nivå (kommun/region/riksdag/regering/EU) med "Välj alla"/"Avmarkera alla", begränsning till en specifik befattning (t.ex. bara ordförande), exkludering av ett parti eller enskilda mottagare, levande räknare av hur många som faktiskt träffas av valet
+- **3-stegs wizard** (mottagare → brev → granska): de fem nivåerna (EU/riksdag/regering/region/kommun) väljs via stora kort med levande mottagarantal. Detaljerad filtrering (enskilda områden, befattning, parti-/individuell exkludering) finns kvar oförändrad bakom en hopfällbar "Avancerat"-sektion — stora grupper (>30 områden) hopfällda från start, sökning forcerar alltid utfällt. Befattningslistan normaliseras (skiftläge/whitespace) så samma roll inte listas separat per stavningsvariant.
+- **AI-brevutkast** (valfritt): beskriv ett ämne (eller låt AI:n själv hitta ett aktuellt) — researchar via riktig websökning och föreslår ett utkast som användaren läser igenom, redigerar och skickar under eget namn, inget skickas automatiskt
 - **Brev**: HTML/textredigerare, ämnesrad (full åäö/UTF-8-stöd), bilagor (PDF/txt/doc/docx, automatisk konvertering till brevtext)
+- **Rate limiting per mailkonto**: en Durable Object per mailkoppling ger sann delad sändningstakt mellan parallella utskick mot samma konto — väntar in en ledig "token" istället för att riskera leverantörens spärr. Olika mailkonton (även under samma användarkonto) har helt oberoende takter och blockerar aldrig varandra.
 - **Flerspråkigt gränssnitt**: 18 språk (svenska, engelska, nordiska språk, tyska, franska, spanska, polska, turkiska, ryska, ukrainska, arabiska, persiska, somaliska, kinesiska, hindi) — automatisk detektion + manuellt val, hela gränssnittet inklusive dynamiska meddelanden
 - **API-nycklar**: programmatisk åtkomst (`Authorization: Bearer <nyckel>`) som alternativ till webbläsarinloggning
 - **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering — FAQ förklarar bland annat exakt vilken politikerdata som finns och hur mottagarfiltren kombineras
@@ -34,9 +36,9 @@ skrapningslogiken.
 
 ## Struktur
 
-- `app/` — huvud-Worker: statisk frontend (`public/`, inkl. `i18n.js`) + API (auth, mail-credentials, mottagarval, brev, feedback, API-nycklar, admin)
-- `sender/` — Queue consumer-Worker: faktisk SMTP-/Graph-sändning
-- `shared/` — kod som delas mellan de två (kryptering, SMTP-klient, TOTP, Graph-mail, typer)
+- `app/` — huvud-Worker: statisk frontend (`public/`, inkl. `i18n.js`, `components/` för wizard-stegen) + API (auth, mail-credentials, mottagarval, brev, AI-utkast, feedback, API-nycklar, admin)
+- `sender/` — Queue consumer-Worker: faktisk SMTP-/Graph-sändning + `rate-limiter.ts` (Durable Object, token bucket per mailkoppling)
+- `shared/` — kod som delas mellan de två (kryptering, SMTP-klient, TOTP, Graph-mail, leverantörs-takter, typer)
 - `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`)
 
 ## Sätta upp lokalt
