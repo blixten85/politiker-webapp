@@ -89,13 +89,16 @@
 }
 
 .wizard-step-dot {
+  font-family: inherit;
   font-size: 0.85rem;
   color: var(--hint);
   padding: 6px 14px;
   border-radius: 20px;
   background: var(--card-bg);
   border: 1px solid var(--border);
+  cursor: pointer;
 }
+.wizard-step-dot:hover { border-color: var(--accent); }
 
 .wizard-step-dot.active {
   color: var(--accent-fg);
