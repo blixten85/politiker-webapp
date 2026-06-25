@@ -86,14 +86,32 @@ export async function listParties(db: D1Database) {
 // Distinkta befattningar per område — bara rader där befattning faktiskt
 // är känd. Används för att låta användaren begränsa till t.ex. bara
 // "Ordförande" inom valda områden.
+// Skrapad befattningstext varierar i skiftläge/whitespace mellan källor
+// ("Ordförande"/"ordförande"/"ORDFÖRANDE") — grupperar på en normaliserad
+// nyckel (lower+trim) så samma roll inte listas separat flera gånger.
+// OBS: slår INTE ihop olika STAVNINGAR/förkortningar av samma roll (t.ex.
+// "v ordf" vs "Vice ordförande") — det kräver en handgjord synonymtabell,
+// inte gjort här. Visar den vanligaste skrivningen per normaliserad grupp.
 export async function listRoles(db: D1Database) {
   const { results } = await db
     .prepare(
-      `SELECT area_type, area_name, role, COUNT(*) as count FROM politicians
-       WHERE role IS NOT NULL GROUP BY area_type, area_name, role ORDER BY area_type, area_name, role`,
+      `SELECT area_type, area_name, role, LOWER(TRIM(role)) as role_key, COUNT(*) as count
+       FROM politicians WHERE role IS NOT NULL AND TRIM(role) != ''
+       GROUP BY area_type, area_name, role ORDER BY area_type, area_name, role_key, count DESC`,
     )
-    .all();
-  return results;
+    .all<{ area_type: string; area_name: string; role: string; role_key: string; count: number }>();
+
+  const merged = new Map<string, { area_type: string; area_name: string; role: string; role_key: string; count: number }>();
+  for (const row of results) {
+    const key = `${row.area_type}|${row.area_name}|${row.role_key}`;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.count += row.count;
+    } else {
+      merged.set(key, { ...row });
+    }
+  }
+  return [...merged.values()];
 }
 
 // Sökning bland politiker inom redan valda områden — används för att
@@ -134,7 +152,10 @@ export async function getRecipientsForAreas(
     params.push(...excludeEmails);
   }
   if (includeRoles.length > 0) {
-    sql += ` AND role IN (${includeRoles.map(() => "?").join(",")})`;
+    // includeRoles innehåller normaliserade nycklar (lower+trim, se
+    // listRoles) — matcha mot samma normalisering av den lagrade kolumnen,
+    // annars missas mottagare vars roll har annat skiftläge än det valda.
+    sql += ` AND LOWER(TRIM(role)) IN (${includeRoles.map(() => "?").join(",")})`;
     params.push(...includeRoles);
   }
 
