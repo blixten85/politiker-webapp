@@ -1187,11 +1187,10 @@ let currentStep = 1;
 let isAdminUser = false;
 
 function hideAllAppViews() {
-  document.getElementById("landing-view").hidden = true;
-  document.getElementById("wizard-view").hidden = true;
-  document.getElementById("settings-view").hidden = true;
-  document.getElementById("admin-view").hidden = true;
-  document.getElementById("letters-view").hidden = true;
+  for (const id of ["landing-view", "wizard-view", "settings-view", "admin-view", "letters-view"]) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
 }
 
 async function showLandingView() {
@@ -1297,7 +1296,7 @@ document.getElementById("letters-list")?.addEventListener("click", async (e) => 
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn")?.addEventListener("click", loadPublicLetters);
+document.getElementById("letters-load-more")?.addEventListener("click", loadPublicLetters);
 document.getElementById("letters-btn")?.addEventListener("click", showLettersView);
 
 function goToStep(n) {
