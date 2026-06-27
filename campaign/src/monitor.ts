@@ -32,7 +32,7 @@ function parseRss(xml: string): RssItem[] {
     const title = (item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]>/) ?? item.match(/<title>([\s\S]*?)<\/title>/))?.[1]?.trim() ?? "";
     const url   = (item.match(/<link>([\s\S]*?)<\/link>/) ?? item.match(/<guid[^>]*>(https?:\/\/[\s\S]*?)<\/guid>/))?.[1]?.trim() ?? "";
     const desc  = (item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]>/) ?? item.match(/<description>([\s\S]*?)<\/description>/))?.[1] ?? "";
-    const summary = desc.replace(/<[^>]*>/g, "").replace(/</g, "").trim().slice(0, 500); // lgtm[js/html-injection]
+    const summary = desc.replace(/[<>]/g, "").trim().slice(0, 500); // lgtm[js/html-injection]
     if (title && url) items.push({ title, url, summary });
   }
   return items;
