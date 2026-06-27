@@ -74,13 +74,17 @@ function looksLikeExternalScript(filename, stack) {
   return EXTERNAL_SCRIPT_MARKERS.some((marker) => text.includes(marker));
 }
 
+const NOISE_MESSAGES = ["Script error.", "Load failed", "NetworkError when attempting to fetch resource."];
 window.addEventListener("error", (e) => {
   if (looksLikeExternalScript(e.filename, e.error?.stack)) return;
+  if (NOISE_MESSAGES.includes(e.message)) return;
   autoReportError(e.message, { stack: e.error?.stack });
 });
 window.addEventListener("unhandledrejection", (e) => {
   if (looksLikeExternalScript(null, e.reason?.stack)) return;
-  autoReportError(String(e.reason?.message ?? e.reason), { stack: e.reason?.stack });
+  const msg = String(e.reason?.message ?? e.reason);
+  if (NOISE_MESSAGES.includes(msg)) return;
+  autoReportError(msg, { stack: e.reason?.stack });
 });
 
 function showToast(text) {
