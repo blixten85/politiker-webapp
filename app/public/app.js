@@ -1196,7 +1196,6 @@ async function showLandingView() {
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
-  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#home");
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
@@ -1208,7 +1207,6 @@ function startWizard() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
-  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#write");
   goToStep(1);
 }
@@ -1219,7 +1217,6 @@ function showSettingsView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
   document.getElementById("admin-btn").hidden = !isAdminUser;
-  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#settings");
 }
 
@@ -1229,7 +1226,6 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
-  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#admin");
   loadAdminPanel();
 }
@@ -1360,12 +1356,10 @@ async function showApp() {
   isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
   await Promise.all(tasks);
-  document.getElementById("letters-btn").hidden = false;
   const hash = location.hash;
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
-  else if (hash === "#letters") showLettersView();
   else showLandingView();
 }
 
