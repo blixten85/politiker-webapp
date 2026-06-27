@@ -195,6 +195,8 @@ registerTranslations("sv", {
   btn_hide_qr: "Dölj QR",
   donate_hint: "Gratis och finansierat av frivilliga donationer.",
   donate_paypal_notice: "⚠️ Fungerar inte just nu",
+  stats_visitors_title: "Besöksstatistik (Workers)",
+  stats_letters_title: "Brevstatistik",
   faq_title: "Vanliga frågor",
   faq_q1: "Vad är Politikerkontakt?",
   faq_a1: "Ett fristående, gratis verktyg som gör det enklare att skriva till kommun-, region- och riksdagspolitiker. Vi har samlat officiella kontaktuppgifter så du inte behöver leta dig fram själv.",

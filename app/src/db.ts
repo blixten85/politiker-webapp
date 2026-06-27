@@ -22,6 +22,8 @@ export interface Env {
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
   CIVIC_OUTLOOK_PASSWORD?: string;
   ANTHROPIC_API_KEY?: string;
+  CF_ANALYTICS_TOKEN?: string;
+  CF_ACCOUNT_ID?: string;
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

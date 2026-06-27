@@ -878,7 +878,52 @@ document.getElementById("create-api-key-form").addEventListener("submit", async 
 let adminStatsRaw = null;
 
 async function loadAdminPanel() {
-  await Promise.all([loadAdminAccounts(), loadAdminFeedback(), loadAdminStats()]);
+  await Promise.all([loadAdminAccounts(), loadAdminFeedback(), loadAdminStats(), loadAdminVisitors()]);
+}
+
+async function loadAdminVisitors(days) {
+  const d = days ?? parseInt(document.getElementById("admin-visitors-days").value, 10);
+  let data;
+  try {
+    data = await api(`/api/admin/stats/visitors?days=${d}`);
+  } catch {
+    document.getElementById("admin-visitors-meta").textContent = "Kunde inte hämta besöksstatistik.";
+    return;
+  }
+  const rows = data.days ?? [];
+  const totalReqs = rows.reduce((s, r) => s + r.requests, 0);
+  const totalErr = rows.reduce((s, r) => s + r.errors, 0);
+  const meta = document.getElementById("admin-visitors-meta");
+  meta.textContent = `${totalReqs.toLocaleString("sv-SE")} requests · ${totalErr} fel · senaste ${d} dagarna`;
+
+  const canvas = document.getElementById("admin-visitors-chart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const padding = 36;
+  ctx.clearRect(0, 0, w, h);
+  if (!rows.length) { ctx.fillStyle = "var(--hint)"; ctx.fillText("Ingen data", w / 2, h / 2); return; }
+  const maxVal = Math.max(...rows.map(r => r.requests), 1);
+  const barW = Math.floor((w - padding * 2) / rows.length);
+  const style = getComputedStyle(document.documentElement);
+  const accent = style.getPropertyValue("--accent").trim() || "#006aa7";
+  const hint = style.getPropertyValue("--hint").trim() || "#9aa0a8";
+  const fg = style.getPropertyValue("--fg").trim() || "#e8e8e8";
+  ctx.font = "11px sans-serif";
+  rows.forEach((r, i) => {
+    const barH = Math.round((r.requests / maxVal) * (h - padding - 20));
+    const x = padding + i * barW;
+    const y = h - padding - barH;
+    ctx.fillStyle = accent;
+    ctx.fillRect(x + 1, y, barW - 2, barH);
+  });
+  ctx.fillStyle = hint;
+  const first = rows[0]?.date ?? "";
+  const last = rows[rows.length - 1]?.date ?? "";
+  ctx.fillText(first, padding, h - 4);
+  if (last !== first) ctx.fillText(last, w - padding - ctx.measureText(last).width, h - 4);
+  ctx.fillStyle = fg;
+  ctx.fillText(maxVal.toLocaleString("sv-SE"), 2, padding + 4);
 }
 
 async function loadAdminAccounts() {
@@ -1073,6 +1118,7 @@ function renderStatsChart() {
   }
 }
 
+document.getElementById("admin-visitors-days").addEventListener("change", () => loadAdminVisitors());
 document.getElementById("admin-stats-granularity").addEventListener("change", renderStatsChart);
 document.getElementById("admin-stats-year").addEventListener("change", renderStatsChart);
 document.getElementById("admin-stats-month").addEventListener("change", renderStatsChart);

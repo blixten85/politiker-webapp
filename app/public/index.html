@@ -286,7 +286,6 @@
       <div class="card" id="admin-card">
         <h2 data-i18n="admin_title">Admin</h2>
         <div class="admin-tabs">
-<<<<<<< HEAD
           <button type="button" class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
           <button type="button" class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
           <button type="button" class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
@@ -294,33 +293,28 @@
 
         <div class="admin-tab-panel" id="admin-tab-accounts">
           <button type="button" id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-=======
-          <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
-          <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
-          <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
-        </div>
-
-        <div class="admin-tab-panel" id="admin-tab-accounts">
-          <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
->>>>>>> origin/main
           <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
-<<<<<<< HEAD
           <button type="button" id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-=======
-          <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
->>>>>>> origin/main
           <ul id="admin-feedback-list"></ul>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-stats" hidden>
-<<<<<<< HEAD
           <button type="button" id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-=======
-          <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
->>>>>>> origin/main
+          <h3 data-i18n="stats_visitors_title">Besöksstatistik (Workers)</h3>
+          <div id="admin-visitors-meta" class="admin-stats-totals"></div>
+          <div class="admin-stats-controls">
+            <select id="admin-visitors-days">
+              <option value="7">7 dagar</option>
+              <option value="30" selected>30 dagar</option>
+              <option value="90">90 dagar</option>
+            </select>
+          </div>
+          <canvas id="admin-visitors-chart" width="640" height="160"></canvas>
+
+          <h3 data-i18n="stats_letters_title">Brevstatistik</h3>
           <div id="admin-stats-totals" class="admin-stats-totals"></div>
           <div class="admin-stats-controls">
             <select id="admin-stats-granularity">
@@ -340,11 +334,7 @@
         </div>
 
         <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
-<<<<<<< HEAD
         <button type="button" id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
-=======
-        <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
->>>>>>> origin/main
       </div>
     </div>
   </section>

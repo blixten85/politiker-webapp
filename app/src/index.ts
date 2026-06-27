@@ -567,6 +567,46 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           return json(await getAdminStats(env));
         }
 
+        if (url.pathname === "/api/admin/stats/visitors" && req.method === "GET") {
+          if (!env.CF_ANALYTICS_TOKEN || !env.CF_ACCOUNT_ID) {
+            return json({ error: "CF_ANALYTICS_TOKEN eller CF_ACCOUNT_ID saknas" }, 503);
+          }
+          const days = Math.min(90, parseInt(url.searchParams.get("days") ?? "30", 10));
+          const now = new Date();
+          const start = new Date(now);
+          start.setUTCDate(start.getUTCDate() - days);
+          const query = `{
+            viewer {
+              accounts(filter: {accountTag: "${env.CF_ACCOUNT_ID}"}) {
+                workersInvocationsAdaptive(
+                  limit: 90,
+                  filter: {
+                    scriptName: "politiker-webapp-app",
+                    datetime_geq: "${start.toISOString()}",
+                    datetime_leq: "${now.toISOString()}"
+                  },
+                  orderBy: [date_ASC]
+                ) {
+                  dimensions { date }
+                  sum { requests errors }
+                }
+              }
+            }
+          }`;
+          const cfResp = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.CF_ANALYTICS_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query }),
+          });
+          const cfData = await cfResp.json<{ data?: { viewer?: { accounts?: { workersInvocationsAdaptive?: { dimensions: { date: string }; sum: { requests: number; errors: number } }[] }[] } }; errors?: { message: string }[] }>();
+          if (cfData.errors?.length) return json({ error: cfData.errors[0].message }, 502);
+          const rows = cfData.data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive ?? [];
+          return json({ days: rows.map(r => ({ date: r.dimensions.date, requests: r.sum.requests, errors: r.sum.errors })) });
+        }
+
         if (url.pathname === "/api/admin/export" && req.method === "GET") {
           const section = (url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "all";
           const format = (url.searchParams.get("format") ?? "json") as "csv" | "json";
