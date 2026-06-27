@@ -1176,6 +1176,7 @@ async function showLandingView() {
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  history.replaceState(null, "", "#home");
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
 }
@@ -1186,6 +1187,7 @@ function startWizard() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  history.replaceState(null, "", "#write");
   goToStep(1);
 }
 
@@ -1195,6 +1197,7 @@ function showSettingsView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  history.replaceState(null, "", "#settings");
 }
 
 function showAdminView() {
@@ -1203,6 +1206,7 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
+  history.replaceState(null, "", "#admin");
   loadAdminPanel();
 }
 
@@ -1266,7 +1270,11 @@ async function showApp() {
   isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
   await Promise.all(tasks);
-  showLandingView();
+  const hash = location.hash;
+  if (hash === "#settings") showSettingsView();
+  else if (hash === "#admin" && isAdminUser) showAdminView();
+  else if (hash === "#write") startWizard();
+  else showLandingView();
 }
 
 document.getElementById("admin-btn").addEventListener("click", showAdminView);
