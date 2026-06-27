@@ -6,3 +6,4 @@ infra/cf_*.json
 infra/cloudflare-resources.json
 __pycache__/
 *.pyc
+infra/.env

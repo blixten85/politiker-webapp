@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "politiker-webapp-campaign",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "politiker_webapp",
+      "database_id": "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 5 * * *",
+      "0 6 * * *",
+      "0 7 * * *",
+      "0 8 * * *",
+      "0 9 * * *"
+    ]
+  },
+  "vars": {
+    "SENDER_NAME": "Anders Eriksson",
+    "GITHUB_REPO": "blixten85/politiker-webapp"
+  }
+}
