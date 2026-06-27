@@ -1,0 +1,10 @@
+[Unit]
+Description=Skickar brevutkast dagligen (max 20/dag)
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target
