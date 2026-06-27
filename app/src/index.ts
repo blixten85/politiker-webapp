@@ -70,6 +70,7 @@ export default {
     // förhämtas spekulativt.
     const headers = new Headers(resp.headers);
     headers.delete("Speculation-Rules");
+    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     // /api/* svarar aldrig statiskt (sessioner, OAuth-redirects, dynamisk data) —
     // tvinga no-store så Cloudflares edge-cache aldrig fastnar på ett gammalt svar.
     if (url.pathname.startsWith("/api/")) {
