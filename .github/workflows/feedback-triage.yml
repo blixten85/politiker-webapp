@@ -35,6 +35,7 @@ jobs:
       contents: write      # för att kunna skapa en gren och committa en eventuell fix
       pull-requests: write # för att kunna öppna en PR med fixen
       issues: write        # för att kunna kommentera på issuet med sina fynd
+      id-token: write      # krävs av claude-code-action för OIDC-autentisering
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
