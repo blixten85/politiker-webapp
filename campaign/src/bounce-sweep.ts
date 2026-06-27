@@ -1,5 +1,5 @@
 import type { Env } from "./index";
-import { sendSmtpMail } from "../../shared/smtp";
+import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
 import { callAnthropic, ANTHROPIC_HAIKU } from "../../shared/anthropic";
 
 const MAX_PER_RUN = 150;
@@ -65,7 +65,7 @@ export async function runBounceSweep(env: Env): Promise<void> {
       await sendSmtpMail(config, {
         to: pol.email,
         subject: "Fråga från medborgare",
-        html: `<pre style="font-family:inherit;white-space:pre-wrap">${body.replace(/</g, "&lt;")}</pre>`,
+        html: `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(body)}</pre>`,
       });
 
       const draftId = crypto.randomUUID();

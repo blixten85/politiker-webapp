@@ -79,6 +79,13 @@ function showToast(text) {
   setTimeout(() => toast.remove(), 6000);
 }
 
+// Escapar serverdata innan den läggs in via innerHTML. Publika brev byggs av
+// RSS-titlar och AI-genererad text — aldrig oescapad in i DOM:en.
+const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
+
 // Ring-buffer med senaste API-anrop — inkluderas i felrapporter för kontext.
 // Loggar aldrig request-body (kan innehålla lösenord/SMTP-uppgifter).
 const recentApiCalls = [];
@@ -1246,15 +1253,15 @@ async function loadPublicLetters() {
       card.className = "card letter-card";
       const badge = l.source === "campaign" ? t("letters_badge_campaign") : t("letters_badge_user");
       const date = new Date(l.published_at).toLocaleDateString(currentLocale());
-      const area = l.area_name ? `<span class="letter-area">${l.area_name}</span>` : "";
+      const area = l.area_name ? `<span class="letter-area">${escapeHtml(l.area_name)}</span>` : "";
       card.innerHTML = `
         <div class="letter-card-meta">
-          <span class="letter-badge">${badge}</span>${area}
-          <span class="letter-date">${date}</span>
+          <span class="letter-badge">${escapeHtml(badge)}</span>${area}
+          <span class="letter-date">${escapeHtml(date)}</span>
         </div>
-        <h3 class="letter-subject">${l.subject}</h3>
-        <p class="letter-excerpt">${l.excerpt}…</p>
-        <button type="button" class="link-btn letter-read-btn" data-id="${l.id}" data-i18n="letters_read_more">Läs hela</button>
+        <h3 class="letter-subject">${escapeHtml(l.subject)}</h3>
+        <p class="letter-excerpt">${escapeHtml(l.excerpt)}…</p>
+        <button type="button" class="link-btn letter-read-btn" data-id="${escapeHtml(l.id)}" data-i18n="letters_read_more">Läs hela</button>
       `;
       list.appendChild(card);
     }
@@ -1272,16 +1279,16 @@ document.getElementById("letters-list")?.addEventListener("click", async (e) => 
   const dialog = document.createElement("dialog");
   dialog.innerHTML = `
     <div style="max-width:640px;padding:1.5rem">
-      <h2>${subject}</h2>
-      <pre style="white-space:pre-wrap;font-family:inherit;line-height:1.6">${body}</pre>
-      <button type="button" autofocus style="margin-top:1rem">${t("btn_close")}</button>
+      <h2>${escapeHtml(subject)}</h2>
+      <pre style="white-space:pre-wrap;font-family:inherit;line-height:1.6">${escapeHtml(body)}</pre>
+      <button type="button" autofocus style="margin-top:1rem">${escapeHtml(t("btn_close"))}</button>
     </div>`;
   dialog.querySelector("button").addEventListener("click", () => { dialog.close(); dialog.remove(); });
   document.body.appendChild(dialog);
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn")?.addEventListener("click", loadPublicLetters);
+document.getElementById("letters-load-more")?.addEventListener("click", loadPublicLetters);
 document.getElementById("letters-btn")?.addEventListener("click", showLettersView);
 
 function goToStep(n) {
