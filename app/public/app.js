@@ -1196,6 +1196,7 @@ async function showLandingView() {
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#home");
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
@@ -1207,6 +1208,7 @@ function startWizard() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#write");
   goToStep(1);
 }
@@ -1217,6 +1219,7 @@ function showSettingsView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#settings");
 }
 
@@ -1226,6 +1229,7 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#admin");
   loadAdminPanel();
 }
@@ -1293,7 +1297,7 @@ document.getElementById("letters-list").addEventListener("click", async (e) => {
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn").addEventListener("click", loadPublicLetters);
+document.getElementById("letters-load-more").addEventListener("click", loadPublicLetters);
 document.getElementById("letters-btn").addEventListener("click", showLettersView);
 
 function goToStep(n) {
@@ -1360,6 +1364,7 @@ async function showApp() {
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
+  else if (hash === "#letters") showLettersView();
   else showLandingView();
 }
 
