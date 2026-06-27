@@ -1171,11 +1171,10 @@ let currentStep = 1;
 let isAdminUser = false;
 
 function hideAllAppViews() {
-  document.getElementById("landing-view").hidden = true;
-  document.getElementById("wizard-view").hidden = true;
-  document.getElementById("settings-view").hidden = true;
-  document.getElementById("admin-view").hidden = true;
-  document.getElementById("letters-view").hidden = true;
+  for (const id of ["landing-view", "wizard-view", "settings-view", "admin-view", "letters-view"]) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
 }
 
 async function showLandingView() {
@@ -1221,8 +1220,10 @@ function showAdminView() {
 let lettersPage = 0;
 
 function showLettersView() {
+  const lettersView = document.getElementById("letters-view");
+  if (!lettersView) return;
   hideAllAppViews();
-  document.getElementById("letters-view").hidden = false;
+  lettersView.hidden = false;
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("letters-btn").hidden = true;
