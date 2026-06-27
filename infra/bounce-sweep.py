@@ -20,7 +20,7 @@ log = logging.getLogger()
 
 ENV_FILE      = os.path.expanduser("~/.appdata/.config/.env")
 CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
-SMTP_HOST     = "smtp-mail.outlook.com"
+SMTP_HOST     = "smtp.gmail.com"
 SMTP_PORT     = 587
 CF_DB_ID      = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 SENDER_NAME   = "Anders Eriksson"
@@ -38,7 +38,7 @@ def load_env():
                     env[k.strip()] = v.strip().strip('"').strip("'")
     return env
 
-def send_via_outlook(from_addr, from_pw, to_addr, to_name, subject, body_text):
+def send_via_gmail(from_addr, from_pw, to_addr, to_name, subject, body_text):
     msg = MIMEText(body_text, "plain", "utf-8")
     msg["From"]    = f"{SENDER_NAME} <{from_addr}>"
     msg["To"]      = f"{to_name} <{to_addr}>"
@@ -163,14 +163,14 @@ def main():
     env = load_env()
     cf_token      = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
     anthropic_key = env.get("ANTHROPIC_API_KEY")
-    from_addr     = env.get("OUTLOOK_EMAIL")
-    from_pw       = env.get("OUTLOOK_PASSWORD")
+    from_addr     = env.get("GMAIL_EMAIL")
+    from_pw       = env.get("GMAIL_PASSWORD")
     if not cf_token:
         log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas"); sys.exit(1)
     if not anthropic_key:
         log.error("ANTHROPIC_API_KEY saknas"); sys.exit(1)
     if not from_addr or not from_pw:
-        log.error("OUTLOOK_EMAIL / OUTLOOK_PASSWORD saknas"); sys.exit(1)
+        log.error("GMAIL_EMAIL / GMAIL_PASSWORD saknas"); sys.exit(1)
 
     politicians = fetch_uncovered(cf_token)
     if not politicians:
@@ -188,7 +188,7 @@ def main():
     for pol in politicians:
         personalized = letter_template.replace("[NAMN]", pol["name"])
         try:
-            send_via_outlook(from_addr, from_pw, pol["email"], pol["name"], subject, personalized)
+            send_via_gmail(from_addr, from_pw, pol["email"], pol["name"], subject, personalized)
             record_sent(pol["id"], pol["email"], pol["name"], pol["area_name"], cf_token)
             sent += 1
         except Exception as e:
