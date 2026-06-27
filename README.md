@@ -32,14 +32,16 @@ skrapningslogiken.
 - **API-nycklar**: programmatisk åtkomst (`Authorization: Bearer <nyckel>`) som alternativ till webbläsarinloggning
 - **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering — FAQ förklarar bland annat exakt vilken politikerdata som finns och hur mottagarfiltren kombineras
 - **Admin-panel**: konton, feedback, statistik (med diagram), export (CSV/JSON) per sektion eller allt i ett — samt en separat, fristående export av politiker-listan
-- **Automatisk felrapportering**: oväntade JS-fel skickas till `/api/feedback` utan att användaren behöver göra något
+- **Felrapportering**: oväntade JS-fel loggas till konsolen; användaren kan rapportera via kontaktformuläret
+- **Autonom kampanj-Worker** (`campaign/`): cron-driven Worker (05–09 UTC dagligen) som självständigt hämtar nyheter från SVT, Aftonbladet, Expressen och Riksdagen, filtrerar socialt relevanta ärenden med Claude, genererar personaliserade medborgarbrev och skickar dem via Gmail till kommunpolitiker, regionpolitiker och riksdagsledamöter — utan mänsklig inblandning. Inkluderar bounce-sweep (kontaktar kommunpolitiker som inte nåtts på 90 dagar) och issue-fixer (läser GitHub-issues med `user-reported`-labeln, genererar kodfixar med Claude och öppnar PR automatiskt)
 
 ## Struktur
 
 - `app/` — huvud-Worker: statisk frontend (`public/`, inkl. `i18n.js`, `components/` för wizard-stegen) + API (auth, mail-credentials, mottagarval, brev, AI-utkast, feedback, API-nycklar, admin)
 - `sender/` — Queue consumer-Worker: faktisk SMTP-/Graph-sändning + `rate-limiter.ts` (Durable Object, token bucket per mailkoppling)
-- `shared/` — kod som delas mellan de två (kryptering, SMTP-klient, TOTP, Graph-mail, leverantörs-takter, typer)
-- `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`)
+- `campaign/` — kampanj-Worker (`politiker-webapp-campaign`): autonom cron-kampanj som dagligen hämtar nyheter/riksdagsärenden, genererar medborgarbrev med Claude, skickar dem via Gmail och självläker rapporterade buggar via GitHub-PR
+- `shared/` — kod som delas mellan Workers (kryptering, SMTP-klient, TOTP, Graph-mail, leverantörs-takter, typer)
+- `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`) + `bounce-processor.py` (systemd-tjänst för Gmail-bouncehantering)
 
 ## Sätta upp lokalt
 
@@ -68,7 +70,16 @@ npx wrangler deploy
 cd ../sender && npx wrangler secret put MAIL_CRED_KEY   # samma värde som ovan
 npx wrangler secret put OAUTH_MICROSOFT_CLIENT_SECRET    # samma värde som ovan, för tokenförnyelse
 npx wrangler deploy
+
+cd ../campaign && npm install
+npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put GMAIL_EMAIL
+npx wrangler secret put GMAIL_PASSWORD
+npx wrangler secret put GITHUB_FEEDBACK_TOKEN
+npx wrangler deploy
 ```
+
+Kampanj-Workern deployas även automatiskt vid push till `main` via Cloudflare Workers Builds.
 
 ## Status
 
