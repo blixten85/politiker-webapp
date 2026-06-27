@@ -4,6 +4,14 @@ import type { Env } from "./db";
 
 const FEEDBACK_REPO = "blixten85/politiker-webapp";
 
+interface WorkerError {
+  method: string;
+  endpoint: string;
+  status: number;
+  error_message: string;
+  created_at: number;
+}
+
 export async function submitFeedback(
   env: Env,
   input: {
@@ -16,6 +24,22 @@ export async function submitFeedback(
 ): Promise<{ githubIssueUrl: string | null }> {
   const isContact = input.type === "contact";
   let githubIssueUrl: string | null = null;
+
+  // Hämta serverfel för kontot (senaste 48h) — ger auto-triage-boten
+  // serverkontext utan att exponera hemligheter (endpoint=pathname, ingen body).
+  const since48h = Date.now() - 48 * 60 * 60 * 1000;
+  const serverErrors: WorkerError[] = [];
+  if (input.accountId) {
+    const { results } = await env.DB.prepare(
+      "SELECT method, endpoint, status, error_message, created_at FROM worker_errors WHERE account_id = ? AND created_at >= ? ORDER BY created_at DESC LIMIT 20",
+    )
+      .bind(input.accountId, since48h)
+      .all<WorkerError>();
+    serverErrors.push(...results);
+  }
+
+  // Rensa gamla rader (>48h) — best effort, piggybacks på befintlig skrivning.
+  env.DB.prepare("DELETE FROM worker_errors WHERE created_at < ?").bind(since48h).run().catch(() => {});
 
   // Allmänna kontaktfrågor skapar inte en GitHub-issue (är inte buggar/buggrapporter
   // som hör hemma i kodspårningen) — bara felrapporter gör det.
@@ -35,7 +59,13 @@ export async function submitFeedback(
             "",
             "---",
             `Konto: ${input.accountId ?? "ej inloggad"}`,
-            input.context ? `Kontext: \`\`\`json\n${JSON.stringify(input.context, null, 2)}\n\`\`\`` : "",
+            input.context ? `Klientkontext: \`\`\`json\n${JSON.stringify(input.context, null, 2)}\n\`\`\`` : "",
+            serverErrors.length > 0
+              ? `Serverfel (senaste 48h):\n\`\`\`\n${serverErrors.map(e => {
+                  const ts = new Date(e.created_at).toISOString();
+                  return `${ts}  ${e.method} ${e.endpoint}  ${e.status}  ${e.error_message}`;
+                }).join("\n")}\n\`\`\``
+              : "",
             "",
             "@claude",
           ].join("\n"),

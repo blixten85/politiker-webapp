@@ -75,6 +75,33 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       headers.set("Cache-Control", "no-store");
     }
+
+    // Logga API-fel (4xx utom 401/404, alla 5xx) till worker_errors för att
+    // ge auto-triage-boten kontext om vad som gick fel server-sidan.
+    // 401 = inte inloggad (förväntat), 404 = okänd rutt (förväntat) — loggas ej.
+    // Endpoint = pathname only, aldrig query-params (kan innehålla tokens).
+    if (
+      url.pathname.startsWith("/api/") &&
+      resp.status >= 400 &&
+      resp.status !== 401 &&
+      resp.status !== 404
+    ) {
+      try {
+        const clone = resp.clone();
+        const data = await clone.json<{ error?: string }>();
+        const errorMessage = data.error ?? "okänt fel";
+        const sessionToken = getCookie(req, "session");
+        const account = sessionToken ? await getAccountFromSession(env, sessionToken) : null;
+        await env.DB.prepare(
+          "INSERT INTO worker_errors (id, account_id, method, endpoint, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+          .bind(randomId(), account?.id ?? null, req.method, url.pathname, resp.status, errorMessage, Date.now())
+          .run();
+      } catch {
+        // best effort — loggfel blockerar aldrig svaret
+      }
+    }
+
     return new Response(resp.body, { status: resp.status, headers });
   },
 };

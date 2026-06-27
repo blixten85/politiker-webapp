@@ -54,7 +54,7 @@ async function autoReportError(message, extra = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: `[Auto-rapport] ${message}`,
-        context: { url: location.href, userAgent: navigator.userAgent, ...extra },
+        context: { url: location.href, userAgent: navigator.userAgent, recentApiCalls: recentApiCalls.slice(), ...extra },
       }),
     });
     showToast(t("msg_auto_error_reported"));
@@ -91,12 +91,21 @@ function showToast(text) {
   setTimeout(() => toast.remove(), 6000);
 }
 
+// Ring-buffer med senaste API-anrop — inkluderas i felrapporter för kontext.
+// Loggar aldrig request-body (kan innehålla lösenord/SMTP-uppgifter).
+const recentApiCalls = [];
+const RECENT_API_MAX = 15;
+
 async function api(path, opts = {}) {
   const resp = await fetch(path, {
     ...opts,
     headers: { "Content-Type": "application/json", ...(opts.headers ?? {}) },
   });
   const data = await resp.json();
+  const entry = { ts: new Date().toISOString(), method: opts.method ?? "GET", endpoint: path, status: resp.status };
+  if (!resp.ok) entry.error = data.error;
+  recentApiCalls.push(entry);
+  if (recentApiCalls.length > RECENT_API_MAX) recentApiCalls.shift();
   if (!resp.ok) throw new Error(data.error ?? t("msg_generic_error"));
   return data;
 }
@@ -1115,6 +1124,7 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
           lang: navigator.language,
           step: currentStep,
           view: ["landing-view","wizard-view","settings-view","admin-view"].find(id => !document.getElementById(id)?.hidden) ?? "unknown",
+          recentApiCalls: recentApiCalls.slice(),
         },
       }),
     });
