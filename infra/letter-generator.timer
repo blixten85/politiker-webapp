@@ -1,0 +1,10 @@
+[Unit]
+Description=Kör brevgeneratorn dagligen (efter monitor.timer)
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

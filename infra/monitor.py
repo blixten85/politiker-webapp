@@ -132,6 +132,34 @@ def upsert_items(items, cf_token):
             log.warning("Batch %d misslyckades: %s", start, e)
     return inserted
 
+def fetch_svt_national():
+    sources = [
+        ("https://www.svt.se/nyheter/rss.xml",                                "svt_national",  "Sverige"),
+        ("https://www.svt.se/nyheter/utrikes/rss.xml",                        "svt_utrikes",   "Utrikes"),
+        ("https://rss.aftonbladet.se/rss2/small/pages/sections/senastenytt/", "aftonbladet",   "Sverige"),
+        ("https://feeds.expressen.se/nyheter/",                               "expressen",     "Sverige"),
+    ]
+    items = []
+    for url, source, area in sources:
+        try:
+            content = fetch(url)
+            for entry in parse_rss(content):
+                items.append({
+                    "id": item_id(entry["url"]),
+                    "source": source,
+                    "item_type": "news",
+                    "title": entry["title"],
+                    "url": entry["url"],
+                    "area_name": area,
+                    "area_type": "riksdag",
+                    "summary": entry["summary"],
+                    "published_at": None,
+                })
+        except Exception as e:
+            log.warning("%s misslyckades: %s", source, e)
+    log.info("Nationellt/utrik/riksrev: %d poster", len(items))
+    return items
+
 def fetch_riksdagen_motioner():
     sources = [
         ("mot", "motion"),
@@ -194,6 +222,7 @@ def main():
 
     all_items = []
     all_items += fetch_riksdagen_motioner()
+    all_items += fetch_svt_national()
     all_items += fetch_svt_local()
 
     inserted = upsert_items(all_items, cf_token)
