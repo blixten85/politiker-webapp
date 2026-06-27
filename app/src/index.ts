@@ -107,6 +107,260 @@ export default {
   },
 };
 
+// --- Tabelldriven routing för de inloggade JSON-endpointsen ---------------
+// De auth-känsliga vägarna (OAuth-redirects, cookie-sättning, civic-letter-
+// token, signup/login/feedback) ligger KVAR som explicita handlers i
+// handleRequest — de har var sin särlogik och inget att vinna på en tabell.
+// Det här gäller bara de ~25 likformiga "parsa → anropa funktion → json"-
+// vägarna som tidigare var en lång if-kedja. Ordning bevaras: första
+// matchande (rx + metod) vinner, exakt som förr.
+
+interface RouteCtx {
+  env: Env;
+  req: Request;
+  url: URL;
+  accountId: string;
+  isAdmin: boolean;
+}
+type RouteHandler = (c: RouteCtx, m: RegExpMatchArray) => Promise<Response> | Response;
+interface RouteDef {
+  method: string;
+  rx: RegExp;
+  h: RouteHandler;
+}
+
+async function runRoutes(routes: RouteDef[], c: RouteCtx): Promise<Response | null> {
+  for (const rt of routes) {
+    if (c.req.method !== rt.method) continue;
+    const m = c.url.pathname.match(rt.rx);
+    if (m) return rt.h(c, m);
+  }
+  return null;
+}
+
+const AUTHED_ROUTES: RouteDef[] = [
+  { method: "POST", rx: /^\/api\/totp\/setup$/, h: async (c) => json(await startTotpSetup(c.env, c.accountId)) },
+  { method: "POST", rx: /^\/api\/totp\/confirm$/, h: async (c) => {
+      const { code } = await c.req.json<{ code: string }>();
+      await confirmTotpSetup(c.env, c.accountId, code);
+      return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/totp\/disable$/, h: async (c) => {
+      await disableTotp(c.env, c.accountId);
+      return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/set-password$/, h: async (c) => {
+      const { newPassword } = await c.req.json<{ newPassword: string }>();
+      await setPassword(c.env, c.accountId, newPassword);
+      return json({ ok: true });
+    } },
+  { method: "GET", rx: /^\/api\/oauth-identities$/, h: async (c) => json(await getOAuthIdentities(c.env, c.accountId)) },
+  { method: "DELETE", rx: /^\/api\/oauth-identities\/([a-z]+)$/, h: async (c, m) => {
+      await unlinkOAuthIdentity(c.env, c.accountId, m[1]);
+      return json({ ok: true });
+    } },
+  { method: "GET", rx: /^\/api\/api-keys$/, h: async (c) => json(await listApiKeys(c.env, c.accountId)) },
+  { method: "POST", rx: /^\/api\/api-keys$/, h: async (c) => {
+      const { name } = await c.req.json<{ name: string }>();
+      return json(await createApiKey(c.env, c.accountId, name));
+    } },
+  { method: "DELETE", rx: /^\/api\/api-keys\/([^/]+)$/, h: async (c, m) => {
+      await revokeApiKey(c.env, c.accountId, m[1]);
+      return json({ ok: true });
+    } },
+  { method: "GET", rx: /^\/api\/areas$/, h: async (c) => json(await listAreas(c.env.DB)) },
+  { method: "GET", rx: /^\/api\/parties$/, h: async (c) => json(await listParties(c.env.DB)) },
+  { method: "GET", rx: /^\/api\/roles$/, h: async (c) => json(await listRoles(c.env.DB)) },
+  { method: "GET", rx: /^\/api\/politicians\/search$/, h: async (c) => {
+      const areaNames = c.url.searchParams.getAll("areaName");
+      const q = c.url.searchParams.get("q") ?? "";
+      if (areaNames.length === 0 || q.length < 2) return json([]);
+      return json(await searchPoliticiansInAreas(c.env.DB, areaNames, q));
+    } },
+  { method: "GET", rx: /^\/api\/mail-credentials$/, h: async (c) => json(await listMailCredentials(c.env, c.accountId)) },
+  { method: "GET", rx: /^\/api\/provider-ceilings$/, h: async (c) => {
+      const providers = [...Object.keys(PROVIDER_PRESETS), "microsoft_graph"];
+      const result: Record<string, { providerDailyLimit: number | null; ceiling: number | null }> = {};
+      for (const p of providers) {
+        result[p] = {
+          providerDailyLimit: p === "microsoft_graph" ? MICROSOFT_GRAPH_DAILY_LIMIT : PROVIDER_PRESETS[p].providerDailyLimit,
+          ceiling: getCeiling(p),
+        };
+      }
+      return json(result);
+    } },
+  { method: "POST", rx: /^\/api\/mail-credentials$/, h: async (c) => {
+      const input = await c.req.json<Parameters<typeof addMailCredential>[2]>();
+      return json(await addMailCredential(c.env, c.accountId, input));
+    } },
+  // cap-pct före den bredare :id-DELETE — mer specifik väg först.
+  { method: "POST", rx: /^\/api\/mail-credentials\/([^/]+)\/cap-pct$/, h: async (c, m) => {
+      const { userCapPct } = await c.req.json<{ userCapPct: number }>();
+      return json(await updateMailCredentialCapPct(c.env, c.accountId, m[1], userCapPct));
+    } },
+  { method: "DELETE", rx: /^\/api\/mail-credentials\/([^/]+)$/, h: async (c, m) => {
+      await deleteMailCredential(c.env, c.accountId, m[1]);
+      return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/draft-letter$/, h: async (c) => {
+      // Litet dygnstak — anropet kostar pengar (LLM + websökning) per
+      // gång, oberoende av om mottagarlistan/utskicket annars är fritt.
+      // OBS: best-effort, inte en hård spärr — KV är eventually consistent
+      // och count+put är inte atomiskt, så några samtidiga requests kan i
+      // teorin slinka förbi gränsen. Acceptabelt för ett kostnadsskydd i
+      // den här skalan; en Durable Object skulle krävas för en hård gräns.
+      const DAILY_DRAFT_LIMIT = 10;
+      const rateLimitKey = `draft-rate:${c.accountId}:${new Date().toISOString().slice(0, 10)}`;
+      const currentCount = parseInt((await c.env.SESSIONS.get(rateLimitKey)) ?? "0", 10);
+      if (currentCount >= DAILY_DRAFT_LIMIT) {
+        return json({ error: `Max ${DAILY_DRAFT_LIMIT} AI-utkast per dygn, prova igen imorgon.` }, 429);
+      }
+
+      const { topic, areaType } = await c.req.json<{ topic?: string; areaType?: string }>();
+      try {
+        const result = await draftLetter(c.env, { topic, areaType });
+        await c.env.SESSIONS.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 60 * 60 * 24 });
+        return json(result);
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "Okänt fel" }, 502);
+      }
+    } },
+  { method: "POST", rx: /^\/api\/send$/, h: async (c) => {
+      const input = await c.req.json<{
+        letterHtml: string;
+        subject?: string;
+        mailCredentialId: string;
+        areaNames: string[];
+        excludeParties?: string[];
+        excludeEmails?: string[];
+        includeRoles?: string[];
+        attachments?: AttachmentInput[];
+      }>();
+      const letterId = randomId();
+      await c.env.DB.prepare("INSERT INTO letters (id, account_id, html_body, created_at) VALUES (?, ?, ?, ?)")
+        .bind(letterId, c.accountId, input.letterHtml, Date.now())
+        .run();
+
+      let htmlBody = input.letterHtml;
+      if (input.attachments && input.attachments.length > 0) {
+        const { extractedHtml } = await processAttachments(c.env, letterId, input.attachments);
+        htmlBody += extractedHtml;
+        await c.env.DB.prepare("UPDATE letters SET html_body = ? WHERE id = ?").bind(htmlBody, letterId).run();
+      }
+      const result = await createAndEnqueueSendJob(c.env, c.accountId, {
+        letterId,
+        htmlBody,
+        subject: input.subject,
+        mailCredentialId: input.mailCredentialId,
+        areaNames: input.areaNames,
+        excludeParties: input.excludeParties,
+        excludeEmails: input.excludeEmails,
+        includeRoles: input.includeRoles,
+      });
+      return json(result);
+    } },
+  { method: "GET", rx: /^\/api\/send-jobs$/, h: async (c) => json(await getSendJobsForAccount(c.env, c.accountId)) },
+  { method: "GET", rx: /^\/api\/public\/letters$/, h: async (c) => {
+      const page = Math.max(0, parseInt(c.url.searchParams.get("page") ?? "0", 10));
+      const { results } = await c.env.DB.prepare(
+        "SELECT id, source, subject, substr(body, 1, 400) AS excerpt, area_name, published_at FROM public_letters ORDER BY published_at DESC LIMIT 20 OFFSET ?"
+      ).bind(page * 20).all();
+      return json({ letters: results });
+    } },
+  { method: "GET", rx: /^\/api\/public\/letters\/(.+)$/, h: async (c, m) => {
+      const row = await c.env.DB.prepare(
+        "SELECT subject, body FROM public_letters WHERE id = ?"
+      ).bind(m[1]).first<{ subject: string; body: string }>();
+      if (!row) return json({ error: "Hittades inte" }, 404);
+      return json(row);
+    } },
+  { method: "POST", rx: /^\/api\/letters\/([^/]+)\/publish$/, h: async (c, m) => {
+      const letterId = m[1];
+      const letter = await c.env.DB.prepare(
+        "SELECT l.id, l.html_body FROM letters l JOIN send_jobs sj ON sj.letter_id = l.id WHERE l.id = ? AND sj.account_id = ? LIMIT 1"
+      ).bind(letterId, c.accountId).first<{ id: string; html_body: string }>();
+      if (!letter) return json({ error: "Brevet hittades inte" }, 404);
+      const already = await c.env.DB.prepare(
+        "SELECT id FROM public_letters WHERE source = 'user' AND account_id = ?"
+      ).bind(c.accountId).first();
+      if (already) return json({ error: "Du har redan publicerat ett brev" }, 409);
+      const firstLine = letter.html_body.replace(/[<>]/g, "").split(/\n/).find(l => l.trim().length > 20) ?? "Medborgarbrev";
+      const subject = firstLine.trim().slice(0, 100);
+      const pubId = randomId();
+      await c.env.DB.prepare(
+        "INSERT INTO public_letters (id, source, account_id, subject, body, area_name, published_at) VALUES (?, 'user', ?, ?, ?, NULL, ?)"
+      ).bind(pubId, c.accountId, subject, letter.html_body.replace(/[<>]/g, ""), null, Date.now()).run();
+      return json({ ok: true, id: pubId });
+    } },
+];
+
+// Admin-endpoints: kräver is_admin = 1 (grindas i handleRequest innan dessa
+// körs). Läs-orienterade översikter — övriga konton ser ALDRIG varandras data.
+// next-approved före :id-GET så den inte slukas av param-matchningen.
+const ADMIN_ROUTES: RouteDef[] = [
+  { method: "GET", rx: /^\/api\/admin\/accounts$/, h: async (c) => {
+      const { results } = await c.env.DB.prepare(
+        "SELECT id, email, email_verified, daily_send_cap, is_admin, disabled, created_at FROM accounts ORDER BY created_at DESC",
+      ).all();
+      return json(results);
+    } },
+  { method: "POST", rx: /^\/api\/admin\/accounts\/([^/]+)\/reset-password$/, h: async (c, m) => {
+      await adminResetPassword(c.env, m[1]);
+      return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/admin\/accounts\/([^/]+)\/toggle-disabled$/, h: async (c, m) => {
+      const { disabled } = await c.req.json<{ disabled: boolean }>();
+      await setAccountDisabled(c.env, m[1], disabled);
+      return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/admin\/civic-letter$/, h: async (c) => {
+      const { subject, htmlBody, topicSourceUrl } = await c.req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
+      const draft = await createCivicLetterDraft(c.env, { subject, htmlBody, topicSourceUrl });
+      await sendApprovalNotification(c.env, draft);
+      return json({ ok: true, draftId: draft.id });
+    } },
+  { method: "GET", rx: /^\/api\/admin\/civic-letter\/next-approved$/, h: async (c) => {
+      const draft = await getApprovedUnsentDraft(c.env);
+      return json(draft ? redactApproveToken(draft) : null);
+    } },
+  { method: "GET", rx: /^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)$/, h: async (c, m) => {
+      const draft = await getCivicLetterDraft(c.env, m[1]);
+      if (!draft) return json({ error: "Hittades inte" }, 404);
+      return json(redactApproveToken(draft));
+    } },
+  { method: "POST", rx: /^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)\/status$/, h: async (c, m) => {
+      const { status } = await c.req.json<{ status: string }>();
+      if (status !== "sending" && status !== "done") {
+        return json({ error: "Ogiltig status — måste vara 'sending' eller 'done'" }, 400);
+      }
+      try {
+        await setCivicLetterStatus(c.env, m[1], status);
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : "Fel" }, 400);
+      }
+      return json({ ok: true });
+    } },
+  { method: "GET", rx: /^\/api\/admin\/feedback$/, h: async (c) => {
+      const { results } = await c.env.DB.prepare("SELECT * FROM feedback ORDER BY created_at DESC LIMIT 100").all();
+      return json(results);
+    } },
+  { method: "GET", rx: /^\/api\/admin\/send-jobs$/, h: async (c) => {
+      const { results } = await c.env.DB.prepare(
+        `SELECT sj.*, a.email FROM send_jobs sj JOIN accounts a ON a.id = sj.account_id ORDER BY sj.created_at DESC LIMIT 100`,
+      ).all();
+      return json(results);
+    } },
+  { method: "GET", rx: /^\/api\/admin\/stats$/, h: async (c) => json(await getAdminStats(c.env)) },
+  { method: "GET", rx: /^\/api\/admin\/export$/, h: async (c) => {
+      const section = (c.url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "all";
+      const format = (c.url.searchParams.get("format") ?? "json") as "csv" | "json";
+      const { filename, content, contentType } = await exportAdminData(c.env, section, format);
+      return new Response(content, {
+        headers: { "Content-Type": contentType, "Content-Disposition": `attachment; filename="${filename}"` },
+      });
+    } },
+];
+
 async function handleRequest(req: Request, env: Env, url: URL): Promise<Response> {
 
     // --- OAuth start/callback returnerar redirects, inte JSON — hanteras separat. ---
@@ -326,296 +580,16 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
 
       // Allt nedanför kräver inloggning
       if (!account) return json({ error: "Inte inloggad" }, 401);
-      const accountId = account.id as string;
-      const isAdmin = !!account.is_admin;
+      const ctx: RouteCtx = { env, req, url, accountId: account.id as string, isAdmin: !!account.is_admin };
 
-      if (url.pathname === "/api/totp/setup" && req.method === "POST") {
-        return json(await startTotpSetup(env, accountId));
-      }
+      const authedResp = await runRoutes(AUTHED_ROUTES, ctx);
+      if (authedResp) return authedResp;
 
-      if (url.pathname === "/api/totp/confirm" && req.method === "POST") {
-        const { code } = await req.json<{ code: string }>();
-        await confirmTotpSetup(env, accountId, code);
-        return json({ ok: true });
-      }
-
-      if (url.pathname === "/api/totp/disable" && req.method === "POST") {
-        await disableTotp(env, accountId);
-        return json({ ok: true });
-      }
-
-      if (url.pathname === "/api/set-password" && req.method === "POST") {
-        const { newPassword } = await req.json<{ newPassword: string }>();
-        await setPassword(env, accountId, newPassword);
-        return json({ ok: true });
-      }
-
-      if (url.pathname === "/api/oauth-identities" && req.method === "GET") {
-        return json(await getOAuthIdentities(env, accountId));
-      }
-
-      const unlinkMatch = url.pathname.match(/^\/api\/oauth-identities\/([a-z]+)$/);
-      if (unlinkMatch && req.method === "DELETE") {
-        await unlinkOAuthIdentity(env, accountId, unlinkMatch[1]);
-        return json({ ok: true });
-      }
-
-      if (url.pathname === "/api/api-keys" && req.method === "GET") {
-        return json(await listApiKeys(env, accountId));
-      }
-
-      if (url.pathname === "/api/api-keys" && req.method === "POST") {
-        const { name } = await req.json<{ name: string }>();
-        return json(await createApiKey(env, accountId, name));
-      }
-
-      if (url.pathname.startsWith("/api/api-keys/") && req.method === "DELETE") {
-        const id = url.pathname.split("/").pop()!;
-        await revokeApiKey(env, accountId, id);
-        return json({ ok: true });
-      }
-
-      if (url.pathname === "/api/areas" && req.method === "GET") {
-        return json(await listAreas(env.DB));
-      }
-
-      if (url.pathname === "/api/parties" && req.method === "GET") {
-        return json(await listParties(env.DB));
-      }
-
-      if (url.pathname === "/api/roles" && req.method === "GET") {
-        return json(await listRoles(env.DB));
-      }
-
-      if (url.pathname === "/api/politicians/search" && req.method === "GET") {
-        const areaNames = url.searchParams.getAll("areaName");
-        const q = url.searchParams.get("q") ?? "";
-        if (areaNames.length === 0 || q.length < 2) return json([]);
-        return json(await searchPoliticiansInAreas(env.DB, areaNames, q));
-      }
-
-      if (url.pathname === "/api/mail-credentials" && req.method === "GET") {
-        return json(await listMailCredentials(env, accountId));
-      }
-
-      if (url.pathname === "/api/provider-ceilings" && req.method === "GET") {
-        const providers = [...Object.keys(PROVIDER_PRESETS), "microsoft_graph"];
-        const result: Record<string, { providerDailyLimit: number | null; ceiling: number | null }> = {};
-        for (const p of providers) {
-          result[p] = {
-            providerDailyLimit: p === "microsoft_graph" ? MICROSOFT_GRAPH_DAILY_LIMIT : PROVIDER_PRESETS[p].providerDailyLimit,
-            ceiling: getCeiling(p),
-          };
-        }
-        return json(result);
-      }
-
-      if (url.pathname === "/api/mail-credentials" && req.method === "POST") {
-        const input = await req.json<Parameters<typeof addMailCredential>[2]>();
-        const result = await addMailCredential(env, accountId, input);
-        return json(result);
-      }
-
-      if (url.pathname.startsWith("/api/mail-credentials/") && req.method === "DELETE") {
-        const id = url.pathname.split("/").pop()!;
-        await deleteMailCredential(env, accountId, id);
-        return json({ ok: true });
-      }
-
-      const capPctMatch = url.pathname.match(/^\/api\/mail-credentials\/([^/]+)\/cap-pct$/);
-      if (capPctMatch && req.method === "POST") {
-        const { userCapPct } = await req.json<{ userCapPct: number }>();
-        const result = await updateMailCredentialCapPct(env, accountId, capPctMatch[1], userCapPct);
-        return json(result);
-      }
-
-      if (url.pathname === "/api/draft-letter" && req.method === "POST") {
-        // Litet dygnstak — anropet kostar pengar (LLM + websökning) per
-        // gång, oberoende av om mottagarlistan/utskicket annars är fritt.
-        // OBS: best-effort, inte en hård spärr — KV är eventually consistent
-        // och count+put är inte atomiskt, så några samtidiga requests kan i
-        // teorin slinka förbi gränsen. Acceptabelt för ett kostnadsskydd i
-        // den här skalan; en Durable Object skulle krävas för en hård gräns.
-        const DAILY_DRAFT_LIMIT = 10;
-        const rateLimitKey = `draft-rate:${accountId}:${new Date().toISOString().slice(0, 10)}`;
-        const currentCount = parseInt((await env.SESSIONS.get(rateLimitKey)) ?? "0", 10);
-        if (currentCount >= DAILY_DRAFT_LIMIT) {
-          return json({ error: `Max ${DAILY_DRAFT_LIMIT} AI-utkast per dygn, prova igen imorgon.` }, 429);
-        }
-
-        const { topic, areaType } = await req.json<{ topic?: string; areaType?: string }>();
-        try {
-          const result = await draftLetter(env, { topic, areaType });
-          await env.SESSIONS.put(rateLimitKey, String(currentCount + 1), { expirationTtl: 60 * 60 * 24 });
-          return json(result);
-        } catch (err) {
-          return json({ error: err instanceof Error ? err.message : "Okänt fel" }, 502);
-        }
-      }
-
-      if (url.pathname === "/api/send" && req.method === "POST") {
-        const input = await req.json<{
-          letterHtml: string;
-          subject?: string;
-          mailCredentialId: string;
-          areaNames: string[];
-          excludeParties?: string[];
-          excludeEmails?: string[];
-          includeRoles?: string[];
-          attachments?: AttachmentInput[];
-        }>();
-        const letterId = randomId();
-        await env.DB.prepare("INSERT INTO letters (id, account_id, html_body, created_at) VALUES (?, ?, ?, ?)")
-          .bind(letterId, accountId, input.letterHtml, Date.now())
-          .run();
-
-        let htmlBody = input.letterHtml;
-        if (input.attachments && input.attachments.length > 0) {
-          const { extractedHtml } = await processAttachments(env, letterId, input.attachments);
-          htmlBody += extractedHtml;
-          await env.DB.prepare("UPDATE letters SET html_body = ? WHERE id = ?").bind(htmlBody, letterId).run();
-        }
-        const result = await createAndEnqueueSendJob(env, accountId, {
-          letterId,
-          htmlBody,
-          subject: input.subject,
-          mailCredentialId: input.mailCredentialId,
-          areaNames: input.areaNames,
-          excludeParties: input.excludeParties,
-          excludeEmails: input.excludeEmails,
-          includeRoles: input.includeRoles,
-        });
-        return json(result);
-      }
-
-      if (url.pathname === "/api/send-jobs" && req.method === "GET") {
-        return json(await getSendJobsForAccount(env, accountId));
-      }
-
-      if (url.pathname === "/api/public/letters" && req.method === "GET") {
-        const page = Math.max(0, parseInt(url.searchParams.get("page") ?? "0", 10));
-        const { results } = await env.DB.prepare(
-          "SELECT id, source, subject, substr(body, 1, 400) AS excerpt, area_name, published_at FROM public_letters ORDER BY published_at DESC LIMIT 20 OFFSET ?"
-        ).bind(page * 20).all();
-        return json({ letters: results });
-      }
-
-      if (url.pathname.startsWith("/api/public/letters/") && req.method === "GET") {
-        const id = url.pathname.slice("/api/public/letters/".length);
-        const row = await env.DB.prepare(
-          "SELECT subject, body FROM public_letters WHERE id = ?"
-        ).bind(id).first<{ subject: string; body: string }>();
-        if (!row) return json({ error: "Hittades inte" }, 404);
-        return json(row);
-      }
-
-      const publishMatch = url.pathname.match(/^\/api\/letters\/([^/]+)\/publish$/);
-      if (publishMatch && req.method === "POST") {
-        if (!account) return json({ error: "Inte inloggad" }, 401);
-        const letterId = publishMatch[1];
-        const letter = await env.DB.prepare(
-          "SELECT l.id, l.html_body FROM letters l JOIN send_jobs sj ON sj.letter_id = l.id WHERE l.id = ? AND sj.account_id = ? LIMIT 1"
-        ).bind(letterId, accountId).first<{ id: string; html_body: string }>();
-        if (!letter) return json({ error: "Brevet hittades inte" }, 404);
-        const already = await env.DB.prepare(
-          "SELECT id FROM public_letters WHERE source = 'user' AND account_id = ?"
-        ).bind(accountId).first();
-        if (already) return json({ error: "Du har redan publicerat ett brev" }, 409);
-        const firstLine = letter.html_body.replace(/[<>]/g, "").split(/\n/).find(l => l.trim().length > 20) ?? "Medborgarbrev";
-        const subject = firstLine.trim().slice(0, 100);
-        const pubId = randomId();
-        await env.DB.prepare(
-          "INSERT INTO public_letters (id, source, account_id, subject, body, area_name, published_at) VALUES (?, 'user', ?, ?, ?, NULL, ?)"
-        ).bind(pubId, accountId, subject, letter.html_body.replace(/[<>]/g, ""), null, Date.now()).run();
-        return json({ ok: true, id: pubId });
-      }
-
-      // --- Admin-endpoints: kräver is_admin = 1. Övriga konton ser ALDRIG
-      // varandras data via vanliga endpoints ovan (alla filtrerar på egen
-      // account_id) — admin-vyerna nedan är det enda undantaget, och de är
-      // läs-orienterade översikter, inte ett sätt att agera å andra kontons vägnar.
+      // Admin-grind: alla /api/admin/* kräver is_admin = 1.
       if (url.pathname.startsWith("/api/admin/")) {
-        if (!isAdmin) return json({ error: "Kräver admin-behörighet" }, 403);
-
-        if (url.pathname === "/api/admin/accounts" && req.method === "GET") {
-          const { results } = await env.DB.prepare(
-            "SELECT id, email, email_verified, daily_send_cap, is_admin, disabled, created_at FROM accounts ORDER BY created_at DESC",
-          ).all();
-          return json(results);
-        }
-
-        const resetMatch = url.pathname.match(/^\/api\/admin\/accounts\/([^/]+)\/reset-password$/);
-        if (resetMatch && req.method === "POST") {
-          await adminResetPassword(env, resetMatch[1]);
-          return json({ ok: true });
-        }
-
-        const disableMatch = url.pathname.match(/^\/api\/admin\/accounts\/([^/]+)\/toggle-disabled$/);
-        if (disableMatch && req.method === "POST") {
-          const { disabled } = await req.json<{ disabled: boolean }>();
-          await setAccountDisabled(env, disableMatch[1], disabled);
-          return json({ ok: true });
-        }
-
-        if (url.pathname === "/api/admin/civic-letter" && req.method === "POST") {
-          const { subject, htmlBody, topicSourceUrl } = await req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
-          const draft = await createCivicLetterDraft(env, { subject, htmlBody, topicSourceUrl });
-          await sendApprovalNotification(env, draft);
-          return json({ ok: true, draftId: draft.id });
-        }
-
-        const civicGetMatch = url.pathname.match(/^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)$/);
-        if (civicGetMatch && req.method === "GET") {
-          const draft = await getCivicLetterDraft(env, civicGetMatch[1]);
-          if (!draft) return json({ error: "Hittades inte" }, 404);
-          return json(redactApproveToken(draft));
-        }
-
-        const civicStatusMatch = url.pathname.match(/^\/api\/admin\/civic-letter\/([a-zA-Z0-9]+)\/status$/);
-        if (civicStatusMatch && req.method === "POST") {
-          const { status } = await req.json<{ status: string }>();
-          if (status !== "sending" && status !== "done") {
-            return json({ error: "Ogiltig status — måste vara 'sending' eller 'done'" }, 400);
-          }
-          try {
-            await setCivicLetterStatus(env, civicStatusMatch[1], status);
-          } catch (err) {
-            return json({ error: err instanceof Error ? err.message : "Fel" }, 400);
-          }
-          return json({ ok: true });
-        }
-
-        if (url.pathname === "/api/admin/civic-letter/next-approved" && req.method === "GET") {
-          const draft = await getApprovedUnsentDraft(env);
-          return json(draft ? redactApproveToken(draft) : null);
-        }
-
-        if (url.pathname === "/api/admin/feedback" && req.method === "GET") {
-          const { results } = await env.DB.prepare("SELECT * FROM feedback ORDER BY created_at DESC LIMIT 100").all();
-          return json(results);
-        }
-
-        if (url.pathname === "/api/admin/send-jobs" && req.method === "GET") {
-          const { results } = await env.DB.prepare(
-            `SELECT sj.*, a.email FROM send_jobs sj JOIN accounts a ON a.id = sj.account_id ORDER BY sj.created_at DESC LIMIT 100`,
-          ).all();
-          return json(results);
-        }
-
-        if (url.pathname === "/api/admin/stats" && req.method === "GET") {
-          return json(await getAdminStats(env));
-        }
-
-        if (url.pathname === "/api/admin/export" && req.method === "GET") {
-          const section = (url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "all";
-          const format = (url.searchParams.get("format") ?? "json") as "csv" | "json";
-          const { filename, content, contentType } = await exportAdminData(env, section, format);
-          return new Response(content, {
-            headers: { "Content-Type": contentType, "Content-Disposition": `attachment; filename="${filename}"` },
-          });
-        }
-
-        return json({ error: "Not found" }, 404);
+        if (!ctx.isAdmin) return json({ error: "Kräver admin-behörighet" }, 403);
+        const adminResp = await runRoutes(ADMIN_ROUTES, ctx);
+        return adminResp ?? json({ error: "Not found" }, 404);
       }
 
       return json({ error: "Not found" }, 404);
