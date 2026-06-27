@@ -6,7 +6,7 @@ vilket ger full täckning av ~14 000 kommunpolitiker var 90:e dag.
 Genererar ETT brev per körning (en Claude-anrop) och personaliserar hälsningen.
 Körs av systemd-timer (bounce-sweep.timer) dagligen kl 10:00.
 """
-import urllib.request, json, os, sys, subprocess, logging, uuid
+import urllib.request, json, os, sys, smtplib, logging, uuid
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.header import Header
@@ -19,8 +19,9 @@ logging.basicConfig(
 log = logging.getLogger()
 
 ENV_FILE      = os.path.expanduser("~/.appdata/.config/.env")
-MSMTP_FILE    = "/etc/msmtprc"
 CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
+SMTP_HOST     = "smtp-mail.outlook.com"
+SMTP_PORT     = 587
 CF_DB_ID      = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 SENDER_NAME   = "Anders Eriksson"
 MAX_PER_RUN   = 150
@@ -37,12 +38,16 @@ def load_env():
                     env[k.strip()] = v.strip().strip('"').strip("'")
     return env
 
-def load_sender_email():
-    with open(MSMTP_FILE) as f:
-        for line in f:
-            if line.strip().startswith("user "):
-                return line.strip().split(None, 1)[1]
-    return None
+def send_via_outlook(from_addr, from_pw, to_addr, to_name, subject, body_text):
+    msg = MIMEText(body_text, "plain", "utf-8")
+    msg["From"]    = f"{SENDER_NAME} <{from_addr}>"
+    msg["To"]      = f"{to_name} <{to_addr}>"
+    msg["Subject"] = str(Header(subject, "utf-8"))
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=60) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(from_addr, from_pw)
+        server.send_message(msg)
 
 def d1_query(sql, cf_token, params=None):
     url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/d1/database/{CF_DB_ID}/query"
@@ -156,16 +161,16 @@ def record_sent(pol_id, pol_email, pol_name, area_name, cf_token):
 
 def main():
     env = load_env()
-    cf_token = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
+    cf_token      = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
     anthropic_key = env.get("ANTHROPIC_API_KEY")
+    from_addr     = env.get("OUTLOOK_EMAIL")
+    from_pw       = env.get("OUTLOOK_PASSWORD")
     if not cf_token:
         log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas"); sys.exit(1)
     if not anthropic_key:
         log.error("ANTHROPIC_API_KEY saknas"); sys.exit(1)
-
-    from_addr = load_sender_email()
-    if not from_addr:
-        log.error("Kunde inte läsa avsändaradress från %s", MSMTP_FILE); sys.exit(1)
+    if not from_addr or not from_pw:
+        log.error("OUTLOOK_EMAIL / OUTLOOK_PASSWORD saknas"); sys.exit(1)
 
     politicians = fetch_uncovered(cf_token)
     if not politicians:
@@ -183,7 +188,7 @@ def main():
     for pol in politicians:
         personalized = letter_template.replace("[NAMN]", pol["name"])
         try:
-            send_via_msmtp(from_addr, pol["email"], pol["name"], subject, personalized)
+            send_via_outlook(from_addr, from_pw, pol["email"], pol["name"], subject, personalized)
             record_sent(pol["id"], pol["email"], pol["name"], pol["area_name"], cf_token)
             sent += 1
         except Exception as e:

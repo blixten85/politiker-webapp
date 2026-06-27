@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Bounce processor för politiker-webapp.
-Läser studsade mail från iCloud IMAP, markerar döda adresser i Cloudflare D1.
+Läser studsade mail från Outlook IMAP, markerar döda adresser i Cloudflare D1.
 Körs av systemd-timer (se bounce-processor.timer).
 """
 import imaplib, email, re, sys, os, json, urllib.request, urllib.error, logging
@@ -14,7 +14,6 @@ logging.basicConfig(
 log = logging.getLogger()
 
 ENV_FILE = os.path.expanduser("~/.appdata/.config/.env")
-MSMTP_FILE = "/etc/msmtprc"
 CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
 CF_DB_ID = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 
@@ -29,16 +28,6 @@ def load_env():
                     env[k.strip()] = v.strip().strip('"').strip("'")
     return env
 
-def load_imap_creds():
-    user = pw = None
-    with open(MSMTP_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("user "):
-                user = line.split(None, 1)[1]
-            elif line.startswith("password "):
-                pw = line.split(None, 1)[1]
-    return user, pw
 
 SKIP_DOMAINS = {
     "denied.se","icloud.com","apple.com","microsoft.com","google.com",
@@ -125,29 +114,27 @@ def mark_dead_in_d1(addresses, cf_token):
 
 def main():
     env = load_env()
-    cf_token = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
+    cf_token  = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
+    imap_user = env.get("OUTLOOK_EMAIL")
+    imap_pw   = env.get("OUTLOOK_PASSWORD")
     if not cf_token:
-        log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas i %s", ENV_FILE)
-        sys.exit(1)
-
-    imap_user, imap_pw = load_imap_creds()
+        log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas"); sys.exit(1)
     if not imap_user or not imap_pw:
-        log.error("Kunde inte läsa IMAP-uppgifter från %s", MSMTP_FILE)
-        sys.exit(1)
+        log.error("OUTLOOK_EMAIL / OUTLOOK_PASSWORD saknas"); sys.exit(1)
 
-    mail = imaplib.IMAP4_SSL("imap.mail.me.com", 993)
+    mail = imaplib.IMAP4_SSL("outlook.office365.com", 993)
     mail.login(imap_user, imap_pw)
 
     all_bounced = set()
     processed_seqs = []
 
-    for folder in ['"Deleted Messages"', "INBOX"]:
+    for folder in ["INBOX", "Junk"]:
         status, _ = mail.select(folder)
         if status != "OK":
             continue
 
         # Sök olästa studs-mail (UNSEEN filtrerar bort redan behandlade)
-        _, data = mail.search(None, 'OR UNSEEN SUBJECT "Undelivered" UNSEEN SUBJECT "Undeliverable"')
+        _, data = mail.search(None, '(UNSEEN OR SUBJECT "Undeliverable" SUBJECT "Delivery Status Notification")')
         if not data or not data[0]:
             continue
         seqnums = [s for s in data[0].split() if s]
