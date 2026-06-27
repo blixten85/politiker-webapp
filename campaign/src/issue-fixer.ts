@@ -1,4 +1,5 @@
 import type { Env } from "./index";
+import { callAnthropic, ANTHROPIC_SONNET } from "../../shared/anthropic";
 
 const MAX_PER_RUN   = 3;
 const AUTOFIX_LABEL = "autofix-attempted";
@@ -33,23 +34,6 @@ async function ghApi<T = unknown>(token: string, path: string, method = "GET", b
   const data = text ? JSON.parse(text) : undefined;
   if (!resp.ok) throw new Error(`GitHub API ${method} ${path} misslyckades: ${resp.status} ${JSON.stringify(data).slice(0, 200)}`);
   return data as T;
-}
-
-async function callClaude(apiKey: string, prompt: string): Promise<string> {
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
-  const data = await resp.json() as { content?: Array<{ text: string }> };
-  const text = data.content?.[0]?.text;
-  if (!text) throw new Error("Anthropic: tomt svar");
-  return text.trim();
 }
 
 function parseStackTrace(body: string): { file: string; line: number } | null {
@@ -118,7 +102,7 @@ ${(issue.body ?? "").slice(0, 1000)}
 Returnera ENBART den fullständiga fixade filen (hela innehållet, inte bara ändringen).
 Om du inte kan göra en säker fix, svara exakt: INGEN FIX`;
 
-      const fixedContent = await callClaude(env.ANTHROPIC_API_KEY, fixPrompt);
+      const fixedContent = await callAnthropic(env.ANTHROPIC_API_KEY, { model: ANTHROPIC_SONNET, maxTokens: 4000, prompt: fixPrompt });
 
       if (fixedContent.startsWith("INGEN FIX")) {
         console.log(`issue-fixer: #${issue.number} — Claude kunde inte hitta fix`);
