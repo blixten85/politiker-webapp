@@ -48,6 +48,7 @@
     "SYSTEM_SMTP_USER": "nils.anders.eriksson@icloud.com",
     "SYSTEM_FROM_ADDRESS": "politiker@denied.se",
     "FEEDBACK_NOTIFY_EMAIL": "politiker@denied.se",
+    "ISSUE_FIXER_INBOX": "steedpower3@gmail.com",
     "OAUTH_GOOGLE_CLIENT_ID": "1051427827429-nu6si4bq993a4onm8spk7bf94gctgr18.apps.googleusercontent.com",
     "OAUTH_GITHUB_CLIENT_ID": "Ov23liGUkGlc3orVREOY",
     "OAUTH_MICROSOFT_CLIENT_ID": "dd6d7bb1-3a2d-46ad-8d4f-12fe09691414"

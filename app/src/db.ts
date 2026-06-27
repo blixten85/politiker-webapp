@@ -14,6 +14,7 @@ export interface Env {
   SYSTEM_FROM_ADDRESS: string;
   GITHUB_FEEDBACK_TOKEN: string;
   FEEDBACK_NOTIFY_EMAIL: string;
+  ISSUE_FIXER_INBOX?: string;
   OAUTH_GOOGLE_CLIENT_ID?: string;
   OAUTH_GOOGLE_CLIENT_SECRET?: string;
   OAUTH_GITHUB_CLIENT_ID?: string;

@@ -1,0 +1,15 @@
+{
+  "name": "politiker-webapp-campaign",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --remote",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "typescript": "^6.0.3",
+    "@cloudflare/workers-types": "^4.0.0"
+  }
+}

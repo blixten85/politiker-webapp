@@ -43,24 +43,8 @@ initTheme();
 // utan inloggning (endpointen kräver inte session). Användarens egna
 // hanterade meddelanden (fel lösenord, validering m.m.) rapporteras INTE
 // automatiskt — bara oväntade undantag.
-let lastAutoReportAt = 0;
-async function autoReportError(message, extra = {}) {
-  const now = Date.now();
-  if (now - lastAutoReportAt < 5000) return; // undvik spam vid upprepade fel
-  lastAutoReportAt = now;
-  try {
-    await fetch("/api/feedback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: `[Auto-rapport] ${message}`,
-        context: { url: location.href, userAgent: navigator.userAgent, recentApiCalls: recentApiCalls.slice(), ...extra },
-      }),
-    });
-    showToast(t("msg_auto_error_reported"));
-  } catch {
-    // Om till och med felrapporteringen misslyckas finns inget mer att göra klientsidan.
-  }
+function autoReportError(message, extra = {}) {
+  console.error("[Auto-rapport]", message, { url: location.href, ...extra });
 }
 
 // Webbläsartillägg injicerar egen kod på sidan, och fel DÄRIFRÅN dyker upp i
@@ -1359,7 +1343,7 @@ async function showApp() {
   }
   isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
-  await Promise.all(tasks);
+  await Promise.allSettled(tasks);
   const hash = location.hash;
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
