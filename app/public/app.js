@@ -1277,7 +1277,7 @@ async function loadPublicLetters() {
   }
 }
 
-document.getElementById("letters-list").addEventListener("click", async (e) => {
+document.getElementById("letters-list")?.addEventListener("click", async (e) => {
   const btn = e.target.closest(".letter-read-btn");
   if (!btn) return;
   const { subject, body } = await api(`/api/public/letters/${btn.dataset.id}`);
@@ -1293,8 +1293,8 @@ document.getElementById("letters-list").addEventListener("click", async (e) => {
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn").addEventListener("click", loadPublicLetters);
-document.getElementById("letters-btn").addEventListener("click", showLettersView);
+document.getElementById("letters-more-btn")?.addEventListener("click", loadPublicLetters);
+document.getElementById("letters-btn")?.addEventListener("click", showLettersView);
 
 function goToStep(n) {
   currentStep = n;
