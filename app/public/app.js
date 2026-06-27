@@ -1187,11 +1187,10 @@ let currentStep = 1;
 let isAdminUser = false;
 
 function hideAllAppViews() {
-  document.getElementById("landing-view").hidden = true;
-  document.getElementById("wizard-view").hidden = true;
-  document.getElementById("settings-view").hidden = true;
-  document.getElementById("admin-view").hidden = true;
-  document.getElementById("letters-view").hidden = true;
+  for (const id of ["landing-view", "wizard-view", "settings-view", "admin-view", "letters-view"]) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
 }
 
 async function showLandingView() {
@@ -1200,6 +1199,7 @@ async function showLandingView() {
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#home");
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
@@ -1211,6 +1211,7 @@ function startWizard() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#write");
   goToStep(1);
 }
@@ -1221,6 +1222,7 @@ function showSettingsView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#settings");
 }
 
@@ -1230,6 +1232,7 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#admin");
   loadAdminPanel();
 }
@@ -1241,6 +1244,7 @@ function showLettersView() {
   document.getElementById("letters-view").hidden = false;
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
+  document.getElementById("admin-btn").hidden = !isAdminUser;
   document.getElementById("letters-btn").hidden = true;
   history.replaceState(null, "", "#letters");
   lettersPage = 0;
@@ -1364,6 +1368,7 @@ async function showApp() {
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
+  else if (hash === "#letters") showLettersView();
   else showLandingView();
 }
 
