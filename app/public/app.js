@@ -1332,11 +1332,11 @@ document.querySelectorAll(".wizard-step-dot").forEach((dot) => {
   dot.addEventListener("click", () => goToStep(Number(dot.dataset.step)));
 });
 
-async function showApp() {
+async function showApp(me) {
   document.getElementById("auth-view").hidden = true;
   document.getElementById("app-view").hidden = false;
   document.getElementById("logout-btn").hidden = false;
-  const me = await api("/api/me");
+  if (!me) me = await api("/api/me");
   if (me.totpEnabled) {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
@@ -1376,11 +1376,13 @@ document.addEventListener("languagechange", () => {
   try {
     const me = await api("/api/me");
     if (me.loggedIn) {
-      await showApp();
+      await showApp(me);
     } else {
       document.getElementById("auth-view").hidden = false;
     }
   } catch {
+    document.getElementById("app-view").hidden = true;
+    document.getElementById("logout-btn").hidden = true;
     document.getElementById("auth-view").hidden = false;
   }
 })();
