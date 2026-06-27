@@ -21,6 +21,7 @@
     <button type="button" id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
     <button type="button" id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
     <button type="button" id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
+    <button type="button" id="letters-btn" class="link-btn" hidden data-i18n="nav_letters">Brev</button>
     <button type="button" id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
     <button type="button" id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
     <button type="button" id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
@@ -335,6 +336,17 @@
 
         <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
         <button type="button" id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+      </div>
+    </div>
+
+    <div id="letters-view" hidden>
+      <div class="card">
+        <h2 data-i18n="letters_title">Publicerade brev</h2>
+        <p class="hint" data-i18n="letters_hint">Kampanjbrev och brev som medborgare valt att dela. Inspiration inför dina egna utskick.</p>
+      </div>
+      <div id="letters-list"></div>
+      <div id="letters-load-more" hidden style="text-align:center;margin-top:1rem">
+        <button type="button" id="letters-more-btn" class="link-btn" data-i18n="letters_load_more">Ladda fler</button>
       </div>
     </div>
   </section>

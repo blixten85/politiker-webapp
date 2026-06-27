@@ -754,6 +754,25 @@ async function loadSendJobs() {
       bounce: j.bounce_count,
       status: j.status,
     });
+    if (j.status === "done" && j.letter_id) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "link-btn";
+      btn.dataset.letterId = j.letter_id;
+      btn.dataset.i18n = "btn_publish_letter";
+      btn.textContent = t("btn_publish_letter");
+      btn.style.marginLeft = "0.5rem";
+      btn.addEventListener("click", async () => {
+        try {
+          await api(`/api/letters/${j.letter_id}/publish`, { method: "POST" });
+          btn.textContent = t("btn_published");
+          btn.disabled = true;
+        } catch (e) {
+          btn.textContent = e.message;
+        }
+      });
+      li.appendChild(btn);
+    }
     ul.appendChild(li);
   }
 }
@@ -1168,6 +1187,7 @@ function hideAllAppViews() {
   document.getElementById("wizard-view").hidden = true;
   document.getElementById("settings-view").hidden = true;
   document.getElementById("admin-view").hidden = true;
+  document.getElementById("letters-view").hidden = true;
 }
 
 async function showLandingView() {
@@ -1176,6 +1196,7 @@ async function showLandingView() {
   document.getElementById("home-btn").hidden = true;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#home");
   const { renderLanding } = await import("/components/step-landing.js");
   renderLanding(document.getElementById("landing-view"), { t, onStart: startWizard });
@@ -1187,6 +1208,7 @@ function startWizard() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#write");
   goToStep(1);
 }
@@ -1197,6 +1219,7 @@ function showSettingsView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = true;
   document.getElementById("admin-btn").hidden = !isAdminUser;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#settings");
 }
 
@@ -1206,9 +1229,76 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
+  document.getElementById("letters-btn").hidden = false;
   history.replaceState(null, "", "#admin");
   loadAdminPanel();
 }
+
+let lettersPage = 0;
+
+function showLettersView() {
+  hideAllAppViews();
+  document.getElementById("letters-view").hidden = false;
+  document.getElementById("home-btn").hidden = false;
+  document.getElementById("settings-btn").hidden = false;
+  document.getElementById("letters-btn").hidden = true;
+  history.replaceState(null, "", "#letters");
+  lettersPage = 0;
+  document.getElementById("letters-list").innerHTML = "";
+  loadPublicLetters();
+}
+
+async function loadPublicLetters() {
+  const list = document.getElementById("letters-list");
+  try {
+    const { letters } = await api(`/api/public/letters?page=${lettersPage}`);
+    if (letters.length === 0 && lettersPage === 0) {
+      list.innerHTML = `<p class="hint" style="padding:1rem">${t("letters_empty")}</p>`;
+      document.getElementById("letters-load-more").hidden = true;
+      return;
+    }
+    for (const l of letters) {
+      const card = document.createElement("div");
+      card.className = "card letter-card";
+      const badge = l.source === "campaign" ? t("letters_badge_campaign") : t("letters_badge_user");
+      const date = new Date(l.published_at).toLocaleDateString(currentLocale());
+      const area = l.area_name ? `<span class="letter-area">${l.area_name}</span>` : "";
+      card.innerHTML = `
+        <div class="letter-card-meta">
+          <span class="letter-badge">${badge}</span>${area}
+          <span class="letter-date">${date}</span>
+        </div>
+        <h3 class="letter-subject">${l.subject}</h3>
+        <p class="letter-excerpt">${l.excerpt}…</p>
+        <button type="button" class="link-btn letter-read-btn" data-id="${l.id}" data-i18n="letters_read_more">Läs hela</button>
+      `;
+      list.appendChild(card);
+    }
+    document.getElementById("letters-load-more").hidden = letters.length < 20;
+    lettersPage++;
+  } catch (e) {
+    list.innerHTML += `<p class="hint" style="padding:1rem">${t("letters_error")}</p>`;
+  }
+}
+
+document.getElementById("letters-list").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".letter-read-btn");
+  if (!btn) return;
+  const { subject, body } = await api(`/api/public/letters/${btn.dataset.id}`);
+  const dialog = document.createElement("dialog");
+  dialog.innerHTML = `
+    <div style="max-width:640px;padding:1.5rem">
+      <h2>${subject}</h2>
+      <pre style="white-space:pre-wrap;font-family:inherit;line-height:1.6">${body}</pre>
+      <button type="button" autofocus style="margin-top:1rem">${t("btn_close")}</button>
+    </div>`;
+  dialog.querySelector("button").addEventListener("click", () => { dialog.close(); dialog.remove(); });
+  document.body.appendChild(dialog);
+  dialog.showModal();
+});
+
+document.getElementById("letters-more-btn").addEventListener("click", loadPublicLetters);
+document.getElementById("letters-btn").addEventListener("click", showLettersView);
 
 function goToStep(n) {
   currentStep = n;
@@ -1270,10 +1360,12 @@ async function showApp() {
   isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
   await Promise.all(tasks);
+  document.getElementById("letters-btn").hidden = false;
   const hash = location.hash;
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
+  else if (hash === "#letters") showLettersView();
   else showLandingView();
 }
 

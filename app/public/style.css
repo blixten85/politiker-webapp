@@ -233,6 +233,7 @@ textarea#letter-body { font-family: monospace; }
 .donate-row-header { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.75rem; }
 .donate-icon { display: flex; align-items: center; flex-shrink: 0; color: var(--fg); }
 .donate-name { flex: 1; font-weight: 500; color: var(--fg); text-decoration: none; }
+a.donate-name { color: var(--link); }
 a.donate-name:hover { text-decoration: underline; }
 .donate-qr-btn { font-size: 0.8rem; padding: 0.2rem 0.5rem; border: 1px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--fg); cursor: pointer; white-space: nowrap; }
 .donate-qr-btn:hover { border-color: var(--accent); }
@@ -294,3 +295,10 @@ a.donate-name:hover { text-decoration: underline; }
 #cap-pct-preview { margin-top: 0; }
 .cred-cap-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .cred-cap-row select { padding: 0.2rem 0.4rem; font-size: 0.8rem; background: var(--input-bg); color: var(--fg); border: 1px solid var(--input-border); border-radius: 4px; }
+.letter-card { margin-bottom: 1rem; }
+.letter-card-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem; font-size: 0.82rem; color: var(--hint); }
+.letter-badge { background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.75rem; font-weight: 600; }
+.letter-area { color: var(--hint); }
+.letter-date { margin-left: auto; }
+.letter-subject { margin: 0 0 0.4rem; font-size: 1rem; }
+.letter-excerpt { margin: 0 0 0.6rem; font-size: 0.88rem; color: var(--hint); line-height: 1.5; white-space: pre-wrap; }

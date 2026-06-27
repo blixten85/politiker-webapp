@@ -491,6 +491,44 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         return json(await getSendJobsForAccount(env, accountId));
       }
 
+      if (url.pathname === "/api/public/letters" && req.method === "GET") {
+        const page = Math.max(0, parseInt(url.searchParams.get("page") ?? "0", 10));
+        const { results } = await env.DB.prepare(
+          "SELECT id, source, subject, substr(body, 1, 400) AS excerpt, area_name, published_at FROM public_letters ORDER BY published_at DESC LIMIT 20 OFFSET ?"
+        ).bind(page * 20).all();
+        return json({ letters: results });
+      }
+
+      if (url.pathname.startsWith("/api/public/letters/") && req.method === "GET") {
+        const id = url.pathname.slice("/api/public/letters/".length);
+        const row = await env.DB.prepare(
+          "SELECT subject, body FROM public_letters WHERE id = ?"
+        ).bind(id).first<{ subject: string; body: string }>();
+        if (!row) return json({ error: "Hittades inte" }, 404);
+        return json(row);
+      }
+
+      const publishMatch = url.pathname.match(/^\/api\/letters\/([^/]+)\/publish$/);
+      if (publishMatch && req.method === "POST") {
+        if (!account) return json({ error: "Inte inloggad" }, 401);
+        const letterId = publishMatch[1];
+        const letter = await env.DB.prepare(
+          "SELECT l.id, l.html_body FROM letters l JOIN send_jobs sj ON sj.letter_id = l.id WHERE l.id = ? AND sj.account_id = ? LIMIT 1"
+        ).bind(letterId, accountId).first<{ id: string; html_body: string }>();
+        if (!letter) return json({ error: "Brevet hittades inte" }, 404);
+        const already = await env.DB.prepare(
+          "SELECT id FROM public_letters WHERE source = 'user' AND account_id = ?"
+        ).bind(accountId).first();
+        if (already) return json({ error: "Du har redan publicerat ett brev" }, 409);
+        const firstLine = letter.html_body.replace(/<[^>]+>/g, "").split(/\n/).find(l => l.trim().length > 20) ?? "Medborgarbrev";
+        const subject = firstLine.trim().slice(0, 100);
+        const pubId = randomId();
+        await env.DB.prepare(
+          "INSERT INTO public_letters (id, source, account_id, subject, body, area_name, published_at) VALUES (?, 'user', ?, ?, ?, NULL, ?)"
+        ).bind(pubId, accountId, subject, letter.html_body.replace(/<[^>]+>/g, ""), null, Date.now()).run();
+        return json({ ok: true, id: pubId });
+      }
+
       // --- Admin-endpoints: kräver is_admin = 1. Övriga konton ser ALDRIG
       // varandras data via vanliga endpoints ovan (alla filtrerar på egen
       // account_id) — admin-vyerna nedan är det enda undantaget, och de är
