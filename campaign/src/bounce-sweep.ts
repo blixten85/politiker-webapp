@@ -1,5 +1,6 @@
 import type { Env } from "./index";
 import { sendSmtpMail } from "../../shared/smtp";
+import { callAnthropic, ANTHROPIC_HAIKU } from "../../shared/anthropic";
 
 const MAX_PER_RUN = 150;
 const SWEEP_DAYS  = 90;
@@ -18,13 +19,10 @@ async function generateSweepLetter(env: Env): Promise<string> {
     ? `Aktuellt ärende: ${topic.title}\nSammanfattning: ${(topic.summary ?? "").slice(0, 400)}`
     : "Allmänt medborgaransvar och kommunal service";
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 600,
-      messages: [{ role: "user", content: `Du är ${env.SENDER_NAME}, engagerad svensk medborgare. Du skriver till en kommunpolitiker.
+  return callAnthropic(env.ANTHROPIC_API_KEY, {
+    model: ANTHROPIC_HAIKU,
+    maxTokens: 600,
+    prompt: `Du är ${env.SENDER_NAME}, engagerad svensk medborgare. Du skriver till en kommunpolitiker.
 
 ${context}
 
@@ -35,14 +33,8 @@ Skriv ett kort medborgarbrev (150–200 ord) som:
 4. Avslutas med att du förväntar dig svar
 5. Undertecknas "${env.SENDER_NAME}, medborgare"
 
-Skriv ENBART brevtexten.` }],
-    }),
+Skriv ENBART brevtexten.`,
   });
-  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
-  const data = await resp.json() as { content?: Array<{ text: string }> };
-  const text = data.content?.[0]?.text;
-  if (!text) throw new Error("Anthropic: tomt svar");
-  return text.trim();
 }
 
 export async function runBounceSweep(env: Env): Promise<void> {

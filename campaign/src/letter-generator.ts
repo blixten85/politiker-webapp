@@ -1,4 +1,5 @@
 import type { Env } from "./index";
+import { callAnthropic, ANTHROPIC_HAIKU } from "../../shared/anthropic";
 
 const MAX_ITEMS    = 5;
 const MAX_MAIN     = 10;
@@ -12,21 +13,8 @@ interface Politician {
   id: string; name: string; email: string; area_name: string; party: string | null; role: string | null;
 }
 
-async function callClaude(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
-  });
-  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
-  const data = await resp.json() as { content?: Array<{ text: string }> };
-  const text = data.content?.[0]?.text;
-  if (!text) throw new Error("Anthropic: tomt svar");
-  return text.trim();
-}
-
 async function isRelevant(item: MonitoredItem, apiKey: string): Promise<boolean> {
-  const answer = await callClaude(apiKey, `Avgör om följande nyhet eller riksdagsärende berör MINST ETT av dessa ämnen:
+  const answer = await callAnthropic(apiKey, { model: ANTHROPIC_HAIKU, maxTokens: 5, prompt: `Avgör om följande nyhet eller riksdagsärende berör MINST ETT av dessa ämnen:
 - Sociala rättigheter och välfärd: sjukvård, abort/reproduktiva rättigheter, äldreomsorg, psykiatri, funktionsnedsättning, barnfamiljer, hemlöshet
 - Bostad och stadsplanering: bostadsbrist, hyresrätt, segregation
 - Ekonomi och arbetsmarknad: skatter, pension, lön, sysselsättning, ojämlikhet, fattigdom
@@ -38,14 +26,14 @@ Hoppa BARA över: natur/miljö/strandskydd utan social koppling, tekniska detalj
 Svara ENBART "ja" eller "nej".
 
 Titel: ${item.title}
-Sammanfattning: ${(item.summary ?? "").slice(0, 400)}`, 5);
+Sammanfattning: ${(item.summary ?? "").slice(0, 400)}` });
   return answer.toLowerCase().startsWith("ja");
 }
 
 async function generateLetter(item: MonitoredItem, pol: Politician, senderName: string, apiKey: string): Promise<string> {
   const polDesc = [pol.name, pol.role, pol.party ? `(${pol.party})` : null, pol.area_name].filter(Boolean).join(", ");
   const typeLabel: Record<string, string> = { motion: "motion", proposition: "proposition", betankande: "betänkande", news: "nyhet" };
-  return callClaude(apiKey, `Du är ${senderName}, kritisk och engagerad svensk medborgare.
+  return callAnthropic(apiKey, { model: ANTHROPIC_HAIKU, maxTokens: 800, prompt: `Du är ${senderName}, kritisk och engagerad svensk medborgare.
 
 Mottagare: ${polDesc}
 Ärende (${typeLabel[item.item_type] ?? "ärende"}): ${item.title}
@@ -62,7 +50,7 @@ Skriv ett medborgarbrev (240–320 ord) som:
 7. Undertecknas "${senderName}"
 
 Ton: saklig, direkt, krävande. Inga tomma artighetsfraser.
-Skriv ENBART brevtexten.`, 800);
+Skriv ENBART brevtexten.` });
 }
 
 function randomId(): string {
