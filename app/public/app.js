@@ -1297,7 +1297,7 @@ document.getElementById("letters-list")?.addEventListener("click", async (e) => 
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn")?.addEventListener("click", loadPublicLetters);
+document.getElementById("letters-load-more")?.addEventListener("click", loadPublicLetters);
 document.getElementById("letters-btn")?.addEventListener("click", showLettersView);
 
 function goToStep(n) {
