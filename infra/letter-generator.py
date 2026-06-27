@@ -20,8 +20,9 @@ ENV_FILE      = os.path.expanduser("~/.appdata/.config/.env")
 CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
 CF_DB_ID      = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 SENDER_NAME   = "Anders Eriksson"
-MAX_ITEMS_PER_RUN      = 5   # nya ärenden per dag
-MAX_RECIPIENTS_PER_ITEM = 15  # politiker per ärende
+MAX_ITEMS_PER_RUN        = 5   # nya ärenden per dag
+MAX_RECIPIENTS_PER_ITEM  = 15  # politiker per ärende
+MAX_KOMMUN_PER_ITEM      = 5   # kommunpolitiker inkluderade i varje utskick
 
 def load_env():
     env = {}
@@ -83,25 +84,43 @@ def fetch_new_items(cf_token):
     return result.get("results", [])
 
 def fetch_politicians_for_item(item, cf_token):
+    limit_main = MAX_RECIPIENTS_PER_ITEM - MAX_KOMMUN_PER_ITEM
+
     if item["area_type"] == "riksdag":
         result = d1_query(
             "SELECT id, name, email, area_name, party, role FROM politicians WHERE area_type = 'riksdag' AND verification_status != 'dead_via_send' ORDER BY RANDOM() LIMIT ?",
-            cf_token, [MAX_RECIPIENTS_PER_ITEM],
+            cf_token, [limit_main],
         )
     else:
         area = item["area_name"] or ""
-        # Extrahera det geografiska namnet (t.ex. "Stockholms län" → "Stockholm")
         keyword = area.replace("läns landsting", "").replace("landsting", "").replace("Region ", "").replace(" läns", "").replace(" län", "").strip()
         result = d1_query(
             "SELECT id, name, email, area_name, party, role FROM politicians WHERE area_type = 'region' AND (area_name LIKE ? OR area_name LIKE ?) AND verification_status != 'dead_via_send' ORDER BY RANDOM() LIMIT ?",
-            cf_token, [f"%{keyword}%", f"%{area}%", MAX_RECIPIENTS_PER_ITEM],
+            cf_token, [f"%{keyword}%", f"%{area}%", limit_main],
         )
-    return result.get("results", [])
 
-RELEVANCE_PROMPT = """Avgör om följande nyhet eller riksdagsärende är relevant för MINST ETT av dessa ämnesområden:
-- Sociala frågor: sjukvård, äldreomsorg, psykiatri, bostad, hemlöshet, barnfattigdom, skola, välfärd, pension, lön, sysselsättning, ekonomisk ojämlikhet
-- Ekonomisk politik: skatter, statsbudget, offentliga utgifter, privatiseringar, arbetsmarknad
-- Biståndskorruption: svenska biståndsmedel (Sida), korruption i mottagarländer, vapenexport till konfliktländer, pengaflöden som gynnar eliter snarare än befolkning
+    politicians = result.get("results", [])
+
+    # Lägg alltid till kommunpolitiker för att täcka lokal bouncedetektering
+    existing_ids = {p["id"] for p in politicians}
+    kommun_result = d1_query(
+        "SELECT id, name, email, area_name, party, role FROM politicians WHERE area_type = 'kommun' AND verification_status != 'dead_via_send' AND id NOT IN ({}) ORDER BY RANDOM() LIMIT ?".format(
+            ",".join(f"'{i}'" for i in existing_ids) if existing_ids else "''"
+        ),
+        cf_token, [MAX_KOMMUN_PER_ITEM],
+    )
+    politicians += kommun_result.get("results", [])
+    return politicians
+
+RELEVANCE_PROMPT = """Avgör om följande nyhet eller riksdagsärende berör MINST ETT av dessa ämnen:
+- Sociala rättigheter och välfärd: sjukvård, abort/reproduktiva rättigheter, äldreomsorg, psykiatri, funktionsnedsättning, barnfamiljer, missbruk, hemlöshet
+- Bostad och stadsplanering: bostadsbrist, hyresrätt, byggande, segregation
+- Ekonomi och arbetsmarknad: skatter, statsbudget, pension, lön, sysselsättning, privatiseringar, ojämlikhet, fattigdom
+- Utbildning och skola: förskola, grundskola, gymnasiet, högskoleutbildning, studiestöd
+- Rättsväsen och rättssäkerhet: brottslighet kopplad till sociala faktorer, fängelseväsende, diskriminering, medborgerliga rättigheter, medborgarskap
+- Bistånd och utrikespolitik: svenska biståndsmedel, korruption i mottagarländer, vapenexport, humanitär hjälp
+
+Hoppa BARA över om ärendet handlar om: natur/miljö/strandskydd/djurskydd utan koppling till social rättvisa, tekniska detaljfrågor, eller om titeln är "Motionen utgår" eller liknande.
 
 Svara med ENBART "ja" eller "nej".
 
