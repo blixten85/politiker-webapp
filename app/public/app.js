@@ -1187,11 +1187,10 @@ let currentStep = 1;
 let isAdminUser = false;
 
 function hideAllAppViews() {
-  document.getElementById("landing-view").hidden = true;
-  document.getElementById("wizard-view").hidden = true;
-  document.getElementById("settings-view").hidden = true;
-  document.getElementById("admin-view").hidden = true;
-  document.getElementById("letters-view").hidden = true;
+  for (const id of ["landing-view", "wizard-view", "settings-view", "admin-view", "letters-view"]) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
 }
 
 async function showLandingView() {
