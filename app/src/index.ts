@@ -520,12 +520,12 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           "SELECT id FROM public_letters WHERE source = 'user' AND account_id = ?"
         ).bind(accountId).first();
         if (already) return json({ error: "Du har redan publicerat ett brev" }, 409);
-        const firstLine = letter.html_body.replace(/<[^>]+>/g, "").split(/\n/).find(l => l.trim().length > 20) ?? "Medborgarbrev";
+        const firstLine = letter.html_body.replace(/[<>]/g, "").split(/\n/).find(l => l.trim().length > 20) ?? "Medborgarbrev";
         const subject = firstLine.trim().slice(0, 100);
         const pubId = randomId();
         await env.DB.prepare(
           "INSERT INTO public_letters (id, source, account_id, subject, body, area_name, published_at) VALUES (?, 'user', ?, ?, ?, NULL, ?)"
-        ).bind(pubId, accountId, subject, letter.html_body.replace(/<[^>]+>/g, ""), null, Date.now()).run();
+        ).bind(pubId, accountId, subject, letter.html_body.replace(/[<>]/g, ""), null, Date.now()).run();
         return json({ ok: true, id: pubId });
       }
 
