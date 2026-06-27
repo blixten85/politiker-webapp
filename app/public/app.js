@@ -1273,6 +1273,7 @@ async function showApp() {
   const hash = location.hash;
   if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
+  else if (hash === "#write") startWizard();
   else showLandingView();
 }
 
