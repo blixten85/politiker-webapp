@@ -41,7 +41,7 @@ SVT_REGIONS = {
     "vasternorrland":   "Västernorrlands län",
     "vastmanland":      "Västmanlands län",
     "orebro":           "Örebro läns landsting",
-    "ostergotland":     "Region Östergötland",
+    "ost":              "Region Östergötland",
 }
 
 def load_env():
@@ -108,23 +108,28 @@ def ensure_table(cf_token):
 
 def upsert_items(items, cf_token):
     inserted = 0
-    for item in items:
+    now = int(datetime.now(timezone.utc).timestamp() * 1000)
+    BATCH = 50
+    for start in range(0, len(items), BATCH):
+        batch = items[start:start + BATCH]
+        placeholders = ",".join("(?,?,?,?,?,?,?,?,?,?)" for _ in batch)
+        params = []
+        for item in batch:
+            params += [
+                item["id"], item["source"], item["item_type"],
+                item["title"], item["url"],
+                item.get("area_name"), item.get("area_type"),
+                item.get("summary", ""),
+                item.get("published_at"), now,
+            ]
         try:
             result = d1_query(
-                "INSERT OR IGNORE INTO monitored_items (id, source, item_type, title, url, area_name, area_type, summary, published_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                cf_token,
-                [
-                    item["id"], item["source"], item["item_type"],
-                    item["title"], item["url"],
-                    item.get("area_name"), item.get("area_type"),
-                    item.get("summary", ""),
-                    item.get("published_at"), int(datetime.now(timezone.utc).timestamp() * 1000),
-                ],
+                f"INSERT OR IGNORE INTO monitored_items (id, source, item_type, title, url, area_name, area_type, summary, published_at, created_at) VALUES {placeholders}",
+                cf_token, params,
             )
-            if result["meta"].get("changes", 0) > 0:
-                inserted += 1
+            inserted += result["meta"].get("changes", 0)
         except Exception as e:
-            log.warning("Kunde inte spara %s: %s", item["url"], e)
+            log.warning("Batch %d misslyckades: %s", start, e)
     return inserted
 
 def fetch_riksdagen_motioner():
