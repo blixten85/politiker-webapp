@@ -1385,10 +1385,14 @@ document.addEventListener("languagechange", () => {
     document.getElementById("reset-password-card").hidden = false;
   }
 
-  const me = await api("/api/me");
-  if (me.loggedIn) {
-    showApp();
-  } else {
+  try {
+    const me = await api("/api/me");
+    if (me.loggedIn) {
+      await showApp();
+    } else {
+      document.getElementById("auth-view").hidden = false;
+    }
+  } catch {
     document.getElementById("auth-view").hidden = false;
   }
 })();
