@@ -14,7 +14,17 @@ export async function hashPassword(password: string): Promise<{ hash: string; sa
 
 export async function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
   const computed = await pbkdf2(password, fromBase64(salt));
-  return toBase64(computed) === hash;
+  return timingSafeEqual(toBase64(computed), hash);
+}
+
+// Konstant-tids-jämförelse — undviker timing-läcka där svarstiden annars
+// avslöjar hur många inledande tecken som stämmer. Längden får läcka
+// (hashen har alltid samma längd), men inte var första avvikelsen sitter.
+export function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 async function pbkdf2(password: string, salt: Uint8Array): Promise<ArrayBuffer> {
@@ -83,7 +93,11 @@ export function randomId(): string {
 }
 
 export function randomVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Krypto-säker 6-siffrig kod — Math.random() är förutsägbar och olämplig
+  // för något som gatekeepar e-postverifiering. Modulo-bias här är försumbar
+  // (2^32 / 900000 ≈ 4772 fulla varv, jämn fördelning i praktiken).
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000;
+  return (100000 + n).toString();
 }
 
 // API-nycklar är hög-entropi slumptokens, inte mänskliga lösenord — vanlig

@@ -208,6 +208,13 @@ async function expect(resp: SmtpResponse, expectedCode: number, errorMessage: st
   }
 }
 
+// Escapar text som ska in i en HTML-mejlkropp. Tidigare escapades bara "<",
+// vilket lämnade "&" och ">" orörda (ofullständig sanering — CodeQL flaggade
+// samma mönster i monitor). Escapa alla tre.
+export function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // RFC 2047 "encoded-word" — krävs för att åäö (eller annan icke-ASCII text)
 // i header-fält som Subject ska visas rätt, eftersom rå SMTP-headers är
 // ASCII-only. Body-texten behöver inte detta (den har sin egen

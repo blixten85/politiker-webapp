@@ -1,5 +1,5 @@
 import type { Env } from "./index";
-import { sendSmtpMail } from "../../shared/smtp";
+import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
 
 const MAX_PER_RUN = 20;
 
@@ -33,7 +33,7 @@ export async function runLetterSender(env: Env): Promise<void> {
       await sendSmtpMail(config, {
         to: rec.politician_email,
         subject: rec.subject,
-        html: `<pre style="font-family:inherit;white-space:pre-wrap">${rec.html_body.replace(/</g, "&lt;")}</pre>`,
+        html: `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(rec.html_body)}</pre>`,
       });
       await env.DB.prepare("UPDATE campaign_recipients SET status='sent', sent_at=? WHERE id=?").bind(now, rec.id).run();
       sent++;
