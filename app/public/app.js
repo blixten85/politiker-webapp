@@ -843,10 +843,11 @@ async function loadOAuthIdentities() {
         try {
           await api(`/api/oauth-identities/${provider}`, { method: "DELETE" });
           msg.textContent = "";
-          loadOAuthIdentities();
         } catch (err) {
           msg.textContent = err.message;
+          return;
         }
+        loadOAuthIdentities();
       };
       row.appendChild(span);
       row.appendChild(unlink);
