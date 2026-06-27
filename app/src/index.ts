@@ -29,7 +29,7 @@ import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
 import { draftLetter } from "./draft-letter";
-import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
+import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity, providerSharesLoginCallback } from "./oauth";
 import {
   approveCivicLetterDraft,
   rejectCivicLetterDraft,
@@ -75,6 +75,33 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       headers.set("Cache-Control", "no-store");
     }
+
+    // Logga API-fel (4xx utom 401/404, alla 5xx) till worker_errors för att
+    // ge auto-triage-boten kontext om vad som gick fel server-sidan.
+    // 401 = inte inloggad (förväntat), 404 = okänd rutt (förväntat) — loggas ej.
+    // Endpoint = pathname only, aldrig query-params (kan innehålla tokens).
+    if (
+      url.pathname.startsWith("/api/") &&
+      resp.status >= 400 &&
+      resp.status !== 401 &&
+      resp.status !== 404
+    ) {
+      try {
+        const clone = resp.clone();
+        const data = await clone.json<{ error?: string }>();
+        const errorMessage = data.error ?? "okänt fel";
+        const sessionToken = getCookie(req, "session");
+        const account = sessionToken ? await getAccountFromSession(env, sessionToken) : null;
+        await env.DB.prepare(
+          "INSERT INTO worker_errors (id, account_id, method, endpoint, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        )
+          .bind(randomId(), account?.id ?? null, req.method, url.pathname, resp.status, errorMessage, Date.now())
+          .run();
+      } catch {
+        // best effort — loggfel blockerar aldrig svaret
+      }
+    }
+
     return new Response(resp.body, { status: resp.status, headers });
   },
 };
@@ -95,9 +122,22 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         if (!code || !state) return json({ error: "Saknar code/state" }, 400);
-        const validState = await env.SESSIONS.get(`oauthstate:${state}`);
-        if (!validState) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
+        const storedState = await env.SESSIONS.get(`oauthstate:${state}`);
+        if (!storedState) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
         await env.SESSIONS.delete(`oauthstate:${state}`);
+
+        // Leverantörer med sharesLoginCallback (GitHub) lägger "link:<accountId>"
+        // i state-värdet för länkflödet, eftersom de bara stödjer en callback-URL.
+        if (storedState.startsWith("link:")) {
+          const linkAccountId = storedState.slice("link:".length);
+          const sessionToken = getCookie(req, "session");
+          const account = await getAccountFromSession(env, sessionToken);
+          if (!account || (account.id as string) !== linkAccountId) {
+            return json({ error: "State tillhör en annan session — försök igen" }, 400);
+          }
+          await handleOAuthLinkCallback(provider, env, code, linkAccountId);
+          return Response.redirect("https://politiker.denied.se/", 302);
+        }
 
         const { accountId } = await handleOAuthCallback(provider, env, code);
         const sessionToken = randomId() + randomId();
@@ -177,7 +217,13 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
 
         if (step === "start") {
           const state = randomId();
-          await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          if (providerSharesLoginCallback(provider)) {
+            // GitHub: lagra som "link:<accountId>" under login-state-nyckeln så
+            // att callbacken till /api/oauth/<provider>/callback kan skilja flödena.
+            await env.SESSIONS.put(`oauthstate:${state}`, `link:${account.id as string}`, { expirationTtl: 600 });
+          } else {
+            await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          }
           return Response.redirect(getLinkAuthorizeUrl(provider, env, state), 302);
         }
 

@@ -54,7 +54,7 @@ async function autoReportError(message, extra = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: `[Auto-rapport] ${message}`,
-        context: { url: location.href, userAgent: navigator.userAgent, ...extra },
+        context: { url: location.href, userAgent: navigator.userAgent, recentApiCalls: recentApiCalls.slice(), ...extra },
       }),
     });
     showToast(t("msg_auto_error_reported"));
@@ -91,12 +91,21 @@ function showToast(text) {
   setTimeout(() => toast.remove(), 6000);
 }
 
+// Ring-buffer med senaste API-anrop — inkluderas i felrapporter för kontext.
+// Loggar aldrig request-body (kan innehålla lösenord/SMTP-uppgifter).
+const recentApiCalls = [];
+const RECENT_API_MAX = 15;
+
 async function api(path, opts = {}) {
   const resp = await fetch(path, {
     ...opts,
     headers: { "Content-Type": "application/json", ...(opts.headers ?? {}) },
   });
   const data = await resp.json();
+  const entry = { ts: new Date().toISOString(), method: opts.method ?? "GET", endpoint: path, status: resp.status };
+  if (!resp.ok) entry.error = data.error;
+  recentApiCalls.push(entry);
+  if (recentApiCalls.length > RECENT_API_MAX) recentApiCalls.shift();
   if (!resp.ok) throw new Error(data.error ?? t("msg_generic_error"));
   return data;
 }
@@ -1109,7 +1118,14 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
         message: fd.get("message"),
         type: fd.get("type"),
         replyTo: fd.get("replyTo") || undefined,
-        context: { url: location.href },
+        context: {
+          url: location.href,
+          userAgent: navigator.userAgent,
+          lang: navigator.language,
+          step: currentStep,
+          view: ["landing-view","wizard-view","settings-view","admin-view"].find(id => !document.getElementById(id)?.hidden) ?? "unknown",
+          recentApiCalls: recentApiCalls.slice(),
+        },
       }),
     });
     statusMsg.textContent = t("msg_sent_success");
@@ -1126,6 +1142,17 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
 });
 
 document.getElementById("faq-btn").addEventListener("click", () => document.getElementById("faq-dialog").showModal());
+document.getElementById("donate-btn").addEventListener("click", () => document.getElementById("donate-dialog").showModal());
+document.getElementById("donate-close").addEventListener("click", () => document.getElementById("donate-dialog").close());
+document.querySelectorAll(".donate-qr-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const img = document.getElementById(btn.dataset.target);
+    if (!img) return;
+    img.hidden = !img.hidden;
+    btn.setAttribute("aria-pressed", String(!img.hidden));
+    btn.textContent = img.hidden ? t("btn_show_qr") : t("btn_hide_qr");
+  });
+});
 document.getElementById("faq-close").addEventListener("click", () => document.getElementById("faq-dialog").close());
 
 // Landningssida → wizard (3 steg) → inställningar. Tre toppnivå-vyer inom

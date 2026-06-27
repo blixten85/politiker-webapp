@@ -138,6 +138,20 @@ CREATE TABLE feedback (
   created_at INTEGER NOT NULL
 );
 
+-- Serverfel (4xx/5xx) loggade per API-anrop — inkluderas automatiskt i
+-- GitHub-issues när feedback skickas. Endpoint = pathname utan query-params
+-- (query-params kan innehålla tokens). Rensas löpande i feedback-endpoint (>48h).
+CREATE TABLE worker_errors (
+  id TEXT PRIMARY KEY,
+  account_id TEXT,
+  method TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  status INTEGER NOT NULL,
+  error_message TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX idx_worker_errors_account ON worker_errors(account_id, created_at);
+
 -- Personliga API-nycklar: alternativ till sessionskaka för programmatisk
 -- åtkomst (Authorization: Bearer <nyckel>). Bara hash lagras, klartext visas
 -- en gång vid skapande.
