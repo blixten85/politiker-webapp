@@ -66,8 +66,6 @@ export async function submitFeedback(
                   return `${ts}  ${e.method} ${e.endpoint}  ${e.status}  ${e.error_message}`;
                 }).join("\n")}\n\`\`\``
               : "",
-            "",
-            "@claude",
           ].join("\n"),
           labels: ["feedback", "user-reported"],
         }),
@@ -96,8 +94,8 @@ export async function submitFeedback(
 
   await sendSystemMail(env, env.FEEDBACK_NOTIFY_EMAIL, mailSubject, mailHtml);
   // Skicka även till issue-fixer-inkorgen så att morgon-scriptet kan agera autonomt
-  if (!isContact) {
-    await sendSystemMail(env, "steedpower3@gmail.com", mailSubject, mailHtml).catch(() => {});
+  if (!isContact && env.ISSUE_FIXER_INBOX) {
+    await sendSystemMail(env, env.ISSUE_FIXER_INBOX, mailSubject, mailHtml).catch(() => {});
   }
 
   return { githubIssueUrl };
