@@ -23,7 +23,7 @@ CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
 CF_DB_ID      = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 MAX_PER_RUN   = 20
 SENDER_NAME   = "Anders Eriksson"
-SMTP_HOST     = "smtp-mail.outlook.com"
+SMTP_HOST     = "smtp.gmail.com"
 SMTP_PORT     = 587
 
 def load_env():
@@ -37,7 +37,7 @@ def load_env():
                     env[k.strip()] = v.strip().strip('"').strip("'")
     return env
 
-def send_via_outlook(from_addr, from_pw, to_addr, to_name, subject, body_text):
+def send_via_gmail(from_addr, from_pw, to_addr, to_name, subject, body_text):
     msg = MIMEText(body_text, "plain", "utf-8")
     msg["From"]    = f"{SENDER_NAME} <{from_addr}>"
     msg["To"]      = f"{to_name} <{to_addr}>"
@@ -78,12 +78,12 @@ def fetch_pending(cf_token):
 def main():
     env = load_env()
     cf_token  = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
-    from_addr = env.get("OUTLOOK_EMAIL")
-    from_pw   = env.get("OUTLOOK_PASSWORD")
+    from_addr = env.get("GMAIL_EMAIL")
+    from_pw   = env.get("GMAIL_PASSWORD")
     if not cf_token:
         log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas"); sys.exit(1)
     if not from_addr or not from_pw:
-        log.error("OUTLOOK_EMAIL / OUTLOOK_PASSWORD saknas"); sys.exit(1)
+        log.error("GMAIL_EMAIL / GMAIL_PASSWORD saknas"); sys.exit(1)
 
     pending = fetch_pending(cf_token)
     if not pending:
@@ -96,7 +96,7 @@ def main():
 
     for rec in pending:
         try:
-            send_via_outlook(
+            send_via_gmail(
                 from_addr, from_pw,
                 rec["politician_email"],
                 rec["politician_name"],
