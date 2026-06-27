@@ -115,20 +115,20 @@ def mark_dead_in_d1(addresses, cf_token):
 def main():
     env = load_env()
     cf_token  = env.get("CLOUDFLARE_API_TOKEN_POLITIKER")
-    imap_user = env.get("OUTLOOK_EMAIL")
-    imap_pw   = env.get("OUTLOOK_PASSWORD")
+    imap_user = env.get("GMAIL_EMAIL")
+    imap_pw   = env.get("GMAIL_PASSWORD")
     if not cf_token:
         log.error("CLOUDFLARE_API_TOKEN_POLITIKER saknas"); sys.exit(1)
     if not imap_user or not imap_pw:
-        log.error("OUTLOOK_EMAIL / OUTLOOK_PASSWORD saknas"); sys.exit(1)
+        log.error("GMAIL_EMAIL / GMAIL_PASSWORD saknas"); sys.exit(1)
 
-    mail = imaplib.IMAP4_SSL("outlook.office365.com", 993)
+    mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
     mail.login(imap_user, imap_pw)
 
     all_bounced = set()
     processed_seqs = []
 
-    for folder in ["INBOX", "Junk"]:
+    for folder in ["INBOX", "[Gmail]/Spam"]:
         status, _ = mail.select(folder)
         if status != "OK":
             continue
