@@ -1,0 +1,12 @@
+[Unit]
+Description=Politiker-webapp autonom issue-fixer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=berduf
+ExecStart=/usr/bin/python3 /home/berduf/GitHub/politiker-webapp/infra/issue-fixer.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=issue-fixer

@@ -1,0 +1,10 @@
+[Unit]
+Description=Kör issue-fixer dagligen kl 11:00 (efter letter-sender och bounce-sweep)
+
+[Timer]
+OnCalendar=*-*-* 11:00:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

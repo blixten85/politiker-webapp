@@ -87,16 +87,18 @@ export async function submitFeedback(
     .bind(randomId(), input.accountId, input.message, githubIssueUrl, Date.now())
     .run();
 
-  await sendSystemMail(
-    env,
-    env.FEEDBACK_NOTIFY_EMAIL,
-    isContact ? "Ny kontaktfråga — politiker.denied.se" : "Ny feedback — politiker.denied.se",
-    [
-      input.replyTo ? `<p>Svar önskas till: ${escapeHtml(input.replyTo)}</p>` : "",
-      `<p>${escapeHtml(input.message)}</p>`,
-      !isContact ? `<p>GitHub-issue: ${githubIssueUrl ? `<a href="${githubIssueUrl}">${githubIssueUrl}</a>` : "kunde inte skapas"}</p>` : "",
-    ].join(""),
-  );
+  const mailSubject = isContact ? "Ny kontaktfråga — politiker.denied.se" : "Ny feedback — politiker.denied.se";
+  const mailHtml = [
+    input.replyTo ? `<p>Svar önskas till: ${escapeHtml(input.replyTo)}</p>` : "",
+    `<p>${escapeHtml(input.message)}</p>`,
+    !isContact ? `<p>GitHub-issue: ${githubIssueUrl ? `<a href="${githubIssueUrl}">${githubIssueUrl}</a>` : "kunde inte skapas"}</p>` : "",
+  ].join("");
+
+  await sendSystemMail(env, env.FEEDBACK_NOTIFY_EMAIL, mailSubject, mailHtml);
+  // Skicka även till issue-fixer-inkorgen så att morgon-scriptet kan agera autonomt
+  if (!isContact) {
+    await sendSystemMail(env, "steedpower3@gmail.com", mailSubject, mailHtml).catch(() => {});
+  }
 
   return { githubIssueUrl };
 }

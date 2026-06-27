@@ -74,13 +74,17 @@ function looksLikeExternalScript(filename, stack) {
   return EXTERNAL_SCRIPT_MARKERS.some((marker) => text.includes(marker));
 }
 
+const NOISE_MESSAGES = ["Script error.", "Load failed", "NetworkError when attempting to fetch resource."];
 window.addEventListener("error", (e) => {
   if (looksLikeExternalScript(e.filename, e.error?.stack)) return;
+  if (NOISE_MESSAGES.includes(e.message)) return;
   autoReportError(e.message, { stack: e.error?.stack });
 });
 window.addEventListener("unhandledrejection", (e) => {
   if (looksLikeExternalScript(null, e.reason?.stack)) return;
-  autoReportError(String(e.reason?.message ?? e.reason), { stack: e.reason?.stack });
+  const msg = String(e.reason?.message ?? e.reason);
+  if (NOISE_MESSAGES.includes(msg)) return;
+  autoReportError(msg, { stack: e.reason?.stack });
 });
 
 function showToast(text) {
@@ -1277,7 +1281,7 @@ async function loadPublicLetters() {
   }
 }
 
-document.getElementById("letters-list").addEventListener("click", async (e) => {
+document.getElementById("letters-list")?.addEventListener("click", async (e) => {
   const btn = e.target.closest(".letter-read-btn");
   if (!btn) return;
   const { subject, body } = await api(`/api/public/letters/${btn.dataset.id}`);
@@ -1293,8 +1297,8 @@ document.getElementById("letters-list").addEventListener("click", async (e) => {
   dialog.showModal();
 });
 
-document.getElementById("letters-more-btn").addEventListener("click", loadPublicLetters);
-document.getElementById("letters-btn").addEventListener("click", showLettersView);
+document.getElementById("letters-more-btn")?.addEventListener("click", loadPublicLetters);
+document.getElementById("letters-btn")?.addEventListener("click", showLettersView);
 
 function goToStep(n) {
   currentStep = n;
@@ -1385,10 +1389,14 @@ document.addEventListener("languagechange", () => {
     document.getElementById("reset-password-card").hidden = false;
   }
 
-  const me = await api("/api/me");
-  if (me.loggedIn) {
-    showApp();
-  } else {
+  try {
+    const me = await api("/api/me");
+    if (me.loggedIn) {
+      await showApp();
+    } else {
+      document.getElementById("auth-view").hidden = false;
+    }
+  } catch {
     document.getElementById("auth-view").hidden = false;
   }
 })();
