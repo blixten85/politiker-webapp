@@ -1109,7 +1109,13 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
         message: fd.get("message"),
         type: fd.get("type"),
         replyTo: fd.get("replyTo") || undefined,
-        context: { url: location.href },
+        context: {
+          url: location.href,
+          userAgent: navigator.userAgent,
+          lang: navigator.language,
+          step: currentStep,
+          view: ["landing-view","wizard-view","settings-view","admin-view"].find(id => !document.getElementById(id)?.hidden) ?? "unknown",
+        },
       }),
     });
     statusMsg.textContent = t("msg_sent_success");
@@ -1126,6 +1132,16 @@ document.getElementById("feedback-form").addEventListener("submit", async (e) =>
 });
 
 document.getElementById("faq-btn").addEventListener("click", () => document.getElementById("faq-dialog").showModal());
+document.getElementById("donate-btn").addEventListener("click", () => document.getElementById("donate-dialog").showModal());
+document.getElementById("donate-close").addEventListener("click", () => document.getElementById("donate-dialog").close());
+document.querySelectorAll(".donate-qr-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const img = document.getElementById(btn.dataset.target);
+    if (!img) return;
+    img.hidden = !img.hidden;
+    btn.textContent = img.hidden ? "Visa QR" : "Dölj QR";
+  });
+});
 document.getElementById("faq-close").addEventListener("click", () => document.getElementById("faq-dialog").close());
 
 // Landningssida → wizard (3 steg) → inställningar. Tre toppnivå-vyer inom

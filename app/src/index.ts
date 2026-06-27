@@ -29,7 +29,7 @@ import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
 import { draftLetter } from "./draft-letter";
-import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity } from "./oauth";
+import { getAuthorizeUrl, handleOAuthCallback, getLinkAuthorizeUrl, handleOAuthLinkCallback, getOAuthIdentities, unlinkOAuthIdentity, providerSharesLoginCallback } from "./oauth";
 import {
   approveCivicLetterDraft,
   rejectCivicLetterDraft,
@@ -95,9 +95,17 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         if (!code || !state) return json({ error: "Saknar code/state" }, 400);
-        const validState = await env.SESSIONS.get(`oauthstate:${state}`);
-        if (!validState) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
+        const storedState = await env.SESSIONS.get(`oauthstate:${state}`);
+        if (!storedState) return json({ error: "Ogiltig eller utgången state — försök igen" }, 400);
         await env.SESSIONS.delete(`oauthstate:${state}`);
+
+        // Leverantörer med sharesLoginCallback (GitHub) lägger "link:<accountId>"
+        // i state-värdet för länkflödet, eftersom de bara stödjer en callback-URL.
+        if (storedState.startsWith("link:")) {
+          const linkAccountId = storedState.slice("link:".length);
+          await handleOAuthLinkCallback(provider, env, code, linkAccountId);
+          return Response.redirect("https://politiker.denied.se/", 302);
+        }
 
         const { accountId } = await handleOAuthCallback(provider, env, code);
         const sessionToken = randomId() + randomId();
@@ -177,7 +185,13 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
 
         if (step === "start") {
           const state = randomId();
-          await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          if (providerSharesLoginCallback(provider)) {
+            // GitHub: lagra som "link:<accountId>" under login-state-nyckeln så
+            // att callbacken till /api/oauth/<provider>/callback kan skilja flödena.
+            await env.SESSIONS.put(`oauthstate:${state}`, `link:${account.id as string}`, { expirationTtl: 600 });
+          } else {
+            await env.SESSIONS.put(`oauthlinkstate:${state}`, account.id as string, { expirationTtl: 600 });
+          }
           return Response.redirect(getLinkAuthorizeUrl(provider, env, state), 302);
         }
 

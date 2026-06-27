@@ -13,6 +13,9 @@ interface ProviderConfig {
   scope: string;
   clientIdEnvKey: keyof Env;
   clientSecretEnvKey: keyof Env;
+  // GitHub stödjer bara EN callback-URL per OAuth-app — länkflödet återanvänder
+  // login-callbacken och kodar "link:<accountId>" i state-värdet istället.
+  sharesLoginCallback?: boolean;
 }
 
 const PROVIDERS: Record<string, ProviderConfig> = {
@@ -31,6 +34,7 @@ const PROVIDERS: Record<string, ProviderConfig> = {
     scope: "read:user user:email",
     clientIdEnvKey: "OAUTH_GITHUB_CLIENT_ID",
     clientSecretEnvKey: "OAUTH_GITHUB_CLIENT_SECRET",
+    sharesLoginCallback: true,
   },
   microsoft: {
     authorizeUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
@@ -45,17 +49,26 @@ const PROVIDERS: Record<string, ProviderConfig> = {
 const REDIRECT_BASE = "https://politiker.denied.se/api/oauth";
 const REDIRECT_BASE_LINK = "https://politiker.denied.se/api/oauth-link";
 
+export function providerSharesLoginCallback(provider: string): boolean {
+  return !!PROVIDERS[provider]?.sharesLoginCallback;
+}
+
 export function getLinkAuthorizeUrl(provider: string, env: Env, state: string): string {
   const cfg = PROVIDERS[provider];
   if (!cfg) throw new Error("Okänd leverantör");
   const clientId = env[cfg.clientIdEnvKey] as string | undefined;
   if (!clientId) throw new Error(`${provider}-inloggning är inte konfigurerad än`);
 
+  // Leverantörer med sharesLoginCallback återanvänder login-redirect-URI:n.
+  const redirectUri = cfg.sharesLoginCallback
+    ? `${REDIRECT_BASE}/${provider}/callback`
+    : `${REDIRECT_BASE_LINK}/${provider}/callback`;
+
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: `${REDIRECT_BASE_LINK}/${provider}/callback`,
+    redirect_uri: redirectUri,
     response_type: "code",
-    scope: PROVIDERS[provider].scope,
+    scope: cfg.scope,
     state,
   });
   return `${cfg.authorizeUrl}?${params.toString()}`;
@@ -167,7 +180,11 @@ export async function handleOAuthCallback(
 // skapar ALDRIG ett nytt konto. Om leverantörsidentiteten redan är kopplad
 // till ett ANNAT konto avvisas länkningen explicit.
 export async function handleOAuthLinkCallback(provider: string, env: Env, code: string, currentAccountId: string): Promise<void> {
-  const { providerUserId } = await exchangeCodeForUserInfo(provider, env, code, `${REDIRECT_BASE_LINK}/${provider}/callback`);
+  const cfg = PROVIDERS[provider];
+  const redirectUri = cfg?.sharesLoginCallback
+    ? `${REDIRECT_BASE}/${provider}/callback`
+    : `${REDIRECT_BASE_LINK}/${provider}/callback`;
+  const { providerUserId } = await exchangeCodeForUserInfo(provider, env, code, redirectUri);
 
   const existingIdentity = await env.DB.prepare("SELECT account_id FROM oauth_identities WHERE provider = ? AND provider_user_id = ?")
     .bind(provider, providerUserId)
