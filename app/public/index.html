@@ -18,16 +18,16 @@
     </div>
   </div>
   <nav class="header-links">
-    <button id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
-    <button id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
-    <button id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
-    <button id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
-    <button id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
-    <button id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
-    <button id="donate-btn" class="link-btn" data-i18n="nav_donate">Stötta tjänsten</button>
+    <button type="button" id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
+    <button type="button" id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
+    <button type="button" id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
+    <button type="button" id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
+    <button type="button" id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
+    <button type="button" id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
+    <button type="button" id="donate-btn" class="link-btn" data-i18n="nav_donate">Stötta tjänsten</button>
     <select id="lang-select" aria-label="Språk"></select>
-    <button id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
-    <button id="logout-btn" class="link-btn" hidden data-i18n="nav_logout">Logga ut</button>
+    <button type="button" id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
+    <button type="button" id="logout-btn" class="link-btn" hidden data-i18n="nav_logout">Logga ut</button>
   </nav>
 </header>
 
@@ -57,7 +57,7 @@
         <input type="text" name="totpCode" id="login-totp" autocomplete="one-time-code" data-i18n-placeholder="placeholder_totp_code" placeholder="6-siffrig 2FA-kod" hidden>
         <button type="submit" data-i18n="btn_login">Logga in</button>
       </form>
-      <button id="forgot-password-btn" class="link-btn" data-i18n="forgot_password_link">Glömt lösenord?</button>
+      <button type="button" id="forgot-password-btn" class="link-btn" data-i18n="forgot_password_link">Glömt lösenord?</button>
       <p id="login-msg"></p>
     </div>
 
@@ -171,7 +171,7 @@
         <div id="review-summary"></div>
         <p class="hint" id="review-no-mail-warning" hidden data-i18n="review_no_mail_warning">Du måste koppla ett mailkonto innan du kan skicka — gör det under Inställningar.</p>
 
-        <button id="send-btn" data-i18n="btn_send">Skicka till valda mottagare</button>
+        <button type="button" id="send-btn" data-i18n="btn_send">Skicka till valda mottagare</button>
         <div class="progress-bar" id="send-progress" hidden><div class="progress-bar-fill" id="send-progress-fill"></div></div>
         <p id="send-msg"></p>
 
@@ -246,7 +246,7 @@
       <h2 data-i18n="totp_title">Tvåfaktorsinloggning (2FA)</h2>
       <div id="totp-disabled-view">
         <p class="hint" data-i18n="totp_not_enabled">Inte aktiverat.</p>
-        <button id="totp-setup-btn" data-i18n="btn_enable_totp">Aktivera 2FA</button>
+        <button type="button" id="totp-setup-btn" data-i18n="btn_enable_totp">Aktivera 2FA</button>
       </div>
       <div id="totp-setup-view" hidden>
         <p class="hint" data-i18n="totp_setup_hint">Lägg till denna hemlighet manuellt i din autentiseringsapp (Google Authenticator, Authy, m.fl.):</p>
@@ -259,7 +259,7 @@
       </div>
       <div id="totp-enabled-view" hidden>
         <p class="hint" data-i18n="totp_enabled_hint">2FA är aktiverat på ditt konto.</p>
-        <button id="totp-disable-btn" data-i18n="btn_disable_totp">Inaktivera 2FA</button>
+        <button type="button" id="totp-disable-btn" data-i18n="btn_disable_totp">Inaktivera 2FA</button>
       </div>
       <p id="totp-msg"></p>
     </div>
@@ -286,23 +286,23 @@
       <div class="card" id="admin-card">
         <h2 data-i18n="admin_title">Admin</h2>
         <div class="admin-tabs">
-          <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
-          <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
-          <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
+          <button type="button" class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
+          <button type="button" class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
+          <button type="button" class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-accounts">
-          <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <button type="button" id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
-          <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <button type="button" id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <ul id="admin-feedback-list"></ul>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-stats" hidden>
-          <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
+          <button type="button" id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <div id="admin-stats-totals" class="admin-stats-totals"></div>
           <div class="admin-stats-controls">
             <select id="admin-stats-granularity">
@@ -322,7 +322,7 @@
         </div>
 
         <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
-        <button id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+        <button type="button" id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
       </div>
     </div>
   </section>
@@ -378,8 +378,8 @@
 </dialog>
 
 <dialog id="donate-dialog">
-  <h3>Stötta tjänsten</h3>
-  <p class="hint">Gratis och finansierat av frivilliga donationer.</p>
+  <h3 data-i18n="nav_donate">Stötta tjänsten</h3>
+  <p class="hint" data-i18n="donate_hint">Gratis och finansierat av frivilliga donationer.</p>
 
   <ul class="donate-list">
     <li class="donate-row">
@@ -397,7 +397,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#59b455"/><path fill="#fff" d="M7 12.5c1.5-3 4.5-4.5 7-3s3.5 5 1.5 7.5"/><path fill="#fff" d="M17 11.5c-1.5 3-4.5 4.5-7 3S6.5 9.5 8.5 7"/></svg>
         </span>
         <span class="donate-name">Swish — 079-354 54 97</span>
-        <button class="donate-qr-btn" data-target="swish-qr-img">Visa QR</button>
+        <button type="button" class="donate-qr-btn" data-target="swish-qr-img" aria-pressed="false" data-i18n="btn_show_qr">Visa QR</button>
       </div>
       <img id="swish-qr-img" src="/swish-qr.png" alt="Swish QR-kod" class="donate-qr" hidden>
     </li>
@@ -408,7 +408,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#2bb673"/><path fill="#fff" d="M7 12h10M12 7v10" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
         </span>
         <a href="https://whydonate.com/sv/fundraising/politiker-kontakt" target="_blank" rel="noopener" class="donate-name">WhyDonate</a>
-        <button class="donate-qr-btn" data-target="whydonate-qr-img">Visa QR</button>
+        <button type="button" class="donate-qr-btn" data-target="whydonate-qr-img" aria-pressed="false" data-i18n="btn_show_qr">Visa QR</button>
       </div>
       <img id="whydonate-qr-img" src="/whydonate-qr.png" alt="WhyDonate QR-kod" class="donate-qr" hidden>
     </li>
@@ -419,7 +419,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#003087" d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 0 1 .923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z"/></svg>
         </span>
         <span class="donate-name">PayPal</span>
-        <span class="donate-notice">⚠️ Fungerar inte just nu</span>
+        <span class="donate-notice" data-i18n="donate_paypal_notice">⚠️ Fungerar inte just nu</span>
       </div>
     </li>
   </ul>

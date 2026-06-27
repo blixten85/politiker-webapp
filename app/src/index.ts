@@ -130,6 +130,11 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         // i state-värdet för länkflödet, eftersom de bara stödjer en callback-URL.
         if (storedState.startsWith("link:")) {
           const linkAccountId = storedState.slice("link:".length);
+          const sessionToken = getCookie(req, "session");
+          const account = await getAccountFromSession(env, sessionToken);
+          if (!account || (account.id as string) !== linkAccountId) {
+            return json({ error: "State tillhör en annan session — försök igen" }, 400);
+          }
           await handleOAuthLinkCallback(provider, env, code, linkAccountId);
           return Response.redirect("https://politiker.denied.se/", 302);
         }

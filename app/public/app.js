@@ -1149,7 +1149,8 @@ document.querySelectorAll(".donate-qr-btn").forEach(btn => {
     const img = document.getElementById(btn.dataset.target);
     if (!img) return;
     img.hidden = !img.hidden;
-    btn.textContent = img.hidden ? "Visa QR" : "Dölj QR";
+    btn.setAttribute("aria-pressed", String(!img.hidden));
+    btn.textContent = img.hidden ? t("btn_show_qr") : t("btn_hide_qr");
   });
 });
 document.getElementById("faq-close").addEventListener("click", () => document.getElementById("faq-dialog").close());
