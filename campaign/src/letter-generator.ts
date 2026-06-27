@@ -18,8 +18,11 @@ async function callClaude(apiKey: string, prompt: string, maxTokens: number): Pr
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
   });
-  const data = await resp.json() as { content: Array<{ text: string }> };
-  return data.content[0].text.trim();
+  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
+  const data = await resp.json() as { content?: Array<{ text: string }> };
+  const text = data.content?.[0]?.text;
+  if (!text) throw new Error("Anthropic: tomt svar");
+  return text.trim();
 }
 
 async function isRelevant(item: MonitoredItem, apiKey: string): Promise<boolean> {
@@ -102,10 +105,11 @@ export async function runLetterGenerator(env: Env): Promise<void> {
     }
 
     // Lägg till kommunpolitiker
-    const existingIds = politicians.map(p => `'${p.id}'`).join(",") || "''";
+    const existingIds = politicians.map(p => p.id);
+    const notIn = existingIds.length ? `AND id NOT IN (${existingIds.map(() => "?").join(",")})` : "";
     const { results: kommun } = await env.DB.prepare(
-      `SELECT id,name,email,area_name,party,role FROM politicians WHERE area_type='kommun' AND verification_status!='dead_via_send' AND id NOT IN (${existingIds}) ORDER BY RANDOM() LIMIT ?`
-    ).bind(MAX_KOMMUN).all<Politician>();
+      `SELECT id,name,email,area_name,party,role FROM politicians WHERE area_type='kommun' AND verification_status!='dead_via_send' ${notIn} ORDER BY RANDOM() LIMIT ?`
+    ).bind(...existingIds, MAX_KOMMUN).all<Politician>();
     politicians = [...politicians, ...kommun];
 
     if (!politicians.length) {
@@ -114,6 +118,7 @@ export async function runLetterGenerator(env: Env): Promise<void> {
     }
 
     let firstPublished = false;
+    let itemDrafts = 0;
     const subject = makeSubject(item);
     const now = Date.now();
 
@@ -136,12 +141,15 @@ export async function runLetterGenerator(env: Env): Promise<void> {
           firstPublished = true;
         }
         totalDrafts++;
+        itemDrafts++;
       } catch (e) {
         console.error(`letter-gen: fel för ${pol.name}:`, e);
       }
     }
 
-    await env.DB.prepare("UPDATE monitored_items SET letter_queued=1 WHERE id=?").bind(item.id).run();
+    if (itemDrafts > 0) {
+      await env.DB.prepare("UPDATE monitored_items SET letter_queued=1 WHERE id=?").bind(item.id).run();
+    }
   }
 
   console.log(`letter-gen: ${totalDrafts} brevutkast skapade`);

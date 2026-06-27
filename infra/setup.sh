@@ -9,26 +9,23 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="$HOME/.appdata/.config/.env"
 SERVICE_DIR="/etc/systemd/system"
+CURRENT_USER="$(id -un)"
 
 echo "=== politiker-webapp setup ==="
 echo "Repokatalog: $REPO_DIR"
 
 # --- 1. Beroenden ---
-echo "[1/5] Kontrollerar beroenden..."
+echo "[1/4] Kontrollerar beroenden..."
 if ! command -v python3 &>/dev/null; then
   echo "  Installerar python3..."
   sudo apt-get install -y python3
 fi
-if ! command -v msmtp &>/dev/null; then
-  echo "  Installerar msmtp..."
-  sudo apt-get install -y msmtp
-fi
 
 # --- 2. Miljövariabler ---
-echo "[2/5] Konfigurerar .env..."
+echo "[2/4] Konfigurerar .env..."
 mkdir -p "$(dirname "$ENV_FILE")"
 if [ ! -f "$ENV_FILE" ]; then
-  cp "$REPO_DIR/infra/.env.example" "$ENV_FILE"
+  install -m 600 "$REPO_DIR/infra/.env.example" "$ENV_FILE"
   echo "  Skapad: $ENV_FILE"
   echo "  OBS: Fyll i värdena i $ENV_FILE innan du fortsätter."
   echo "  Kör sedan: bash $REPO_DIR/infra/setup.sh"
@@ -37,43 +34,25 @@ else
   echo "  Finns redan: $ENV_FILE"
 fi
 
-# Läs variabler
-source <(grep -v '^#' "$ENV_FILE" | grep '=' | sed 's/^/export /')
+# Läs specifika variabler utan att evaluera .env som shellkod
+_get_env() {
+  grep -m1 "^$1=" "$ENV_FILE" | cut -d= -f2- | tr -d '"'"'"
+}
+GMAIL_EMAIL="$(_get_env GMAIL_EMAIL)"
+GMAIL_PASSWORD="$(_get_env GMAIL_PASSWORD)"
 
-if [ -z "${GMAIL_EMAIL:-}" ] || [ -z "${GMAIL_PASSWORD:-}" ]; then
+if [ -z "${GMAIL_EMAIL}" ] || [ -z "${GMAIL_PASSWORD}" ]; then
   echo "  FEL: GMAIL_EMAIL och GMAIL_PASSWORD måste vara ifyllda i $ENV_FILE"
   exit 1
 fi
 
-# --- 3. msmtp ---
-echo "[3/5] Konfigurerar msmtp..."
-if [ ! -f /etc/msmtprc ]; then
-  sudo tee /etc/msmtprc > /dev/null <<MSMTPRC
-defaults
-auth           on
-tls            on
-tls_trust_file /etc/ssl/certs/ca-certificates.crt
-logfile        /var/log/msmtp.log
-
-account        gmail
-host           smtp.gmail.com
-port           587
-from           ${GMAIL_EMAIL}
-user           ${GMAIL_EMAIL}
-password       ${GMAIL_PASSWORD}
-
-account default : gmail
-MSMTPRC
-  sudo chmod 600 /etc/msmtprc
-  echo "  /etc/msmtprc skapad"
-else
-  echo "  /etc/msmtprc finns redan (rör inte)"
-fi
-
-# --- 4. systemd-tjänster ---
-echo "[4/5] Installerar systemd-tjänster..."
+# --- 3. systemd-tjänster (med rätt användare och sökväg) ---
+echo "[3/4] Installerar systemd-tjänster..."
 for f in bounce-processor.service bounce-processor.timer; do
-  sudo cp "$REPO_DIR/infra/$f" "$SERVICE_DIR/$f"
+  sudo sed \
+    -e "s|User=berduf|User=${CURRENT_USER}|g" \
+    -e "s|/home/berduf/GitHub/politiker-webapp|${REPO_DIR}|g" \
+    "$REPO_DIR/infra/$f" | sudo tee "$SERVICE_DIR/$f" > /dev/null
   echo "  Installerade: $f"
 done
 
@@ -81,8 +60,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now bounce-processor.timer
 echo "  bounce-processor.timer aktiverad"
 
-# --- 5. Verifiera ---
-echo "[5/5] Verifierar..."
+# --- 4. Verifiera ---
+echo "[4/4] Verifierar..."
 systemctl is-active bounce-processor.timer && echo "  bounce-processor.timer: aktiv" || echo "  bounce-processor.timer: INTE aktiv"
 
 echo ""
@@ -92,7 +71,7 @@ echo ""
 echo "Cloudflare Workers (campaign) deployas via:"
 echo "  cd $REPO_DIR/campaign && npm install && npx wrangler deploy"
 echo ""
-echo "Secrets som måste sättas via 'wrangler secret put':"
+echo "Secrets som måste sättas via 'wrangler secret put' i campaign/:"
 echo "  ANTHROPIC_API_KEY"
 echo "  GMAIL_EMAIL"
 echo "  GMAIL_PASSWORD"

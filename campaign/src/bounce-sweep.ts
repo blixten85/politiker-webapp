@@ -38,8 +38,11 @@ Skriv ett kort medborgarbrev (150–200 ord) som:
 Skriv ENBART brevtexten.` }],
     }),
   });
-  const data = await resp.json() as { content: Array<{ text: string }> };
-  return data.content[0].text.trim();
+  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
+  const data = await resp.json() as { content?: Array<{ text: string }> };
+  const text = data.content?.[0]?.text;
+  if (!text) throw new Error("Anthropic: tomt svar");
+  return text.trim();
 }
 
 export async function runBounceSweep(env: Env): Promise<void> {

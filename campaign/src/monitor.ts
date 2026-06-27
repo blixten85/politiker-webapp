@@ -83,7 +83,7 @@ export async function runMonitor(env: Env): Promise<void> {
           area_type: "riksdag", summary: entry.summary,
         });
       }
-    } catch { /* fortsätt med nästa källa */ }
+    } catch (e) { console.error(`monitor: fel vid riksdagen/${type}:`, e); }
   }
 
   // SVT regionalt
@@ -97,7 +97,7 @@ export async function runMonitor(env: Env): Promise<void> {
           area_type: "region", summary: entry.summary,
         });
       }
-    } catch { /* fortsätt */ }
+    } catch (e) { console.error(`monitor: fel vid svt_${slug}:`, e); }
   }
 
   // Nationella källor
@@ -111,7 +111,7 @@ export async function runMonitor(env: Env): Promise<void> {
           area_type: "riksdag", summary: entry.summary,
         });
       }
-    } catch { /* fortsätt */ }
+    } catch (e) { console.error(`monitor: fel vid ${s.source}:`, e); }
   }
 
   const inserted = await batchUpsert(env, items);

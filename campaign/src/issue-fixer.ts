@@ -18,7 +18,7 @@ interface GithubIssue {
   labels: Array<{ name: string }>;
 }
 
-async function ghApi(token: string, path: string, method = "GET", body?: unknown): Promise<unknown> {
+async function ghApi<T = unknown>(token: string, path: string, method = "GET", body?: unknown): Promise<T> {
   const resp = await fetch(`https://api.github.com${path}`, {
     method,
     headers: {
@@ -27,9 +27,12 @@ async function ghApi(token: string, path: string, method = "GET", body?: unknown
       "User-Agent": "politiker-webapp-campaign",
       "Content-Type": "application/json",
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  return resp.json();
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : undefined;
+  if (!resp.ok) throw new Error(`GitHub API ${method} ${path} misslyckades: ${resp.status} ${JSON.stringify(data).slice(0, 200)}`);
+  return data as T;
 }
 
 async function callClaude(apiKey: string, prompt: string): Promise<string> {
@@ -42,8 +45,11 @@ async function callClaude(apiKey: string, prompt: string): Promise<string> {
       messages: [{ role: "user", content: prompt }],
     }),
   });
-  const data = await resp.json() as { content: Array<{ text: string }> };
-  return data.content[0].text.trim();
+  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${await resp.text()}`);
+  const data = await resp.json() as { content?: Array<{ text: string }> };
+  const text = data.content?.[0]?.text;
+  if (!text) throw new Error("Anthropic: tomt svar");
+  return text.trim();
 }
 
 function parseStackTrace(body: string): { file: string; line: number } | null {
@@ -78,21 +84,16 @@ export async function runIssueFixer(env: Env): Promise<void> {
     const stack    = parseStackTrace(issue.body ?? "");
     const sourcePath = stack ? FILE_MAP[stack.file] : null;
 
-    // Markera som under bearbetning
-    await ghApi(env.GITHUB_FEEDBACK_TOKEN, `/repos/${repo}/issues/${issue.number}/labels`, "POST",
-      { labels: [AUTOFIX_LABEL] }
-    );
-
     if (!sourcePath) {
       console.log(`issue-fixer: #${issue.number} — kan inte mappa stack-trace, hoppar över`);
       continue;
     }
 
     try {
-      // Hämta källfil från GitHub
-      const fileData = await ghApi(env.GITHUB_FEEDBACK_TOKEN,
-        `/repos/${repo}/contents/${sourcePath}?ref=main`
-      ) as { content: string; sha: string };
+      // Hämta källfil från samma commit som branchen baseras på
+      const fileData = await ghApi<{ content: string; sha: string }>(env.GITHUB_FEEDBACK_TOKEN,
+        `/repos/${repo}/contents/${sourcePath}?ref=${mainSha}`
+      );
 
       const content = atob(fileData.content.replace(/\n/g, ""));
       const lines   = content.split("\n");
@@ -145,6 +146,11 @@ Om du inte kan göra en säker fix, svara exakt: INGEN FIX`;
         head: branch,
         base: "main",
       });
+
+      // Markera issue som hanterad (efter att allt lyckats)
+      await ghApi(env.GITHUB_FEEDBACK_TOKEN, `/repos/${repo}/issues/${issue.number}/labels`, "POST",
+        { labels: [AUTOFIX_LABEL] }
+      );
 
       console.log(`issue-fixer: PR skapad för issue #${issue.number}`);
     } catch (e) {
