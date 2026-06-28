@@ -93,10 +93,17 @@ export function randomId(): string {
 }
 
 export function randomVerificationCode(): string {
-  // Krypto-säker 6-siffrig kod — Math.random() är förutsägbar och olämplig
-  // för något som gatekeepar e-postverifiering. Modulo-bias här är försumbar
-  // (2^32 / 900000 ≈ 4772 fulla varv, jämn fördelning i praktiken).
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000;
+  // Krypto-säker 6-siffrig kod med rejection sampling för att undvika modulo-bias.
+  const range = 900000; // 100000..999999
+  const maxUint32 = 0x1_0000_0000; // 2^32
+  const limit = Math.floor(maxUint32 / range) * range;
+
+  let x: number;
+  do {
+    x = crypto.getRandomValues(new Uint32Array(1))[0];
+  } while (x >= limit);
+
+  const n = x % range;
   return (100000 + n).toString();
 }
 
