@@ -194,7 +194,8 @@ const AUTHED_ROUTES: RouteDef[] = [
   { method: "GET", rx: /^\/api\/politicians\/search$/, h: async (c) => {
       const areaNames = c.url.searchParams.getAll("areaName");
       const q = c.url.searchParams.get("q") ?? "";
-      if (areaNames.length === 0 || q.length < 2) return json([]);
+      if (q.length < 2) return json([]);
+      // areaNames får vara tomt = global sökning bland alla politiker.
       return json(await searchPoliticiansInAreas(c.env.DB, areaNames, q));
     } },
   { method: "GET", rx: /^\/api\/mail-credentials$/, h: async (c) => json(await listMailCredentials(c.env, c.accountId)) },
@@ -254,6 +255,7 @@ const AUTHED_ROUTES: RouteDef[] = [
         excludeParties?: string[];
         excludeEmails?: string[];
         includeRoles?: string[];
+        includeEmails?: string[];
         attachments?: AttachmentInput[];
       }>();
       const letterId = randomId();
@@ -275,6 +277,7 @@ const AUTHED_ROUTES: RouteDef[] = [
         excludeParties: input.excludeParties,
         excludeEmails: input.excludeEmails,
         includeRoles: input.includeRoles,
+        includeEmails: input.includeEmails,
       });
       return json(result);
     } },

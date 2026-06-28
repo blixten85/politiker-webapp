@@ -157,15 +157,18 @@ export async function listRoles(db: D1Database) {
 // låta användaren plocka ut och exkludera enskilda mottagare ur en
 // annars bred kategori-/områdesmarkering.
 export async function searchPoliticiansInAreas(db: D1Database, areaNames: string[], query: string) {
-  if (areaNames.length === 0) return [];
-  const placeholders = areaNames.map(() => "?").join(",");
+  // Tomt areaNames = sök bland ALLA politiker (global individsökning) — så
+  // användaren kan rikta till / exkludera enskilda utan att först välja område.
+  let sql = `SELECT name, email, area_name, party FROM politicians WHERE name LIKE ?`;
+  const params: unknown[] = [`%${query}%`];
+  if (areaNames.length > 0) {
+    sql += ` AND area_name IN (${areaNames.map(() => "?").join(",")})`;
+    params.push(...areaNames);
+  }
+  sql += ` ORDER BY name LIMIT 50`;
   const { results } = await db
-    .prepare(
-      `SELECT name, email, area_name, party FROM politicians
-       WHERE area_name IN (${placeholders}) AND name LIKE ?
-       ORDER BY name LIMIT 50`,
-    )
-    .bind(...areaNames, `%${query}%`)
+    .prepare(sql)
+    .bind(...params)
     .all<{ name: string; email: string; area_name: string; party: string | null }>();
   return results;
 }
@@ -176,33 +179,57 @@ export async function getRecipientsForAreas(
   excludeParties: string[] = [],
   excludeEmails: string[] = [],
   includeRoles: string[] = [],
+  includeEmails: string[] = [],
 ) {
-  if (areaNames.length === 0) return [];
-  const areaPlaceholders = areaNames.map(() => "?").join(",");
-  let sql = `SELECT name, email, area_name FROM politicians WHERE area_name IN (${areaPlaceholders})`;
-  const params: unknown[] = [...areaNames];
+  // Oberoende filter, valfri ordning:
+  //  - "pool" = politiker som matchar valda områden OCH valda befattningar
+  //    (tomt område = alla områden, tom roll = alla roller). Poolen tas bara
+  //    med om användaren faktiskt valt minst ett område eller en befattning —
+  //    annars skickar vi inte oavsiktligt till hela landet.
+  //  - includeEmails = enskilt utvalda ("rikta till"), alltid med oavsett pool.
+  //  - excludeParties drabbar bara poolen, inte de enskilt utvalda.
+  //  - excludeEmails plockas bort sist (vinner över allt).
+  // Dedupar på e-post så ingen får dubbla brev (samma person kan ligga i
+  // flera områden, t.ex. både kommun och region).
+  const byEmail = new Map<string, { name: string; email: string; area_name: string }>();
 
-  if (excludeParties.length > 0) {
-    sql += ` AND (party IS NULL OR party NOT IN (${excludeParties.map(() => "?").join(",")}))`;
-    params.push(...excludeParties);
-  }
-  if (excludeEmails.length > 0) {
-    sql += ` AND email NOT IN (${excludeEmails.map(() => "?").join(",")})`;
-    params.push(...excludeEmails);
-  }
-  if (includeRoles.length > 0) {
-    // includeRoles innehåller normaliserade nycklar (lower+trim, se
-    // listRoles) — matcha mot samma normalisering av den lagrade kolumnen,
-    // annars missas mottagare vars roll har annat skiftläge än det valda.
-    sql += ` AND LOWER(TRIM(role)) IN (${includeRoles.map(() => "?").join(",")})`;
-    params.push(...includeRoles);
+  const hasPoolIntent = areaNames.length > 0 || includeRoles.length > 0;
+  if (hasPoolIntent) {
+    let sql = `SELECT name, email, area_name FROM politicians WHERE 1=1`;
+    const params: unknown[] = [];
+    if (areaNames.length > 0) {
+      sql += ` AND area_name IN (${areaNames.map(() => "?").join(",")})`;
+      params.push(...areaNames);
+    }
+    if (includeRoles.length > 0) {
+      // includeRoles innehåller normaliserade nycklar (lower+trim, se
+      // listRoles) — matcha mot samma normalisering av den lagrade kolumnen,
+      // annars missas mottagare vars roll har annat skiftläge än det valda.
+      sql += ` AND LOWER(TRIM(role)) IN (${includeRoles.map(() => "?").join(",")})`;
+      params.push(...includeRoles);
+    }
+    if (excludeParties.length > 0) {
+      sql += ` AND (party IS NULL OR party NOT IN (${excludeParties.map(() => "?").join(",")}))`;
+      params.push(...excludeParties);
+    }
+    const { results } = await db
+      .prepare(sql)
+      .bind(...params)
+      .all<{ name: string; email: string; area_name: string }>();
+    for (const r of results) byEmail.set(r.email, r);
   }
 
-  const { results } = await db
-    .prepare(sql)
-    .bind(...params)
-    .all<{ name: string; email: string; area_name: string }>();
-  return results;
+  if (includeEmails.length > 0) {
+    const ph = includeEmails.map(() => "?").join(",");
+    const { results } = await db
+      .prepare(`SELECT name, email, area_name FROM politicians WHERE email IN (${ph})`)
+      .bind(...includeEmails)
+      .all<{ name: string; email: string; area_name: string }>();
+    for (const r of results) byEmail.set(r.email, r);
+  }
+
+  for (const e of excludeEmails) byEmail.delete(e);
+  return [...byEmail.values()];
 }
 
 export async function countSentToday(db: D1Database, accountId: string): Promise<number> {
