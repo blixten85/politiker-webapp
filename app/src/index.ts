@@ -11,8 +11,10 @@ import {
   setPassword,
   adminResetPassword,
   setAccountDisabled,
+  deleteOwnAccount,
 } from "./auth";
-import { getAdminStats, exportAdminData } from "./admin-stats";
+import { getAdminStats, exportAdminData, getTimeSeries, type Granularity } from "./admin-stats";
+import { recordVisit } from "./visits";
 import {
   addMailCredential,
   listMailCredentials,
@@ -23,7 +25,7 @@ import {
   getCeiling,
   MICROSOFT_GRAPH_DAILY_LIMIT,
 } from "./mail-credentials";
-import { listAreas, listParties, listRoles, searchPoliticiansInAreas } from "./db";
+import { listAreas, listParties, listRoles, searchPoliticiansInAreas, deleteAccount } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
@@ -59,8 +61,16 @@ function setSessionCookie(token: string): string {
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
+
+    // Anonym besöksinspelning på faktiska sidladdningar (SPA-roten "/"). Övriga
+    // paths är statiska assets (app.js, style.css, bilder) och räknas inte.
+    // Best-effort via waitUntil — blockerar aldrig svaret.
+    if (req.method === "GET" && url.pathname === "/") {
+      ctx.waitUntil(recordVisit(env, req));
+    }
+
     const resp = await handleRequest(req, env, url);
     // Cloudflares "Speed Brain"-funktion injicerar en Speculation-Rules-header
     // som ber webbläsaren spekulativt förhämta länkar (t.ex. OAuth-startlänkar)
@@ -153,6 +163,16 @@ const AUTHED_ROUTES: RouteDef[] = [
       const { newPassword } = await c.req.json<{ newPassword: string }>();
       await setPassword(c.env, c.accountId, newPassword);
       return json({ ok: true });
+    } },
+  { method: "POST", rx: /^\/api\/delete-account$/, h: async (c) => {
+      const { password, totpCode } = await c.req.json<{ password?: string; totpCode?: string }>();
+      await deleteOwnAccount(c.env, c.accountId, password, totpCode);
+      // Avsluta den aktiva sessionen och nolla kakan — kontot finns inte längre.
+      const token = getCookie(c.req, "session");
+      if (token) await c.env.SESSIONS.delete(`session:${token}`);
+      const resp = json({ ok: true });
+      resp.headers.set("Set-Cookie", "session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+      return resp;
     } },
   { method: "GET", rx: /^\/api\/oauth-identities$/, h: async (c) => json(await getOAuthIdentities(c.env, c.accountId)) },
   { method: "DELETE", rx: /^\/api\/oauth-identities\/([a-z]+)$/, h: async (c, m) => {
@@ -249,7 +269,6 @@ const AUTHED_ROUTES: RouteDef[] = [
       }
       const result = await createAndEnqueueSendJob(c.env, c.accountId, {
         letterId,
-        htmlBody,
         subject: input.subject,
         mailCredentialId: input.mailCredentialId,
         areaNames: input.areaNames,
@@ -313,6 +332,12 @@ const ADMIN_ROUTES: RouteDef[] = [
       await setAccountDisabled(c.env, m[1], disabled);
       return json({ ok: true });
     } },
+  { method: "DELETE", rx: /^\/api\/admin\/accounts\/([^/]+)$/, h: async (c, m) => {
+      // Hindra admin från att av misstag radera sitt eget inloggade konto här.
+      if (m[1] === c.accountId) return json({ error: "Du kan inte radera ditt eget konto från adminvyn" }, 400);
+      await deleteAccount(c.env, m[1]);
+      return json({ ok: true });
+    } },
   { method: "POST", rx: /^\/api\/admin\/civic-letter$/, h: async (c) => {
       const { subject, htmlBody, topicSourceUrl } = await c.req.json<{ subject: string; htmlBody: string; topicSourceUrl?: string }>();
       const draft = await createCivicLetterDraft(c.env, { subject, htmlBody, topicSourceUrl });
@@ -351,8 +376,12 @@ const ADMIN_ROUTES: RouteDef[] = [
       return json(results);
     } },
   { method: "GET", rx: /^\/api\/admin\/stats$/, h: async (c) => json(await getAdminStats(c.env)) },
+  { method: "GET", rx: /^\/api\/admin\/timeseries$/, h: async (c) => {
+      const g = (c.url.searchParams.get("granularity") ?? "month") as Granularity;
+      return json({ series: await getTimeSeries(c.env, g) });
+    } },
   { method: "GET", rx: /^\/api\/admin\/export$/, h: async (c) => {
-      const section = (c.url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "all";
+      const section = (c.url.searchParams.get("section") ?? "all") as "accounts" | "feedback" | "stats" | "politicians" | "all";
       const format = (c.url.searchParams.get("format") ?? "json") as "csv" | "json";
       const { filename, content, contentType } = await exportAdminData(c.env, section, format);
       return new Response(content, {

@@ -109,6 +109,16 @@ Om du inte kan göra en säker fix, svara exakt: INGEN FIX`;
         continue;
       }
 
+      // Säkerhetsnät mot skenande omskrivning: en äkta punktfix ändrar inte
+      // filens storlek dramatiskt. Krymper den till under halva originalet
+      // eller växer till över det dubbla är det troligen ingen riktig fix
+      // utan en hallucination eller prompt-injection-styrd omskrivning av
+      // den (delvis angriparstyrda) issue-texten — hoppa över helt.
+      if (fixedContent.length < content.length * 0.5 || fixedContent.length > content.length * 2) {
+        console.log(`issue-fixer: #${issue.number} — fix avvisad (storleksändring ${content.length}→${fixedContent.length}), kräver manuell granskning`);
+        continue;
+      }
+
       // Skapa branch
       const branch = `claude/autofix-${issue.number}`;
       await ghApi(env.GITHUB_FEEDBACK_TOKEN, `/repos/${repo}/git/refs`, "POST", {
@@ -123,12 +133,15 @@ Om du inte kan göra en säker fix, svara exakt: INGEN FIX`;
         branch,
       });
 
-      // Öppna PR
+      // Öppna PR som UTKAST — autofix-brancher är undantagna från auto-merge
+      // (.github/workflows/auto-merge.yml) och draft-läget gör att de inte
+      // kan mergas innan en människa aktivt markerat dem som redo.
       await ghApi(env.GITHUB_FEEDBACK_TOKEN, `/repos/${repo}/pulls`, "POST", {
         title: `Autofix issue #${issue.number}: ${errorMsg.slice(0, 50)}`,
-        body: `Automatisk fix av https://github.com/${repo}/issues/${issue.number}\n\nGenererad av issue-fixer Worker.`,
+        body: `Automatisk fix av https://github.com/${repo}/issues/${issue.number}\n\nGenererad av issue-fixer Worker utifrån användarrapporterad text. **Kräver manuell granskning innan merge** — innehållet är delvis angriparstyrt (issue-body) och fixen är en LLM-omskrivning av hela filen.`,
         head: branch,
         base: "main",
+        draft: true,
       });
 
       // Markera issue som hanterad (efter att allt lyckats)

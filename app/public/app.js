@@ -38,11 +38,12 @@ document.getElementById("theme-toggle").addEventListener("click", () => {
 initI18n();
 initTheme();
 
-// Automatisk felrapportering: riktiga JS-fel (buggar) skickas till
-// /api/feedback utan att användaren behöver agera debug-verktyg. Fungerar
-// utan inloggning (endpointen kräver inte session). Användarens egna
-// hanterade meddelanden (fel lösenord, validering m.m.) rapporteras INTE
-// automatiskt — bara oväntade undantag.
+// Oväntade JS-fel (buggar) loggas till webbläsarkonsolen med en "[Auto-rapport]"-
+// markör så de är lätta att hitta vid felsökning. De skickas MEDVETET inte
+// vidare till servern automatiskt: den vägen skulle mata den autonoma
+// issue-fixern (campaign/src/issue-fixer.ts) med delvis okontrollerad text.
+// Användarens egna hanterade meddelanden (fel lösenord, validering m.m.)
+// loggas inte här — bara oväntade undantag.
 function autoReportError(message, extra = {}) {
   console.error("[Auto-rapport]", message, { url: location.href, ...extra });
 }
@@ -586,7 +587,7 @@ function updateRecipientCountPreview() {
     // det istället för totalen per område (parti-exkludering ovanpå det
     // är en ungefärlig förhandsvisning, servern räknar exakt vid skicka).
     for (const r of allRoles) {
-      if (selectedAreas.has(r.area_name) && includedRoles.has(r.role)) total += r.count;
+      if (selectedAreas.has(r.area_name) && includedRoles.has(r.role_key)) total += r.count;
     }
   } else {
     for (const a of allAreas) {
@@ -888,8 +889,6 @@ document.getElementById("create-api-key-form").addEventListener("submit", async 
   }
 });
 
-let adminStatsRaw = null;
-
 async function loadAdminPanel() {
   await Promise.all([loadAdminAccounts(), loadAdminFeedback(), loadAdminStats()]);
 }
@@ -951,6 +950,21 @@ async function loadAdminAccounts() {
       loadAdminAccounts();
     };
     tdActions.appendChild(toggleBtn);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn-danger";
+    deleteBtn.textContent = t("btn_delete_account");
+    deleteBtn.onclick = async () => {
+      if (!confirm(t("confirm_delete_account_admin", { email: a.email }))) return;
+      try {
+        await api(`/api/admin/accounts/${a.id}`, { method: "DELETE" });
+        showToast(t("msg_account_deleted", { email: a.email }));
+        loadAdminAccounts();
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+    tdActions.appendChild(deleteBtn);
     tr.appendChild(tdActions);
 
     tbody.appendChild(tr);
@@ -969,15 +983,16 @@ async function loadAdminFeedback() {
 }
 
 async function loadAdminStats() {
-  adminStatsRaw = await api("/api/admin/stats");
+  const stats = await api("/api/admin/stats");
 
   const totalsDiv = document.getElementById("admin-stats-totals");
   totalsDiv.innerHTML = "";
   const boxes = [
-    [t("stat_total_accounts"), adminStatsRaw.totalAccounts],
-    [t("stat_total_letters"), adminStatsRaw.totalLetters],
-    [t("stat_total_sent"), adminStatsRaw.totalSent],
-    [t("stat_total_bounced"), adminStatsRaw.totalBounced],
+    [t("stat_total_visitors"), stats.totalVisitors ?? 0],
+    [t("stat_total_accounts"), stats.totalAccounts],
+    [t("stat_total_letters"), stats.totalLetters],
+    [t("stat_total_sent"), stats.totalSent],
+    [t("stat_total_bounced"), stats.totalBounced],
   ];
   for (const [label, n] of boxes) {
     const box = document.createElement("div");
@@ -986,34 +1001,9 @@ async function loadAdminStats() {
     totalsDiv.appendChild(box);
   }
 
-  const years = [...new Set(adminStatsRaw.dailySeries.map((d) => d.day.slice(0, 4)))].sort();
-  const yearSelect = document.getElementById("admin-stats-year");
-  yearSelect.innerHTML = "";
-  const allYearsOpt = document.createElement("option");
-  allYearsOpt.value = "";
-  allYearsOpt.textContent = "—";
-  yearSelect.appendChild(allYearsOpt);
-  for (const y of years) {
-    const opt = document.createElement("option");
-    opt.value = y;
-    opt.textContent = y;
-    yearSelect.appendChild(opt);
-  }
-
-  const monthSelect = document.getElementById("admin-stats-month");
-  if (monthSelect.options.length === 1) {
-    for (let m = 1; m <= 12; m++) {
-      const mm = String(m).padStart(2, "0");
-      const opt = document.createElement("option");
-      opt.value = mm;
-      opt.textContent = mm;
-      monthSelect.appendChild(opt);
-    }
-  }
-
   const leaderboardTbody = document.getElementById("admin-leaderboard-list");
   leaderboardTbody.innerHTML = "";
-  for (const row of adminStatsRaw.leaderboard) {
+  for (const row of stats.leaderboard) {
     if (row.sentCount === 0) continue;
     const tr = document.createElement("tr");
     const tdEmail = document.createElement("td");
@@ -1025,70 +1015,65 @@ async function loadAdminStats() {
     leaderboardTbody.appendChild(tr);
   }
 
-  renderStatsChart();
+  await renderTimeSeries();
 }
 
-function bucketKey(day, granularity) {
-  // day är "YYYY-MM-DD"
-  if (granularity === "day") return day;
-  if (granularity === "month") return day.slice(0, 7);
-  if (granularity === "year") return day.slice(0, 4);
-  // week: ISO-veckonummer, approximerat utan extra bibliotek
-  const d = new Date(day + "T00:00:00Z");
-  const onejan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((d - onejan) / 86400000 + onejan.getUTCDay() + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
-}
-
-function renderStatsChart() {
-  if (!adminStatsRaw) return;
-  const granularity = document.getElementById("admin-stats-granularity").value;
-  const yearFilter = document.getElementById("admin-stats-year").value;
-  const monthFilter = document.getElementById("admin-stats-month").value;
-
-  let series = adminStatsRaw.dailySeries;
-  if (yearFilter) series = series.filter((d) => d.day.slice(0, 4) === yearFilter);
-  if (monthFilter) series = series.filter((d) => d.day.slice(5, 7) === monthFilter);
-
-  const buckets = new Map();
-  for (const { day, sent } of series) {
-    const key = bucketKey(day, granularity);
-    buckets.set(key, (buckets.get(key) || 0) + sent);
-  }
-  const keys = [...buckets.keys()].sort().slice(-60); // visa max 60 senaste staplarna
-  const values = keys.map((k) => buckets.get(k));
-
-  const canvas = document.getElementById("admin-stats-chart");
+// Enkelt stapeldiagram utan externt bibliotek. Visar de senaste 60 bucketarna.
+// points: [{ label, value }]. cssVar styr stapelfärgen.
+function drawBarChart(canvasId, points, cssVar) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  if (keys.length === 0) return;
+  const hintColor = getComputedStyle(document.documentElement).getPropertyValue("--hint").trim() || "#9aa0a8";
 
+  const data = points.slice(-60);
+  if (data.length === 0) {
+    ctx.fillStyle = hintColor;
+    ctx.font = "12px sans-serif";
+    ctx.fillText(t("stats_no_data"), 8, h / 2);
+    return;
+  }
+
+  const values = data.map((d) => d.value);
   const max = Math.max(...values, 1);
   const padding = 24;
-  const barAreaW = w - padding * 2;
-  const barW = barAreaW / keys.length;
-  const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#006aa7";
+  const barW = (w - padding * 2) / data.length;
+  const color = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || "#006aa7";
 
-  ctx.fillStyle = accentColor;
-  for (let i = 0; i < keys.length; i++) {
+  ctx.fillStyle = color;
+  for (let i = 0; i < data.length; i++) {
     const barH = (values[i] / max) * (h - padding * 2);
     ctx.fillRect(padding + i * barW + 1, h - padding - barH, Math.max(barW - 2, 1), barH);
   }
 
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--hint").trim() || "#9aa0a8";
+  ctx.fillStyle = hintColor;
   ctx.font = "10px sans-serif";
   ctx.fillText(String(max), 2, padding);
-  ctx.fillText(keys[0], padding, h - 4);
-  if (keys.length > 1) {
-    const lastLabel = keys[keys.length - 1];
+  ctx.fillText(data[0].label, padding, h - 4);
+  if (data.length > 1) {
+    const lastLabel = data[data.length - 1].label;
     ctx.fillText(lastLabel, w - padding - ctx.measureText(lastLabel).width, h - 4);
   }
 }
 
-document.getElementById("admin-stats-granularity").addEventListener("change", renderStatsChart);
-document.getElementById("admin-stats-year").addEventListener("change", renderStatsChart);
-document.getElementById("admin-stats-month").addEventListener("change", renderStatsChart);
+// Unika besökare räknas server-side per bucket (COUNT DISTINCT är inte
+// additivt och kan inte rollas upp i klienten) — hämta om vid varje
+// granularitetsbyte.
+async function renderTimeSeries() {
+  const granularity = document.getElementById("admin-stats-granularity").value;
+  let series = [];
+  try {
+    ({ series } = await api(`/api/admin/timeseries?granularity=${granularity}`));
+  } catch {
+    series = [];
+  }
+  drawBarChart("admin-visitors-chart", series.map((p) => ({ label: p.bucket, value: p.visitors })), "--accent");
+  drawBarChart("admin-stats-chart", series.map((p) => ({ label: p.bucket, value: p.sent })), "--accent");
+}
+
+document.getElementById("admin-stats-granularity").addEventListener("change", renderTimeSeries);
 
 document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1339,6 +1324,21 @@ document.querySelectorAll(".wizard-step-dot").forEach((dot) => {
   dot.addEventListener("click", () => goToStep(Number(dot.dataset.step)));
 });
 
+document.getElementById("delete-account-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!confirm(t("confirm_delete_my_account"))) return;
+  const msg = document.getElementById("delete-account-msg");
+  const password = document.getElementById("delete-account-password").value;
+  const totpCode = document.getElementById("delete-account-totp").value;
+  try {
+    await api("/api/delete-account", { method: "POST", body: JSON.stringify({ password, totpCode }) });
+    // Kontot är borta — ladda om till startsidan i utloggat läge.
+    location.replace("/");
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
 async function showApp(me) {
   document.getElementById("auth-view").hidden = true;
   document.getElementById("app-view").hidden = false;
@@ -1347,6 +1347,7 @@ async function showApp(me) {
   if (me.totpEnabled) {
     document.getElementById("totp-disabled-view").hidden = true;
     document.getElementById("totp-enabled-view").hidden = false;
+    document.getElementById("delete-account-totp").hidden = false;
   }
   isAdminUser = me.isAdmin;
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
@@ -1359,6 +1360,31 @@ async function showApp(me) {
 }
 
 document.getElementById("admin-btn").addEventListener("click", showAdminView);
+
+// Hamburger-meny: öppna/stäng panelen. Stänger vid klick på en navigerings-
+// knapp (men inte vid tema-knappen, så man kan växla tema med menyn kvar),
+// vid Escape och vid klick utanför.
+const menuToggle = document.getElementById("menu-toggle");
+const menuPanel = document.getElementById("menu-panel");
+function setMenuOpen(open) {
+  menuPanel.hidden = !open;
+  menuToggle.setAttribute("aria-expanded", String(open));
+  menuToggle.classList.toggle("open", open);
+}
+menuToggle.addEventListener("click", (e) => {
+  e.stopPropagation();
+  setMenuOpen(menuPanel.hidden);
+});
+menuPanel.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (btn && btn.id !== "theme-toggle") setMenuOpen(false);
+});
+document.addEventListener("click", (e) => {
+  if (!menuPanel.hidden && !menuPanel.contains(e.target) && !menuToggle.contains(e.target)) setMenuOpen(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !menuPanel.hidden) setMenuOpen(false);
+});
 
 document.addEventListener("languagechange", () => {
   if (!document.getElementById("app-view").hidden) {

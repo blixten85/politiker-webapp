@@ -5,6 +5,7 @@ export interface AdminStats {
   totalLetters: number;
   totalSent: number;
   totalBounced: number;
+  totalVisitors: number; // unika besökare (COUNT DISTINCT), all tid
   dailySeries: { day: string; sent: number }[]; // senaste 365 dagarna, ok-status
   leaderboard: { email: string; sentCount: number }[]; // topp 50
 }
@@ -17,6 +18,15 @@ export async function getAdminStats(env: Env): Promise<AdminStats> {
        (SELECT COUNT(*) FROM send_log WHERE status = 'ok') as totalSent,
        (SELECT COUNT(*) FROM send_log WHERE status = 'bounce') as totalBounced`,
   ).first<{ totalAccounts: number; totalLetters: number; totalSent: number; totalBounced: number }>();
+
+  // Defensivt: visits-tabellen kan saknas innan migrationen körts.
+  let totalVisitors = 0;
+  try {
+    const v = await env.DB.prepare("SELECT COUNT(DISTINCT visitor_hash) as n FROM visits").first<{ n: number }>();
+    totalVisitors = v?.n ?? 0;
+  } catch {
+    /* tabellen finns inte än */
+  }
 
   const since365 = Date.now() - 365 * 24 * 60 * 60 * 1000;
   const { results: dailySeries } = await env.DB.prepare(
@@ -38,9 +48,80 @@ export async function getAdminStats(env: Env): Promise<AdminStats> {
     totalLetters: totals?.totalLetters ?? 0,
     totalSent: totals?.totalSent ?? 0,
     totalBounced: totals?.totalBounced ?? 0,
+    totalVisitors,
     dailySeries,
     leaderboard,
   };
+}
+
+export type Granularity = "minute" | "hour" | "day" | "week" | "month" | "quarter" | "half" | "year";
+
+export interface TimeSeriesPoint {
+  bucket: string;
+  sent: number;
+  visitors: number;
+}
+
+// Vitlista granularitet → (SQL-bucketuttryck, tidsfönster). Kolumnnamnet
+// substitueras in — granularitet kommer aldrig in i SQL:en som fri text, så
+// ingen injektionsyta. Fönstret begränsar antalet rader/buckets per
+// upplösning så frågorna förblir billiga (fina upplösningar = kort fönster).
+const DAY = 24 * 60 * 60 * 1000;
+const GRAN: Record<Granularity, { expr: (col: string) => string; windowMs: number | null }> = {
+  minute: { expr: (c) => `strftime('%Y-%m-%d %H:%M', ${c} / 1000, 'unixepoch')`, windowMs: 6 * 60 * 60 * 1000 },
+  hour: { expr: (c) => `strftime('%Y-%m-%d %H:00', ${c} / 1000, 'unixepoch')`, windowMs: 7 * DAY },
+  day: { expr: (c) => `date(${c} / 1000, 'unixepoch')`, windowMs: 365 * DAY },
+  week: { expr: (c) => `strftime('%Y-W%W', ${c} / 1000, 'unixepoch')`, windowMs: 2 * 365 * DAY },
+  month: { expr: (c) => `strftime('%Y-%m', ${c} / 1000, 'unixepoch')`, windowMs: 5 * 365 * DAY },
+  quarter: {
+    expr: (c) => `strftime('%Y', ${c} / 1000, 'unixepoch') || '-Q' || ((cast(strftime('%m', ${c} / 1000, 'unixepoch') as integer) + 2) / 3)`,
+    windowMs: null,
+  },
+  half: {
+    expr: (c) => `strftime('%Y', ${c} / 1000, 'unixepoch') || '-H' || ((cast(strftime('%m', ${c} / 1000, 'unixepoch') as integer) + 5) / 6)`,
+    windowMs: null,
+  },
+  year: { expr: (c) => `strftime('%Y', ${c} / 1000, 'unixepoch')`, windowMs: null },
+};
+
+// Tidsserie för admin-grafen: skickade brev (additivt) OCH unika besökare
+// (COUNT DISTINCT — INTE additivt, måste beräknas per bucket i SQL, inte
+// rollas upp från en finare serie i frontend). Slås ihop per bucket.
+export async function getTimeSeries(env: Env, granularity: Granularity): Promise<TimeSeriesPoint[]> {
+  const g = GRAN[granularity] ?? GRAN.month;
+  const since = g.windowMs === null ? 0 : Date.now() - g.windowMs;
+
+  const sentRows = await env.DB.prepare(
+    `SELECT ${g.expr("sent_at")} as bucket, COUNT(*) as n
+     FROM send_log WHERE status = 'ok' AND sent_at >= ?
+     GROUP BY bucket`,
+  )
+    .bind(since)
+    .all<{ bucket: string; n: number }>();
+
+  let visitorRows: { bucket: string; n: number }[] = [];
+  try {
+    const r = await env.DB.prepare(
+      `SELECT ${g.expr("visited_at")} as bucket, COUNT(DISTINCT visitor_hash) as n
+       FROM visits WHERE visited_at >= ?
+       GROUP BY bucket`,
+    )
+      .bind(since)
+      .all<{ bucket: string; n: number }>();
+    visitorRows = r.results;
+  } catch {
+    /* visits-tabellen finns inte än */
+  }
+
+  const byBucket = new Map<string, TimeSeriesPoint>();
+  for (const { bucket, n } of sentRows.results) byBucket.set(bucket, { bucket, sent: n, visitors: 0 });
+  for (const { bucket, n } of visitorRows) {
+    const p = byBucket.get(bucket) ?? { bucket, sent: 0, visitors: 0 };
+    p.visitors = n;
+    byBucket.set(bucket, p);
+  }
+
+  return [...byBucket.values()].sort((a, b) => (a.bucket < b.bucket ? -1 : a.bucket > b.bucket ? 1 : 0));
 }
 
 function toCsv(rows: Record<string, unknown>[]): string {

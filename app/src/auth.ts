@@ -1,10 +1,25 @@
 import { hashPassword, verifyPassword, randomId, randomVerificationCode } from "../../shared/crypto";
 import { sendSmtpMail } from "../../shared/smtp";
 import { generateTotpSecret, totpAuthUri, verifyTotpCode } from "../../shared/totp";
-import { createAccount, getAccountByEmail, getAccountById, verifyAccountEmail, type Env } from "./db";
+import { createAccount, getAccountByEmail, getAccountById, verifyAccountEmail, deleteAccount, type Env } from "./db";
+import { enforceAttemptLimit, recordFailedAttempt, clearAttempts } from "./rate-limit";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 dagar
 const RESET_TTL_MS = 30 * 60 * 1000; // 30 min
+
+// Brute-force-spärrar (försök inom glidande fönster). Lösenords-/TOTP-koll
+// och e-postverifiering har annars inga försöksgränser — utan detta är en
+// 6-siffrig TOTP/verifieringskod gissningsbar med tillräckligt många anrop.
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+const CODE_MAX_ATTEMPTS = 10;
+const CODE_WINDOW_SECONDS = 60 * 60;
+
+// Dummy-hash att verifiera mot när e-posten inte finns, så att en inloggning
+// mot en okänd adress kostar lika mycket tid (PBKDF2) som en mot en känd —
+// annars skulle svarstiden avslöja vilka adresser som är registrerade.
+const DUMMY_SALT = "AAAAAAAAAAAAAAAAAAAAAA=="; // 16 nollbytes, base64
+const DUMMY_HASH = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
 export async function signup(env: Env, email: string, password: string): Promise<{ accountId: string }> {
   const existing = await getAccountByEmail(env.DB, email);
@@ -21,8 +36,13 @@ export async function signup(env: Env, email: string, password: string): Promise
 }
 
 export async function verifyEmail(env: Env, accountId: string, code: string): Promise<void> {
+  await enforceAttemptLimit(env, "verify", accountId, { max: CODE_MAX_ATTEMPTS, windowSeconds: CODE_WINDOW_SECONDS });
   const ok = await verifyAccountEmail(env.DB, accountId, code);
-  if (!ok) throw new Error("Felaktig eller utgången kod");
+  if (!ok) {
+    await recordFailedAttempt(env, "verify", accountId, CODE_WINDOW_SECONDS);
+    throw new Error("Felaktig eller utgången kod");
+  }
+  await clearAttempts(env, "verify", accountId);
 }
 
 export async function login(
@@ -31,20 +51,45 @@ export async function login(
   password: string,
   totpCode?: string,
 ): Promise<{ sessionToken: string }> {
+  // Spärren gäller per e-post och räknar även försök mot icke-existerande
+  // konton — annars skulle ett uteblivet lockout avslöja vilka adresser som
+  // saknas. Misslyckade inloggningar (fel konto/lösenord/TOTP) räknas upp,
+  // ett lyckat login nollställer.
+  await enforceAttemptLimit(env, "login", email, { max: LOGIN_MAX_ATTEMPTS, windowSeconds: LOGIN_WINDOW_SECONDS });
+
   const account = await getAccountByEmail(env.DB, email);
-  if (!account) throw new Error("Fel e-post eller lösenord");
+
+  // Verifiera lösenordet INNAN något kontospecifikt tillstånd avslöjas.
+  // Allt som gäller ett enskilt konto (inaktiverat, overifierat) får bara
+  // visas för den som redan bevisat lösenordet — annars kan felmeddelandena
+  // användas för att kartlägga vilka adresser som är registrerade. Okända
+  // konton verifieras mot en dummy så svarstiden blir densamma.
+  // (Konton skapade via OAuth har ett slumpat oanvändbart lösenord och
+  // faller därför naturligt igenom som "fel lösenord" — de loggar in via
+  // leverantörsknappen istället.)
+  const passwordOk = await verifyPassword(
+    password,
+    (account?.password_hash as string) ?? DUMMY_HASH,
+    (account?.password_salt as string) ?? DUMMY_SALT,
+  );
+  if (!account || !passwordOk) {
+    await recordFailedAttempt(env, "login", email, LOGIN_WINDOW_SECONDS);
+    throw new Error("Fel e-post eller lösenord");
+  }
+
   if (account.disabled) throw new Error("Kontot är inaktiverat — kontakta support om du tror detta är ett fel");
-  if (!account.password_hash) throw new Error("Det här kontot använder inloggning via leverantör — använd den knappen istället");
-  const ok = await verifyPassword(password, account.password_hash as string, account.password_salt as string);
-  if (!ok) throw new Error("Fel e-post eller lösenord");
   if (!account.email_verified) throw new Error("E-postadressen är inte verifierad än");
 
   if (account.totp_enabled) {
     if (!totpCode) throw new Error("TOTP_REQUIRED");
     const validTotp = await verifyTotpCode(account.totp_secret as string, totpCode);
-    if (!validTotp) throw new Error("Fel TOTP-kod");
+    if (!validTotp) {
+      await recordFailedAttempt(env, "login", email, LOGIN_WINDOW_SECONDS);
+      throw new Error("Fel TOTP-kod");
+    }
   }
 
+  await clearAttempts(env, "login", email);
   const sessionToken = randomId() + randomId();
   await env.SESSIONS.put(`session:${sessionToken}`, account.id as string, { expirationTtl: SESSION_TTL_SECONDS });
   return { sessionToken };
@@ -104,10 +149,15 @@ export async function startTotpSetup(env: Env, accountId: string): Promise<{ sec
 }
 
 export async function confirmTotpSetup(env: Env, accountId: string, code: string): Promise<void> {
+  await enforceAttemptLimit(env, "totp-setup", accountId, { max: CODE_MAX_ATTEMPTS, windowSeconds: CODE_WINDOW_SECONDS });
   const account = await getAccountById(env.DB, accountId);
   if (!account || !account.totp_secret) throw new Error("Ingen TOTP-uppsättning pågår");
   const valid = await verifyTotpCode(account.totp_secret as string, code);
-  if (!valid) throw new Error("Fel kod — kontrollera att klockan på din enhet är rätt");
+  if (!valid) {
+    await recordFailedAttempt(env, "totp-setup", accountId, CODE_WINDOW_SECONDS);
+    throw new Error("Fel kod — kontrollera att klockan på din enhet är rätt");
+  }
+  await clearAttempts(env, "totp-setup", accountId);
   await env.DB.prepare("UPDATE accounts SET totp_enabled = 1 WHERE id = ?").bind(accountId).run();
 }
 
@@ -144,6 +194,28 @@ export async function adminResetPassword(env: Env, targetAccountId: string): Pro
 
 export async function setAccountDisabled(env: Env, targetAccountId: string, disabled: boolean): Promise<void> {
   await env.DB.prepare("UPDATE accounts SET disabled = ? WHERE id = ?").bind(disabled ? 1 : 0, targetAccountId).run();
+}
+
+// Självbetjäning: kontoinnehavaren raderar sitt EGET konto permanent. Kräver
+// återautentisering — lösenord om ett sådant är satt av användaren, och TOTP
+// om 2FA är aktiverat — så att en kapad men inte återautentiserad session inte
+// kan radera kontot. Konton skapade enbart via OAuth (utan eget lösenord och
+// utan 2FA) bekräftas av den aktiva sessionen i sig.
+export async function deleteOwnAccount(env: Env, accountId: string, password?: string, totpCode?: string): Promise<void> {
+  const account = await getAccountById(env.DB, accountId);
+  if (!account) throw new Error("Konto saknas");
+
+  if (account.password_set_by_user) {
+    const ok = await verifyPassword(password ?? "", account.password_hash as string, account.password_salt as string);
+    if (!ok) throw new Error("Fel lösenord");
+  }
+  if (account.totp_enabled) {
+    if (!totpCode) throw new Error("TOTP_REQUIRED");
+    const valid = await verifyTotpCode(account.totp_secret as string, totpCode);
+    if (!valid) throw new Error("Fel TOTP-kod");
+  }
+
+  await deleteAccount(env, accountId);
 }
 
 export async function sendSystemMail(env: Env, to: string, subject: string, html: string): Promise<void> {

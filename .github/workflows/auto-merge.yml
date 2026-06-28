@@ -67,7 +67,10 @@ jobs:
 
   claude:
     runs-on: ubuntu-latest
-    if: startsWith(github.head_ref, 'claude/') || contains(github.event.pull_request.labels.*.name, 'claude')
+    # claude/autofix-* skapas av den autonoma issue-fixern (campaign/src/issue-fixer.ts),
+    # som låter en LLM skriva om hela källfiler utifrån användarrapporterad text.
+    # De PR:erna ska ALDRIG auto-mergas — de kräver manuell granskning.
+    if: (startsWith(github.head_ref, 'claude/') || contains(github.event.pull_request.labels.*.name, 'claude')) && !startsWith(github.head_ref, 'claude/autofix-')
     steps:
       - name: Auto-merge Claude AI PRs once checks pass
         run: |
