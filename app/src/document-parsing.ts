@@ -2,6 +2,8 @@
 // .doc (gamla binära Word-formatet) stöds INTE — inget rimligt lättviktigt
 // bibliotek finns för det; sådana filer kan bara bifogas, inte konverteras.
 
+import { escapeHtml } from "../../shared/html";
+
 export async function convertToHtml(filename: string, contentType: string, bytes: ArrayBuffer): Promise<string> {
   const ext = filename.toLowerCase().split(".").pop();
 
@@ -36,8 +38,4 @@ export async function convertToHtml(filename: string, contentType: string, bytes
   }
 
   throw new Error(`Filtypen .${ext} kan inte konverteras till brevtext.`);
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

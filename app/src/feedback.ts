@@ -1,4 +1,5 @@
 import { randomId } from "../../shared/crypto";
+import { escapeHtml } from "../../shared/html";
 import { sendSystemMail } from "./auth";
 import type { Env } from "./db";
 
@@ -99,8 +100,4 @@ export async function submitFeedback(
   }
 
   return { githubIssueUrl };
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

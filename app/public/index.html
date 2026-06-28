@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Politikerkontakt — skriv till dina folkvalda</title>
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div class="se-banner" aria-hidden="true"></div>
@@ -17,18 +16,34 @@
       <p data-i18n="brand_tagline">Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.</p>
     </div>
   </div>
-  <nav class="header-links">
-    <button type="button" id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
-    <button type="button" id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
-    <button type="button" id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
-    <button type="button" id="letters-btn" class="link-btn" hidden data-i18n="nav_letters">Brev</button>
-    <button type="button" id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
-    <button type="button" id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
-    <button type="button" id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
-    <button type="button" id="donate-btn" class="link-btn" data-i18n="nav_donate">Stötta tjänsten</button>
-    <select id="lang-select" aria-label="Språk"></select>
-    <button type="button" id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
-    <button type="button" id="logout-btn" class="link-btn" hidden data-i18n="nav_logout">Logga ut</button>
+  <nav class="header-nav">
+    <button type="button" id="menu-toggle" class="menu-toggle" aria-label="Meny" aria-expanded="false" aria-controls="menu-panel">
+      <span></span><span></span><span></span>
+    </button>
+    <div id="menu-panel" class="menu-panel" hidden>
+      <div class="menu-group" id="menu-group-nav">
+        <p class="menu-group-title" data-i18n="menu_group_navigation">Navigering</p>
+        <button type="button" id="home-btn" class="link-btn" hidden data-i18n="nav_home">Start</button>
+        <button type="button" id="settings-btn" class="link-btn" hidden data-i18n="nav_settings">Inställningar</button>
+        <button type="button" id="letters-btn" class="link-btn" hidden data-i18n="nav_letters">Brev</button>
+        <button type="button" id="admin-btn" class="link-btn" hidden data-i18n="nav_admin">Admin</button>
+      </div>
+      <div class="menu-group">
+        <p class="menu-group-title" data-i18n="menu_group_info">Information & stöd</p>
+        <button type="button" id="faq-btn" class="link-btn" data-i18n="nav_faq">FAQ</button>
+        <button type="button" id="contact-btn" class="link-btn" data-i18n="nav_contact">Kontakt</button>
+        <button type="button" id="feedback-btn" class="link-btn" data-i18n="nav_report_bug">Rapportera fel</button>
+        <button type="button" id="donate-btn" class="link-btn" data-i18n="nav_donate">Stötta tjänsten</button>
+      </div>
+      <div class="menu-group">
+        <p class="menu-group-title" data-i18n="menu_group_prefs">Inställningar</p>
+        <div class="menu-row">
+          <select id="lang-select" aria-label="Språk"></select>
+          <button type="button" id="theme-toggle" class="link-btn" aria-label="Växla tema"></button>
+        </div>
+        <button type="button" id="logout-btn" class="link-btn" hidden data-i18n="nav_logout">Logga ut</button>
+      </div>
+    </div>
   </nav>
 </header>
 
@@ -281,6 +296,17 @@
       <p id="api-key-msg"></p>
     </div>
 
+    <div class="card danger-zone">
+      <h2 data-i18n="delete_account_title">Radera konto</h2>
+      <p class="hint" data-i18n="delete_account_hint">Detta raderar permanent ditt konto och all kopplad data (mailkopplingar, brev, utskickshistorik, API-nycklar). Åtgärden kan inte ångras.</p>
+      <form id="delete-account-form">
+        <input type="password" id="delete-account-password" data-i18n-placeholder="placeholder_current_password" placeholder="Ditt lösenord" autocomplete="current-password">
+        <input type="text" id="delete-account-totp" inputmode="numeric" data-i18n-placeholder="placeholder_totp_if_enabled" placeholder="2FA-kod (om aktiverat)" hidden>
+        <button type="submit" class="btn-danger" data-i18n="btn_delete_my_account">Radera mitt konto permanent</button>
+      </form>
+      <p id="delete-account-msg"></p>
+    </div>
+
     </div>
 
     <div id="admin-view" hidden>
@@ -294,45 +320,45 @@
 
         <div class="admin-tab-panel" id="admin-tab-accounts">
           <button type="button" id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-          <button class="admin-tab-btn" data-tab="accounts" data-i18n="admin_accounts">Konton</button>
-          <button class="admin-tab-btn" data-tab="feedback" data-i18n="admin_feedback">Feedback</button>
-          <button class="admin-tab-btn" data-tab="stats" data-i18n="admin_stats">Statistik</button>
-        </div>
-
-        <div class="admin-tab-panel" id="admin-tab-accounts">
-          <button id="admin-export-accounts-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <table class="admin-table"><tbody id="admin-accounts-list"></tbody></table>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-feedback" hidden>
           <button type="button" id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-          <button id="admin-export-feedback-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <ul id="admin-feedback-list"></ul>
         </div>
 
         <div class="admin-tab-panel" id="admin-tab-stats" hidden>
           <button type="button" id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
-          <button id="admin-export-stats-btn" class="link-btn" data-i18n="btn_export_csv">Exportera CSV</button>
           <div id="admin-stats-totals" class="admin-stats-totals"></div>
           <div class="admin-stats-controls">
+            <label for="admin-stats-granularity" data-i18n="stats_granularity_label">Tidsupplösning</label>
             <select id="admin-stats-granularity">
+              <option value="minute" data-i18n="stats_minute">Minut</option>
+              <option value="hour" data-i18n="stats_hour">Timme</option>
               <option value="day" data-i18n="stats_day">Dag</option>
               <option value="week" data-i18n="stats_week">Vecka</option>
               <option value="month" selected data-i18n="stats_month">Månad</option>
+              <option value="quarter" data-i18n="stats_quarter">Kvartal</option>
+              <option value="half" data-i18n="stats_half">Halvår</option>
               <option value="year" data-i18n="stats_year">År</option>
             </select>
-            <select id="admin-stats-year"></select>
-            <select id="admin-stats-month">
-              <option value="" data-i18n="stats_all_months">Alla månader</option>
-            </select>
           </div>
-          <canvas id="admin-stats-chart" width="640" height="220"></canvas>
+
+          <h3 class="admin-chart-title" data-i18n="stats_chart_visitors">Unika besökare</h3>
+          <canvas id="admin-visitors-chart" width="640" height="200"></canvas>
+
+          <h3 class="admin-chart-title" data-i18n="stats_chart_sent">Skickade mejl</h3>
+          <canvas id="admin-stats-chart" width="640" height="200"></canvas>
+
           <h3 data-i18n="stats_leaderboard">Topplista per konto</h3>
           <table class="admin-table"><tbody id="admin-leaderboard-list"></tbody></table>
         </div>
 
-        <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
-        <button type="button" id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+        <div class="admin-export-row">
+          <button type="button" id="admin-export-politicians-btn" class="link-btn" data-i18n="btn_export_politicians">Exportera politiker (CSV)</button>
+          <button type="button" id="admin-export-all-btn" class="link-btn" data-i18n="btn_export_all">Exportera allt (JSON)</button>
+        </div>
       </div>
     </div>
 

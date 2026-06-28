@@ -8,7 +8,6 @@ export async function createAndEnqueueSendJob(
   accountId: string,
   input: {
     letterId: string;
-    htmlBody: string;
     subject?: string;
     mailCredentialId: string;
     areaNames: string[];
@@ -71,7 +70,6 @@ export async function createAndEnqueueSendJob(
       mailCredentialId: input.mailCredentialId,
       recipientEmail: r.email,
       recipientName: r.name,
-      htmlBody: input.htmlBody,
       subject: input.subject,
     };
     await env.SEND_QUEUE.send(message);

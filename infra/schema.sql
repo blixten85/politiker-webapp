@@ -163,3 +163,14 @@ CREATE TABLE api_keys (
   created_at INTEGER NOT NULL,
   last_used_at INTEGER
 );
+-- Anonym besöksstatistik för admin-översikten. Lagrar ALDRIG IP eller
+-- user-agent — bara en irreversibel hash (SHA-256 av IP+UA+salt) per
+-- sidladdning, så unika besökare kan räknas (COUNT DISTINCT) utan att
+-- någon enskild besökare kan identifieras eller spåras bakåt.
+CREATE TABLE visits (
+  id TEXT PRIMARY KEY,
+  visitor_hash TEXT NOT NULL,
+  visited_at INTEGER NOT NULL
+);
+CREATE INDEX idx_visits_visited_at ON visits(visited_at);
+CREATE INDEX idx_visits_hash ON visits(visitor_hash);

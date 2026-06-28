@@ -23,6 +23,7 @@ export interface Env {
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
   CIVIC_OUTLOOK_PASSWORD?: string;
   ANTHROPIC_API_KEY?: string;
+  VISITOR_SALT?: string;
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {
@@ -31,6 +32,43 @@ export async function getAccountByEmail(db: D1Database, email: string) {
 
 export async function getAccountById(db: D1Database, id: string) {
   return db.prepare("SELECT * FROM accounts WHERE id = ?").bind(id).first();
+}
+
+// Permanent, oåterkallelig radering av ett konto och ALL dess kopplade data.
+// Diagnostik-/feedback-rader (nullbara account_id) anonymiseras istället för
+// att raderas — de är inte personlig kontodata och behålls avidentifierade.
+// Besöksstatistiken (visits) är redan anonym och rör inte enskilda konton.
+// Sessionskakor i KV kan inte räknas upp, men blir verkningslösa direkt:
+// getAccountFromSession slår upp kontot som nu är borta och returnerar null.
+export async function deleteAccount(env: Env, accountId: string): Promise<void> {
+  // R2-objekt (brevbilagor) städas separat — batchen nedan tar bara D1-rader.
+  const { results: attachmentRows } = await env.DB.prepare(
+    "SELECT r2_key FROM letter_attachments WHERE letter_id IN (SELECT id FROM letters WHERE account_id = ?)",
+  ).bind(accountId).all<{ r2_key: string }>();
+
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM letter_attachments WHERE letter_id IN (SELECT id FROM letters WHERE account_id = ?)").bind(accountId),
+    env.DB.prepare("DELETE FROM send_log WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM send_jobs WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM public_letters WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM letters WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM mail_credentials WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM oauth_identities WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM api_keys WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("UPDATE feedback SET account_id = NULL WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("UPDATE worker_errors SET account_id = NULL WHERE account_id = ?").bind(accountId),
+    env.DB.prepare("DELETE FROM accounts WHERE id = ?").bind(accountId),
+  ]);
+
+  if (attachmentRows.length > 0) {
+    // Best-effort: kvarlämnade R2-objekt är föräldralösa men oåtkomliga utan
+    // letter_attachments-raden, så ett misslyckande här läcker ingen data.
+    try {
+      await env.ATTACHMENTS.delete(attachmentRows.map((r) => r.r2_key));
+    } catch {
+      /* föräldralösa objekt städas vid behov manuellt — blockerar inte raderingen */
+    }
+  }
 }
 
 export async function createAccount(

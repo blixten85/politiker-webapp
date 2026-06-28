@@ -11,6 +11,9 @@
 // writer". releaseLock(), inte close(), är rätt väg in i TLS-uppgraderingen.
 
 import { connect } from "cloudflare:sockets";
+// escapeHtml bor i shared/html.ts; återexporteras här eftersom befintliga
+// importörer (campaign/letter-sender, bounce-sweep) hämtar den från smtp.
+export { escapeHtml } from "./html";
 
 export interface SmtpConfig {
   host: string;
@@ -206,13 +209,6 @@ async function expect(resp: SmtpResponse, expectedCode: number, errorMessage: st
   if (resp.code !== expectedCode) {
     throw new SmtpError(`${errorMessage} (fick ${resp.code}: ${resp.text})`);
   }
-}
-
-// Escapar text som ska in i en HTML-mejlkropp. Tidigare escapades bara "<",
-// vilket lämnade "&" och ">" orörda (ofullständig sanering — CodeQL flaggade
-// samma mönster i monitor). Escapa alla tre.
-export function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // RFC 2047 "encoded-word" — krävs för att åäö (eller annan icke-ASCII text)

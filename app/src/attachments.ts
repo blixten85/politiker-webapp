@@ -52,22 +52,3 @@ export async function processAttachments(
 
   return { extractedHtml };
 }
-
-export async function getAttachmentsForSending(
-  env: Env,
-  letterId: string,
-): Promise<Array<{ filename: string; contentType: string; bytes: ArrayBuffer }>> {
-  const { results } = await env.DB.prepare(
-    "SELECT filename, content_type, r2_key FROM letter_attachments WHERE letter_id = ? AND mode = 'attach'",
-  )
-    .bind(letterId)
-    .all<{ filename: string; content_type: string; r2_key: string }>();
-
-  const attachments = [];
-  for (const row of results) {
-    const obj = await env.ATTACHMENTS.get(row.r2_key);
-    if (!obj) continue; // borttagen/utgången — skippa snarare än krascha hela utskicket
-    attachments.push({ filename: row.filename, contentType: row.content_type, bytes: await obj.arrayBuffer() });
-  }
-  return attachments;
-}

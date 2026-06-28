@@ -120,10 +120,21 @@ async function processJobMessages(
     credentialRow = await refreshAndPersistMicrosoftToken(env, credentialId, credentialRow);
   }
 
-  // Hämta ev. bilagor en gång per utskick (inte en gång per mottagare) —
-  // letter_id ligger på send_jobs, samma bilagor gäller alla mottagare i jobbet.
-  const job = await env.DB.prepare("SELECT letter_id FROM send_jobs WHERE id = ?").bind(sendJobId).first<{ letter_id: string }>();
-  const attachments = job ? await fetchAttachments(env, job.letter_id) : [];
+  // Hämta brevkropp + ev. bilagor en gång per utskick (inte en gång per
+  // mottagare) — letter_id ligger på send_jobs, samma brev och bilagor gäller
+  // alla mottagare i jobbet. html_body skickas medvetet inte i kömeddelandet
+  // (skulle dupliceras per mottagare), utan hämtas härifrån.
+  const job = await env.DB.prepare(
+    "SELECT sj.letter_id, l.html_body FROM send_jobs sj JOIN letters l ON l.id = sj.letter_id WHERE sj.id = ?",
+  )
+    .bind(sendJobId)
+    .first<{ letter_id: string; html_body: string }>();
+  if (!job) {
+    for (const m of batch.messages) m.ack(); // brevet finns inte längre — kan inte skickas
+    await markJobAborted(env, sendJobId, "Brevet finns inte längre");
+    return;
+  }
+  const attachments = await fetchAttachments(env, job.letter_id);
 
   let bounceCount = 0;
   let attempted = 0;
@@ -150,7 +161,7 @@ async function processJobMessages(
     attempted++;
     try {
       const greeting = firstName(m.recipientName) ? `Hej ${firstName(m.recipientName)}!` : "Hej!";
-      const html = `<p>${greeting}</p>\n${m.htmlBody}`;
+      const html = `<p>${greeting}</p>\n${job.html_body}`;
       await sendOneMail(env, credentialRow, m.recipientEmail, html, m.subject, attachments);
       await logSend(env, m, "ok", null);
       queueMsg.ack();
