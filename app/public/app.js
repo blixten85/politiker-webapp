@@ -12,6 +12,7 @@ let allAreas = [];
 let allParties = [];
 let excludedParties = new Set();
 let excludedRecipients = new Map(); // email -> name
+let includedRecipients = new Map(); // email -> name (enskilt "rikta till"-utvalda)
 let allRoles = [];
 let includedRoles = new Set(); // tom = ingen begränsning (alla befattningar)
 
@@ -457,7 +458,9 @@ document.getElementById("area-filter").addEventListener("input", renderAreas);
 function renderRoleFilterList() {
   const div = document.getElementById("role-filter-list");
   div.innerHTML = "";
-  const relevant = allRoles.filter((r) => selectedAreas.has(r.area_name));
+  // Befattningar är övergripande (globala) — inte låsta till valda områden.
+  // En vald befattning utan valt område = den befattningen i ALLA områden.
+  const relevant = allRoles;
 
   // Gruppera på normaliserad nyckel (lower+trim) — samma roll skriven med
   // olika skiftläge ("Ledamot"/"ledamot"/"LEDAMOT") ska bli EN kryssruta,
@@ -506,7 +509,8 @@ function renderRoleFilterList() {
 function renderPartyExcludeList() {
   const div = document.getElementById("party-exclude-list");
   div.innerHTML = "";
-  const relevant = allParties.filter((p) => selectedAreas.has(p.area_name));
+  // Parti-exkludering är också övergripande (globalt aggregerat).
+  const relevant = allParties;
   if (relevant.length === 0) return;
 
   const byParty = new Map();
@@ -548,57 +552,106 @@ function renderExcludedList() {
   }
 }
 
+function renderIncludedList() {
+  const ul = document.getElementById("included-list");
+  if (!ul) return;
+  ul.innerHTML = "";
+  for (const [email, name] of includedRecipients) {
+    const li = document.createElement("li");
+    li.textContent = `${name} <${email}> `;
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.textContent = t("btn_remove");
+    removeBtn.onclick = () => {
+      includedRecipients.delete(email);
+      renderIncludedList();
+      updateRecipientCountPreview();
+    };
+    li.appendChild(removeBtn);
+    ul.appendChild(li);
+  }
+}
+
 let excludeSearchTimeout = null;
 document.getElementById("exclude-search").addEventListener("input", (e) => {
   clearTimeout(excludeSearchTimeout);
   const q = e.target.value.trim();
   const resultsDiv = document.getElementById("exclude-search-results");
-  if (q.length < 2 || selectedAreas.size === 0) {
+  if (q.length < 2) {
     resultsDiv.innerHTML = "";
     return;
   }
   excludeSearchTimeout = setTimeout(async () => {
     const params = new URLSearchParams({ q });
+    // Tomt = global sökning. Om områden är valda smalnar vi av till dem.
     for (const a of selectedAreas) params.append("areaName", a);
     const results = await api(`/api/politicians/search?${params.toString()}`);
     resultsDiv.innerHTML = "";
     for (const r of results) {
-      const label = document.createElement("label");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = excludedRecipients.has(r.email);
-      cb.onchange = () => {
-        if (cb.checked) excludedRecipients.set(r.email, r.name);
-        else excludedRecipients.delete(r.email);
+      const row = document.createElement("div");
+      row.className = "search-result-row";
+      const name = document.createElement("span");
+      name.textContent = `${r.name} (${r.area_name}${r.party ? ", " + r.party : ""}) `;
+
+      const addBtn = document.createElement("button");
+      addBtn.type = "button";
+      const refreshAdd = () => {
+        addBtn.textContent = includedRecipients.has(r.email) ? t("btn_added") : t("btn_add_recipient");
+        addBtn.disabled = includedRecipients.has(r.email);
+      };
+      addBtn.onclick = () => {
+        includedRecipients.set(r.email, r.name);
+        excludedRecipients.delete(r.email);
+        renderIncludedList();
         renderExcludedList();
+        refreshAdd();
         updateRecipientCountPreview();
       };
-      label.appendChild(cb);
-      label.append(` ${r.name} (${r.area_name}${r.party ? ", " + r.party : ""})`);
-      resultsDiv.appendChild(label);
+      refreshAdd();
+
+      const exBtn = document.createElement("button");
+      exBtn.type = "button";
+      exBtn.textContent = t("btn_exclude");
+      exBtn.onclick = () => {
+        excludedRecipients.set(r.email, r.name);
+        includedRecipients.delete(r.email);
+        renderIncludedList();
+        renderExcludedList();
+        refreshAdd();
+        updateRecipientCountPreview();
+      };
+
+      row.append(name, addBtn, exBtn);
+      resultsDiv.appendChild(row);
     }
   }, 300);
 });
 
 function updateRecipientCountPreview() {
-  let total = 0;
-  if (includedRoles.size > 0) {
-    // Befattning begränsar mottagarna till just dessa roller — räkna ihop
-    // det istället för totalen per område (parti-exkludering ovanpå det
-    // är en ungefärlig förhandsvisning, servern räknar exakt vid skicka).
-    for (const r of allRoles) {
-      if (selectedAreas.has(r.area_name) && includedRoles.has(r.role_key)) total += r.count;
+  // Ungefärlig förhandsvisning — servern räknar exakt (och dedupar) vid skicka.
+  // Oberoende filter: poolen finns bara om minst ett område eller en
+  // befattning är valt (annars riktar vi inte oavsiktligt till hela landet).
+  const hasPoolIntent = selectedAreas.size > 0 || includedRoles.size > 0;
+  let pool = 0;
+  if (hasPoolIntent) {
+    if (includedRoles.size > 0) {
+      // Befattning är global: tomt område = den rollen i alla områden.
+      for (const r of allRoles) {
+        if (includedRoles.has(r.role_key) && (selectedAreas.size === 0 || selectedAreas.has(r.area_name))) pool += r.count;
+      }
+    } else {
+      for (const a of allAreas) {
+        if (selectedAreas.has(a.area_name)) pool += a.count;
+      }
     }
-  } else {
-    for (const a of allAreas) {
-      if (selectedAreas.has(a.area_name)) total += a.count;
+    let excludedByParty = 0;
+    for (const p of allParties) {
+      if (excludedParties.has(p.party) && (selectedAreas.size === 0 || selectedAreas.has(p.area_name))) excludedByParty += p.count;
     }
+    pool = Math.max(0, pool - excludedByParty);
   }
-  let excludedByParty = 0;
-  for (const p of allParties) {
-    if (selectedAreas.has(p.area_name) && excludedParties.has(p.party)) excludedByParty += p.count;
-  }
-  const finalCount = Math.max(0, total - excludedByParty - excludedRecipients.size);
+  // Enskilt "rikta till" läggs till; enskilt exkluderade dras av.
+  const finalCount = Math.max(0, pool + includedRecipients.size - excludedRecipients.size);
   document.getElementById("recipient-count-preview").textContent = t("msg_recipient_count_preview", { count: finalCount });
   return finalCount;
 }
@@ -722,6 +775,7 @@ document.getElementById("send-btn").addEventListener("click", async () => {
         excludeParties: [...excludedParties],
         excludeEmails: [...excludedRecipients.keys()],
         includeRoles: [...includedRoles],
+        includeEmails: [...includedRecipients.keys()],
         attachments: attachments.length > 0 ? attachments : undefined,
       }),
     });
@@ -1391,6 +1445,7 @@ document.addEventListener("languagechange", () => {
     loadMailCredentials();
     renderAreas();
     renderExcludedList();
+    renderIncludedList();
     loadSendJobs();
     loadApiKeys();
     loadOAuthIdentities();

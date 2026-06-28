@@ -14,6 +14,7 @@ export async function createAndEnqueueSendJob(
     excludeParties?: string[];
     excludeEmails?: string[];
     includeRoles?: string[];
+    includeEmails?: string[];
   },
 ): Promise<{ sendJobId: string; totalRecipients: number }> {
   const account = await env.DB.prepare("SELECT daily_send_cap FROM accounts WHERE id = ?").bind(accountId).first<{ daily_send_cap: number }>();
@@ -28,8 +29,9 @@ export async function createAndEnqueueSendJob(
     input.excludeParties ?? [],
     input.excludeEmails ?? [],
     input.includeRoles ?? [],
+    input.includeEmails ?? [],
   );
-  if (recipients.length === 0) throw new Error("Inga mottagare matchar valda områden");
+  if (recipients.length === 0) throw new Error("Inga mottagare matchar valda filter — välj område, befattning eller enskilda politiker");
 
   const alreadySentToday = await countSentToday(env.DB, accountId);
   const accountRemaining = account.daily_send_cap - alreadySentToday;
@@ -51,7 +53,7 @@ export async function createAndEnqueueSendJob(
   }
   if (recipients.length > remainingQuota) {
     throw new Error(
-      `Valda områden ger ${recipients.length} mottagare, men du har bara ${remainingQuota} kvar av ${limitLabel}. Välj färre områden eller vänta till imorgon.`,
+      `Valda filter ger ${recipients.length} mottagare, men du har bara ${remainingQuota} kvar av ${limitLabel}. Smalna av urvalet eller vänta till imorgon.`,
     );
   }
 
