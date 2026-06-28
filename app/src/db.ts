@@ -41,6 +41,14 @@ export async function getAccountById(db: D1Database, id: string) {
 // Sessionskakor i KV kan inte räknas upp, men blir verkningslösa direkt:
 // getAccountFromSession slår upp kontot som nu är borta och returnerar null.
 export async function deleteAccount(env: Env, accountId: string): Promise<void> {
+  // Skydda mot att radera det SISTA admin-kontot — annars går det inte längre
+  // att administrera plattformen (gäller både självbetjäning och adminvyn).
+  const target = await env.DB.prepare("SELECT is_admin FROM accounts WHERE id = ?").bind(accountId).first<{ is_admin: number }>();
+  if (target?.is_admin) {
+    const row = await env.DB.prepare("SELECT COUNT(*) as n FROM accounts WHERE is_admin = 1").first<{ n: number }>();
+    if ((row?.n ?? 0) <= 1) throw new Error("Kan inte radera det sista admin-kontot — utse en annan administratör först");
+  }
+
   // R2-objekt (brevbilagor) städas separat — batchen nedan tar bara D1-rader.
   const { results: attachmentRows } = await env.DB.prepare(
     "SELECT r2_key FROM letter_attachments WHERE letter_id IN (SELECT id FROM letters WHERE account_id = ?)",
