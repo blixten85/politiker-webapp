@@ -22,8 +22,12 @@ async function visitorHash(env: Env, req: Request): Promise<string> {
 export async function recordVisit(env: Env, req: Request): Promise<void> {
   try {
     const hash = await visitorHash(env, req);
-    await env.DB.prepare("INSERT INTO visits (id, visitor_hash, visited_at) VALUES (?, ?, ?)")
-      .bind(randomId(), hash, Date.now())
+    // Cloudflare fyller req.cf.country med ISO-3166-1 alpha-2 (t.ex. "SE").
+    // Saknas i lokal dev och kan vara "T1"/"XX" för Tor/okänt — lagra som null.
+    const cf = (req as unknown as { cf?: { country?: string } }).cf;
+    const country = cf?.country && cf.country !== "XX" ? cf.country : null;
+    await env.DB.prepare("INSERT INTO visits (id, visitor_hash, visited_at, country) VALUES (?, ?, ?, ?)")
+      .bind(randomId(), hash, Date.now(), country)
       .run();
   } catch {
     // Tabellen kan saknas innan migrationen körts, eller skrivningen kan fela —

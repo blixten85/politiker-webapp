@@ -574,9 +574,19 @@ a.donate-name:hover { text-decoration: underline; }
 }
 /* === Admin-statistik: grafer + exportrad === */
 .admin-chart-title { margin: 1rem 0 0.35rem; }
+#admin-visitors-chart {
   width: 100%; max-width: 640px; height: auto;
   background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px;
 }
+.admin-visitor-countries {
+  list-style: none; padding: 0; margin: 0.35rem 0 0;
+  display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem;
+}
+.admin-visitor-countries li {
+  background: var(--input-bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.85rem;
+}
+.admin-visitor-countries .n { color: var(--hint); margin-left: 0.3rem; }
 .admin-export-row {
   display: flex; gap: 1rem; flex-wrap: wrap;
   margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);

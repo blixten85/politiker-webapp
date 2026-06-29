@@ -6,6 +6,7 @@ export interface AdminStats {
   totalSent: number;
   totalBounced: number;
   totalVisitors: number; // unika besökare (COUNT DISTINCT), all tid
+  visitorCountries: { country: string; n: number }[]; // unika besökare per land
   dailySeries: { day: string; sent: number }[]; // senaste 365 dagarna, ok-status
   leaderboard: { email: string; sentCount: number }[]; // topp 50
 }
@@ -19,13 +20,20 @@ export async function getAdminStats(env: Env): Promise<AdminStats> {
        (SELECT COUNT(*) FROM send_log WHERE status = 'bounce') as totalBounced`,
   ).first<{ totalAccounts: number; totalLetters: number; totalSent: number; totalBounced: number }>();
 
-  // Defensivt: visits-tabellen kan saknas innan migrationen körts.
+  // Defensivt: visits-tabellen (och country-kolumnen) kan saknas innan
+  // migrationerna körts.
   let totalVisitors = 0;
+  let visitorCountries: { country: string; n: number }[] = [];
   try {
     const v = await env.DB.prepare("SELECT COUNT(DISTINCT visitor_hash) as n FROM visits").first<{ n: number }>();
     totalVisitors = v?.n ?? 0;
+    const c = await env.DB.prepare(
+      `SELECT country, COUNT(DISTINCT visitor_hash) as n FROM visits
+       WHERE country IS NOT NULL GROUP BY country ORDER BY n DESC, country`,
+    ).all<{ country: string; n: number }>();
+    visitorCountries = c.results;
   } catch {
-    /* tabellen finns inte än */
+    /* tabellen/kolumnen finns inte än */
   }
 
   const since365 = Date.now() - 365 * 24 * 60 * 60 * 1000;
@@ -49,6 +57,7 @@ export async function getAdminStats(env: Env): Promise<AdminStats> {
     totalSent: totals?.totalSent ?? 0,
     totalBounced: totals?.totalBounced ?? 0,
     totalVisitors,
+    visitorCountries,
     dailySeries,
     leaderboard,
   };
