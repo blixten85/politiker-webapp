@@ -33,7 +33,7 @@ skrapningslogiken.
 - **Kontakt/FAQ**: inbyggd kontaktväg och vanliga frågor, separat från felrapportering — FAQ förklarar bland annat exakt vilken politikerdata som finns och hur mottagarfiltren kombineras
 - **Admin-panel**: konton, feedback, statistik (med diagram), export (CSV/JSON) per sektion eller allt i ett — samt en separat, fristående export av politiker-listan
 - **Felrapportering**: oväntade JS-fel loggas till konsolen; användaren kan rapportera via kontaktformuläret
-- **Autonom kampanj-Worker** (`campaign/`): cron-driven Worker (05–09 UTC dagligen) som självständigt hämtar nyheter från SVT, Aftonbladet, Expressen och Riksdagen, filtrerar socialt relevanta ärenden med Claude, genererar personaliserade medborgarbrev och skickar dem via Gmail till kommunpolitiker, regionpolitiker och riksdagsledamöter — utan mänsklig inblandning. Inkluderar bounce-sweep (kontaktar kommunpolitiker som inte nåtts på 90 dagar) och issue-fixer (läser GitHub-issues med `user-reported`-labeln, genererar kodfixar med Claude och öppnar PR automatiskt)
+- **Autonom kampanj-Worker** (`campaign/`): cron-driven Worker (05–09 UTC dagligen) som självständigt hämtar nyheter från SVT, Aftonbladet, Expressen och Riksdagen, filtrerar socialt relevanta ärenden med Claude, genererar personaliserade medborgarbrev och skickar dem via Gmail till kommunpolitiker, regionpolitiker och riksdagsledamöter — utan mänsklig inblandning. Inkluderar bounce-sweep (kontaktar kommunpolitiker som inte nåtts på 90 dagar). Klientfel rapporteras automatiskt som GitHub-issues direkt från app-Workern (gratis via GitHub API, ingen LLM)
 
 ## Struktur
 

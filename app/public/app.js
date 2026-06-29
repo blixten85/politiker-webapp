@@ -40,13 +40,30 @@ initI18n();
 initTheme();
 
 // Oväntade JS-fel (buggar) loggas till webbläsarkonsolen med en "[Auto-rapport]"-
-// markör så de är lätta att hitta vid felsökning. De skickas MEDVETET inte
-// vidare till servern automatiskt: den vägen skulle mata den autonoma
-// issue-fixern (campaign/src/issue-fixer.ts) med delvis okontrollerad text.
-// Användarens egna hanterade meddelanden (fel lösenord, validering m.m.)
-// loggas inte här — bara oväntade undantag.
+// markör OCH skickas till servern, som skapar en GitHub-issue (gratis via
+// GitHub API — ingen LLM/autofix inblandad, så ingen kostnad per rapport).
+// Servern deduplicerar och har ett dygnstak mot spam. Användarens egna
+// hanterade meddelanden (fel lösenord, validering m.m.) loggas inte här —
+// bara oväntade undantag.
+const reportedErrorSignatures = new Set();
 function autoReportError(message, extra = {}) {
   console.error("[Auto-rapport]", message, { url: location.href, ...extra });
+  // Dedup inom sessionen så samma fel inte spammar servern.
+  const sig = `${message}|${extra.stack ?? ""}`.slice(0, 500);
+  if (reportedErrorSignatures.has(sig)) return;
+  reportedErrorSignatures.add(sig);
+  // Fire-and-forget: får aldrig blockera eller kasta vidare. keepalive så
+  // rapporten skickas även om sidan håller på att stängas.
+  try {
+    fetch("/api/client-error", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, stack: extra.stack, url: location.href }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* ignorera — felet är redan loggat i konsolen */
+  }
 }
 
 // Webbläsartillägg injicerar egen kod på sidan, och fel DÄRIFRÅN dyker upp i
