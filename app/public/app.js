@@ -590,8 +590,12 @@ document.getElementById("exclude-search").addEventListener("input", (e) => {
     for (const r of results) {
       const row = document.createElement("div");
       row.className = "search-result-row";
+
+      const topLine = document.createElement("div");
+      topLine.className = "search-result-top";
       const name = document.createElement("span");
-      name.textContent = `${r.name} (${r.area_name}${r.party ? ", " + r.party : ""}) `;
+      name.className = "search-result-name";
+      name.textContent = r.name;
 
       const addBtn = document.createElement("button");
       addBtn.type = "button";
@@ -621,7 +625,25 @@ document.getElementById("exclude-search").addEventListener("input", (e) => {
         updateRecipientCountPreview();
       };
 
-      row.append(name, addBtn, exBtn);
+      topLine.append(name, addBtn, exBtn);
+      row.appendChild(topLine);
+
+      // Alla befattningar/anknytningar under namnet — gör tydligt vem man
+      // riktar sig till (t.ex. "Ledamot – Region Skåne (S)").
+      const affs = r.affiliations ?? [];
+      if (affs.length > 0) {
+        const ul = document.createElement("ul");
+        ul.className = "search-result-affiliations";
+        for (const a of affs) {
+          const li = document.createElement("li");
+          const role = a.role ? `${a.role} – ` : "";
+          const party = a.party ? ` (${a.party})` : "";
+          li.textContent = `${role}${a.area_name}${party}`;
+          ul.appendChild(li);
+        }
+        row.appendChild(ul);
+      }
+
       resultsDiv.appendChild(row);
     }
   }, 300);

@@ -191,7 +191,13 @@ button:disabled { background: var(--hint); border-color: var(--hint); opacity: 0
 
 #exclude-details, #role-filter-details, #ai-draft-details { margin-top: 0.8rem; margin-bottom: 1rem; }
 #exclude-details summary, #role-filter-details summary, #ai-draft-details summary { cursor: pointer; color: var(--link); }
-#party-exclude-list label, #exclude-search-results label, #role-filter-list label { display: block; padding: 0.15rem 0; }
+#party-exclude-list label, #role-filter-list label { display: block; padding: 0.15rem 0; }
+.search-result-row { padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+.search-result-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.search-result-name { font-weight: 600; flex: 1; min-width: 8rem; }
+.search-result-top button { flex: 0 0 auto; }
+.search-result-affiliations { list-style: none; margin: 0.25rem 0 0; padding: 0 0 0 0.2rem; }
+.search-result-affiliations li { font-size: 0.82rem; color: var(--hint); padding: 0.05rem 0; }
 #ai-draft-details input[type="text"] { margin-top: 0.5rem; }
 #ai-draft-status { min-height: 1.2em; }
 #exclude-search { margin-top: 0.5rem; }
