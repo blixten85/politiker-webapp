@@ -43,43 +43,51 @@ skrapningslogiken.
 - `shared/` — kod som delas mellan Workers (kryptering, SMTP-klient, TOTP, Graph-mail, leverantörs-takter, typer)
 - `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`) + `bounce-processor.py` (systemd-tjänst för Gmail-bouncehantering)
 
-## Sätta upp lokalt
+## Köra din egen kopia (ett kommando)
+
+Hela stacken — Cloudflare-resurser, databas, secrets och alla tre Workers —
+sätts upp av `infra/setup.sh`. Du behöver bara ett Cloudflare-konto och Node 18+.
+
+```bash
+git clone https://github.com/blixten85/politiker-webapp.git
+cd politiker-webapp
+bash infra/setup.sh
+```
+
+**Första körningen** skapar `~/.appdata/.config/.env` (genererar `MAIL_CRED_KEY`
+automatiskt) och avslutar så du kan fylla i dina värden. Minst:
+
+- `SYSTEM_SMTP_PASSWORD` — SMTP-konto för verifierings-/notismail
+- `GITHUB_FEEDBACK_TOKEN` — fine-grained PAT med `Issues:Write` (för feedback/felrapporter)
+- `CUSTOM_DOMAIN` — egen domän (lämna tom → deploy till `*.workers.dev`)
+- Valfritt: `ANTHROPIC_API_KEY` + `GMAIL_EMAIL`/`GMAIL_PASSWORD` (autonom kampanj), `OAUTH_*_CLIENT_SECRET` (social inloggning)
+
+**Andra körningen** gör resten automatiskt och idempotent:
+
+1. `wrangler login` (öppnar webbläsare om du inte är inloggad)
+2. Skapar D1, KV, Queue och R2 i ditt konto — och patchar `wrangler.jsonc` med dina resurs-ID:n
+3. Applicerar `infra/schema.sql` (bara på en nyskapad databas — rör aldrig befintlig data)
+4. Sätter secrets och deployar `app`, `sender` och (om kampanj-creds finns) `campaign`
+5. Installerar `bounce-processor` som systemd-timer (Linux + Gmail-creds)
+
+Kör om `bash infra/setup.sh` när som helst för att uppdatera deployen.
+SMTP-host/-user/-from och OAuth-client-ID:n bor i `app/wrangler.jsonc` → `vars`
+om du vill ändra dem.
+
+> Databasen skapas tom på politikerdata — importera den från
+> [`politiker-kontakter`](https://github.com/blixten85/politiker-kontakter)-repot.
+
+Kampanj-Workern deployas även automatiskt vid push till `main` via Cloudflare Workers Builds.
+
+### Lokal utveckling
 
 ```bash
 cd app && npm install && cp .dev.vars.example .dev.vars  # fyll i riktiga värden
 cd ../sender && npm install
+npx wrangler dev --remote
 ```
 
-`MAIL_CRED_KEY` måste vara **samma värde** i båda `.dev.vars`/secrets (app krypterar, sender dekrypterar).
-
-```bash
-openssl rand -base64 32   # generera MAIL_CRED_KEY
-```
-
-## Deploy
-
-```bash
-cd app && npx wrangler secret put MAIL_CRED_KEY
-npx wrangler secret put SYSTEM_SMTP_PASSWORD
-npx wrangler secret put GITHUB_FEEDBACK_TOKEN
-npx wrangler secret put OAUTH_GOOGLE_CLIENT_SECRET
-npx wrangler secret put OAUTH_GITHUB_CLIENT_SECRET
-npx wrangler secret put OAUTH_MICROSOFT_CLIENT_SECRET
-npx wrangler deploy
-
-cd ../sender && npx wrangler secret put MAIL_CRED_KEY   # samma värde som ovan
-npx wrangler secret put OAUTH_MICROSOFT_CLIENT_SECRET    # samma värde som ovan, för tokenförnyelse
-npx wrangler deploy
-
-cd ../campaign && npm install
-npx wrangler secret put ANTHROPIC_API_KEY
-npx wrangler secret put GMAIL_EMAIL
-npx wrangler secret put GMAIL_PASSWORD
-npx wrangler secret put GITHUB_FEEDBACK_TOKEN
-npx wrangler deploy
-```
-
-Kampanj-Workern deployas även automatiskt vid push till `main` via Cloudflare Workers Builds.
+`MAIL_CRED_KEY` måste vara **samma värde** i app och sender (app krypterar, sender dekrypterar).
 
 ## Status
 
