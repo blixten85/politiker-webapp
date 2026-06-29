@@ -161,24 +161,54 @@ export async function listRoles(db: D1Database) {
   return [...merged.values()];
 }
 
-// Sökning bland politiker inom redan valda områden — används för att
-// låta användaren plocka ut och exkludera enskilda mottagare ur en
-// annars bred kategori-/områdesmarkering.
-export async function searchPoliticiansInAreas(db: D1Database, areaNames: string[], query: string) {
+// En sökträff = EN person (grupperad på e-post — samma adress = samma person;
+// olika personer med samma namn har olika adresser) med ALLA sina
+// befattningar/anknytningar samlade, så besökaren ser vem hen riktar sig till.
+export interface PoliticianSearchHit {
+  name: string;
+  email: string;
+  affiliations: { role: string | null; area_name: string; party: string | null }[];
+}
+
+// CHAR(30)/CHAR(31) = ASCII record-/unit-separator. Förekommer aldrig i namn,
+// områden eller partier, så de är säkra fält-/radavgränsare i GROUP_CONCAT.
+const AFF_SEP = "\x1e";
+const FIELD_SEP = "\x1f";
+
+// Sökning bland politiker — global, eller begränsad till valda områden.
+// Används för att låta användaren hitta, rikta till eller exkludera enskilda.
+export async function searchPoliticiansInAreas(db: D1Database, areaNames: string[], query: string): Promise<PoliticianSearchHit[]> {
   // Tomt areaNames = sök bland ALLA politiker (global individsökning) — så
   // användaren kan rikta till / exkludera enskilda utan att först välja område.
-  let sql = `SELECT name, email, area_name, party FROM politicians WHERE name LIKE ?`;
+  let sql = `SELECT email, MAX(name) as name,
+       GROUP_CONCAT(
+         COALESCE(NULLIF(TRIM(role), ''), '') || CHAR(31) || area_name || CHAR(31) || COALESCE(party, ''),
+         CHAR(30)
+       ) as affiliations
+     FROM politicians
+     WHERE name LIKE ? AND email IS NOT NULL AND email != ''`;
   const params: unknown[] = [`%${query}%`];
   if (areaNames.length > 0) {
     sql += ` AND area_name IN (${areaNames.map(() => "?").join(",")})`;
     params.push(...areaNames);
   }
-  sql += ` ORDER BY name LIMIT 50`;
+  sql += ` GROUP BY email ORDER BY name LIMIT 50`;
   const { results } = await db
     .prepare(sql)
     .bind(...params)
-    .all<{ name: string; email: string; area_name: string; party: string | null }>();
-  return results;
+    .all<{ email: string; name: string; affiliations: string | null }>();
+
+  return results.map((r) => {
+    const seen = new Set<string>();
+    const affiliations: PoliticianSearchHit["affiliations"] = [];
+    for (const part of (r.affiliations ?? "").split(AFF_SEP)) {
+      if (seen.has(part)) continue; // dedupa identiska (roll, område, parti)
+      seen.add(part);
+      const [role, area_name, party] = part.split(FIELD_SEP);
+      affiliations.push({ role: role || null, area_name: area_name ?? "", party: party || null });
+    }
+    return { name: r.name, email: r.email, affiliations };
+  });
 }
 
 export async function getRecipientsForAreas(
