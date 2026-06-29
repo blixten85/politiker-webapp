@@ -27,7 +27,7 @@ import {
 } from "./mail-credentials";
 import { listAreas, listParties, listRoles, searchPoliticiansInAreas, deleteAccount } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
-import { submitFeedback } from "./feedback";
+import { submitFeedback, reportClientError } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
 import { createApiKey, listApiKeys, revokeApiKey, getAccountFromApiKey } from "./api-keys";
 import { draftLetter } from "./draft-letter";
@@ -61,14 +61,14 @@ function setSessionCookie(token: string): string {
 }
 
 export default {
-  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(req: Request, env: Env, execCtx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
 
     // Anonym besöksinspelning på faktiska sidladdningar (SPA-roten "/"). Övriga
     // paths är statiska assets (app.js, style.css, bilder) och räknas inte.
     // Best-effort via waitUntil — blockerar aldrig svaret.
     if (req.method === "GET" && url.pathname === "/") {
-      ctx.waitUntil(recordVisit(env, req));
+      execCtx.waitUntil(recordVisit(env, req));
     }
 
     const resp = await handleRequest(req, env, url);
@@ -608,6 +608,15 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
         }>();
         const result = await submitFeedback(env, { accountId: account ? (account.id as string) : null, message, context, type, replyTo });
         return json(result);
+      }
+
+      // Automatisk klient-felrapportering (oväntade JS-undantag). Kräver INTE
+      // inloggning. Svaret blockeras aldrig av GitHub-anropet — körs i
+      // bakgrunden via waitUntil; klienten bryr sig inte om resultatet.
+      if (url.pathname === "/api/client-error" && req.method === "POST") {
+        const { message, stack, url: pageUrl } = await req.json<{ message?: string; stack?: string; url?: string }>();
+        if (message) await reportClientError(env, { message, stack, url: pageUrl });
+        return json({ ok: true });
       }
 
       // Allt nedanför kräver inloggning

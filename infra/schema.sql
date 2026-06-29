@@ -174,3 +174,15 @@ CREATE TABLE visits (
 );
 CREATE INDEX idx_visits_visited_at ON visits(visited_at);
 CREATE INDEX idx_visits_hash ON visits(visitor_hash);
+
+-- Dedup/räkning av automatiskt rapporterade klientfel (oväntade JS-undantag).
+-- En rad per unik signatur; github_issue_url sätts när en issue skapats.
+CREATE TABLE client_errors (
+  signature TEXT PRIMARY KEY,
+  message TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 1,
+  first_seen INTEGER NOT NULL,
+  last_seen INTEGER NOT NULL,
+  github_issue_url TEXT
+);
+CREATE INDEX idx_client_errors_first_seen ON client_errors(first_seen);

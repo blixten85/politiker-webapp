@@ -5,6 +5,83 @@ import type { Env } from "./db";
 
 const FEEDBACK_REPO = "blixten85/politiker-webapp";
 
+// Tak för hur många NYA auto-issues som får skapas per dygn — skyddar mot
+// issue-spam om en deploy felar för alla besökare samtidigt. Överskjutande
+// fel räknas fortfarande i client_errors men öppnar ingen issue.
+const MAX_NEW_AUTO_ISSUES_PER_DAY = 20;
+
+// Automatiskt rapporterat klientfel → GitHub-issue (gratis via GitHub API,
+// INGEN LLM inblandad). Deduplicerar på en signatur (felmeddelande + fil:rad)
+// så återkommande fel räknas upp på EN issue i stället för att skapa nya, och
+// har ett dygnstak mot spam. Best effort: får aldrig kasta vidare.
+export async function reportClientError(
+  env: Env,
+  input: { message: string; stack?: string; url?: string },
+): Promise<{ reported: boolean }> {
+  const message = (input.message || "okänt fel").slice(0, 300);
+  const stack = (input.stack ?? "").slice(0, 2000);
+  const frame = stack.match(/(\w+\.(?:js|ts|css)):(\d+)/);
+  const signature = `${message}|${frame ? `${frame[1]}:${frame[2]}` : ""}`;
+  const now = Date.now();
+
+  const existing = await env.DB.prepare("SELECT 1 FROM client_errors WHERE signature = ?")
+    .bind(signature)
+    .first();
+  if (existing) {
+    // Känd bugg — räkna bara upp förekomsten, skapa ingen ny issue.
+    await env.DB.prepare("UPDATE client_errors SET count = count + 1, last_seen = ? WHERE signature = ?")
+      .bind(now, signature)
+      .run();
+    return { reported: false };
+  }
+
+  await env.DB.prepare("INSERT INTO client_errors (signature, message, count, first_seen, last_seen) VALUES (?, ?, 1, ?, ?)")
+    .bind(signature, message, now, now)
+    .run();
+
+  const since24h = now - 24 * 60 * 60 * 1000;
+  const day = await env.DB.prepare(
+    "SELECT COUNT(*) as n FROM client_errors WHERE github_issue_url IS NOT NULL AND first_seen >= ?",
+  )
+    .bind(since24h)
+    .first<{ n: number }>();
+  if ((day?.n ?? 0) >= MAX_NEW_AUTO_ISSUES_PER_DAY) return { reported: false };
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${FEEDBACK_REPO}/issues`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.GITHUB_FEEDBACK_TOKEN}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "politiker-webapp-autoreport",
+      },
+      body: JSON.stringify({
+        title: `Auto: ${message.slice(0, 80)}`,
+        body: [
+          "Automatiskt rapporterat klientfel — oväntat JS-undantag i produktion.",
+          "",
+          `**Fel:** ${message}`,
+          input.url ? `**Sida:** ${input.url}` : "",
+          stack ? `**Stack:**\n\`\`\`\n${stack}\n\`\`\`` : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        labels: ["bug", "auto-reported"],
+      }),
+    });
+    if (resp.ok) {
+      const issue = (await resp.json()) as { html_url: string };
+      await env.DB.prepare("UPDATE client_errors SET github_issue_url = ? WHERE signature = ?")
+        .bind(issue.html_url, signature)
+        .run();
+      return { reported: true };
+    }
+  } catch {
+    // best effort — felet är redan loggat i client_errors
+  }
+  return { reported: false };
+}
+
 interface WorkerError {
   method: string;
   endpoint: string;

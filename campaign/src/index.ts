@@ -2,7 +2,6 @@ import { runMonitor } from "./monitor";
 import { runLetterGenerator } from "./letter-generator";
 import { runLetterSender } from "./letter-sender";
 import { runBounceSweep } from "./bounce-sweep";
-import { runIssueFixer } from "./issue-fixer";
 
 export interface Env {
   DB: D1Database;
@@ -19,7 +18,10 @@ export interface Env {
 //   06:00 → letter-gen     (08:00 CET)
 //   07:00 → letter-sender  (09:00 CET)
 //   08:00 → bounce-sweep   (10:00 CET)
-//   09:00 → issue-fixer    (11:00 CET)
+//
+// Klientfel rapporteras numera direkt till GitHub (gratis) via app-Workern,
+// utan någon LLM-driven autofix — den gamla issue-fixern (Claude skrev om hela
+// filer, ~$3-4/issue) är borttagen.
 
 export default {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
@@ -31,7 +33,6 @@ export default {
           case 6:  await runLetterGenerator(env); break;
           case 7:  await runLetterSender(env);    break;
           case 8:  await runBounceSweep(env);     break;
-          case 9:  await runIssueFixer(env);      break;
         }
       })()
     );
