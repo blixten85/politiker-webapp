@@ -1055,6 +1055,8 @@ async function loadAdminStats() {
     totalsDiv.appendChild(box);
   }
 
+  renderVisitorCountries(stats.visitorCountries ?? []);
+
   const leaderboardTbody = document.getElementById("admin-leaderboard-list");
   leaderboardTbody.innerHTML = "";
   for (const row of stats.leaderboard) {
@@ -1070,6 +1072,35 @@ async function loadAdminStats() {
   }
 
   await renderTimeSeries();
+}
+
+// Tvåbokstavs ISO-landskod → flagg-emoji (regional indicator-symboler).
+// "SE" → 🇸🇪. Returnerar tom sträng om koden inte är två A–Z-bokstäver.
+function countryFlag(code) {
+  if (!/^[A-Za-z]{2}$/.test(code)) return "";
+  return [...code.toUpperCase()].map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65)).join("");
+}
+
+function renderVisitorCountries(countries) {
+  const ul = document.getElementById("admin-visitor-countries");
+  if (!ul) return;
+  ul.innerHTML = "";
+  if (countries.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = t("stats_no_data");
+    ul.appendChild(li);
+    return;
+  }
+  for (const { country, n } of countries) {
+    const li = document.createElement("li");
+    const flag = countryFlag(country);
+    li.append(`${flag ? flag + " " : ""}${country}`);
+    const count = document.createElement("span");
+    count.className = "n";
+    count.textContent = n;
+    li.appendChild(count);
+    ul.appendChild(li);
+  }
 }
 
 // Enkelt stapeldiagram utan externt bibliotek. Visar de senaste 60 bucketarna.
@@ -1217,11 +1248,12 @@ let currentStep = 1;
 let isAdminUser = false;
 
 function hideAllAppViews() {
-  document.getElementById("landing-view").hidden = true;
-  document.getElementById("wizard-view").hidden = true;
-  document.getElementById("settings-view").hidden = true;
-  document.getElementById("admin-view").hidden = true;
-  document.getElementById("letters-view").hidden = true;
+  // Null-säker: överlever deploy-skew där ny JS hinner före ny HTML (annars
+  // kastar t.ex. saknad #letters-view ett "[Auto-rapport]"-konsolfel).
+  for (const id of ["landing-view", "wizard-view", "settings-view", "admin-view", "letters-view"]) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
 }
 
 async function showLandingView() {
