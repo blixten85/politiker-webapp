@@ -39,7 +39,7 @@ skrapningslogiken.
 
 - `app/` — huvud-Worker: statisk frontend (`public/`, inkl. `i18n.js`, `components/` för wizard-stegen) + API (auth, mail-credentials, mottagarval, brev, AI-utkast, feedback, API-nycklar, admin)
 - `sender/` — Queue consumer-Worker: faktisk SMTP-/Graph-sändning + `rate-limiter.ts` (Durable Object, token bucket per mailkoppling)
-- `campaign/` — kampanj-Worker (`politiker-webapp-campaign`): autonom cron-kampanj som dagligen hämtar nyheter/riksdagsärenden, genererar medborgarbrev med Claude, skickar dem via Gmail och självläker rapporterade buggar via GitHub-PR
+- `campaign/` — kampanj-Worker (`politiker-webapp-campaign`): autonom cron-kampanj som dagligen hämtar nyheter/riksdagsärenden, genererar medborgarbrev med Claude och skickar dem via Gmail
 - `shared/` — kod som delas mellan Workers (kryptering, SMTP-klient, TOTP, Graph-mail, leverantörs-takter, typer)
 - `infra/` — Cloudflare-provisionering (`cf-api.sh`, `az-graph-api.sh`, `schema.sql`) + `bounce-processor.py` (systemd-tjänst för Gmail-bouncehantering)
 
