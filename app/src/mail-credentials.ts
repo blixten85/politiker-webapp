@@ -106,7 +106,7 @@ export async function addMicrosoftGraphMailCredential(env: Env, accountId: strin
   await env.DB.prepare(
     `INSERT INTO mail_credentials
        (id, account_id, provider, smtp_host, smtp_port, smtp_user, encrypted_password, from_address, verified_at, daily_cap, user_cap_pct, oauth_access_token, oauth_refresh_token, oauth_token_expires_at, created_at)
-     VALUES (?, ?, 'microsoft_graph', 'oauth', 0, ?, '', ?, ?, ?, ?, 100, ?, ?, ?, ?)`,
+     VALUES (?, ?, 'microsoft_graph', 'oauth', 0, ?, '', ?, ?, ?, 100, ?, ?, ?, ?)`,
   )
     .bind(id, accountId, tokens.email, tokens.email, Date.now(), dailyCap, encryptedAccessToken, encryptedRefreshToken, tokens.expiresAt, Date.now())
     .run();
