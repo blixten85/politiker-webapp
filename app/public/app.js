@@ -1204,15 +1204,24 @@ async function renderTimeSeries() {
 
 document.getElementById("admin-stats-granularity").addEventListener("change", renderTimeSeries);
 
+// Aktiv under-flik (Konton/Feedback/Statistik) speglas i hashen som
+// #admin/<tab>, så en refresh stannar kvar på samma flik istället för att
+// falla tillbaka till Konton.
+const ADMIN_TABS = ["accounts", "feedback", "stats"];
+function adminTabFromHash() {
+  const m = location.hash.match(/^#admin\/(\w+)/);
+  return m && ADMIN_TABS.includes(m[1]) ? m[1] : "accounts";
+}
+function activateAdminTab(tab) {
+  document.querySelectorAll(".admin-tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll(".admin-tab-panel").forEach((p) => (p.hidden = p.id !== `admin-tab-${tab}`));
+}
 document.querySelectorAll(".admin-tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".admin-tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".admin-tab-panel").forEach((p) => (p.hidden = true));
-    btn.classList.add("active");
-    document.getElementById(`admin-tab-${btn.dataset.tab}`).hidden = false;
+    activateAdminTab(btn.dataset.tab);
+    history.replaceState(null, "", btn.dataset.tab === "accounts" ? "#admin" : `#admin/${btn.dataset.tab}`);
   });
 });
-document.querySelector('.admin-tab-btn[data-tab="accounts"]').classList.add("active");
 
 function downloadExport(section, format) {
   window.location.href = `/api/admin/export?section=${section}&format=${format}`;
@@ -1336,7 +1345,9 @@ function showAdminView() {
   document.getElementById("home-btn").hidden = false;
   document.getElementById("settings-btn").hidden = false;
   document.getElementById("admin-btn").hidden = true;
-  history.replaceState(null, "", "#admin");
+  const tab = adminTabFromHash();
+  history.replaceState(null, "", tab === "accounts" ? "#admin" : `#admin/${tab}`);
+  activateAdminTab(tab);
   loadAdminPanel();
 }
 
@@ -1487,7 +1498,7 @@ async function showApp(me) {
   // /api/admin/*-anropen behöver). Öppna admin-vyn direkt när vi laddats där.
   if (location.pathname === "/admin" && isAdminUser) showAdminView();
   else if (hash === "#settings") showSettingsView();
-  else if (hash === "#admin" && isAdminUser) showAdminView();
+  else if (hash.startsWith("#admin") && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
   else showLandingView();
 }
