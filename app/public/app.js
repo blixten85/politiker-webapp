@@ -1469,6 +1469,17 @@ async function renderReviewStep() {
 
 document.getElementById("home-btn").addEventListener("click", showLandingView);
 document.getElementById("settings-btn").addEventListener("click", showSettingsView);
+
+// Flaggan/banner fungerar som logga → start. Inloggad: tillbaka till
+// landningsvyn (samma som "Start"-knappen). Utloggad: scrolla upp till toppen
+// (auth-vyn är redan starten). Båda flaggorna är aria-hidden — home-btn är den
+// tangentbords-/skärmläsartillgängliga vägen, det här är en mus-genväg.
+function goHomeFromBanner() {
+  if (!document.getElementById("app-view").hidden) showLandingView();
+  else window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.querySelector(".se-banner")?.addEventListener("click", goHomeFromBanner);
+document.querySelector(".se-flag")?.addEventListener("click", goHomeFromBanner);
 document.getElementById("step1-next-btn").addEventListener("click", () => goToStep(2));
 document.getElementById("step2-back-btn").addEventListener("click", () => goToStep(1));
 document.getElementById("step2-next-btn").addEventListener("click", () => goToStep(3));
