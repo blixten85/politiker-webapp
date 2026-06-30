@@ -32,6 +32,13 @@ export async function getAdminStats(env: Env): Promise<AdminStats> {
        WHERE country IS NOT NULL GROUP BY country ORDER BY n DESC, country`,
     ).all<{ country: string; n: number }>();
     visitorCountries = c.results;
+    // Besökare vars land aldrig kunde resolvas (country IS NULL) faller ur
+    // frågan ovan. Lägg dem i en "Okänt"-hink så landsuppdelningen blir en
+    // äkta partition som summerar till totalVisitors — annars ser siffrorna
+    // ut att inte stämma (t.ex. 24 totalt men bara 17 fördelat på länder).
+    const knownSum = visitorCountries.reduce((sum, r) => sum + r.n, 0);
+    const unknown = totalVisitors - knownSum;
+    if (unknown > 0) visitorCountries.push({ country: "??", n: unknown });
   } catch {
     /* tabellen/kolumnen finns inte än */
   }
