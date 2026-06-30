@@ -125,9 +125,9 @@ export async function requestPasswordReset(env: Env, email: string): Promise<voi
 export async function resetPassword(env: Env, token: string, newPassword: string): Promise<void> {
   if (newPassword.length < 10) throw new Error("Lösenordet måste vara minst 10 tecken");
 
-  const account = await env.DB.prepare("SELECT id, reset_expires_at FROM accounts WHERE reset_token = ?")
+  const account = await env.DB.prepare("SELECT id, email, reset_expires_at FROM accounts WHERE reset_token = ?")
     .bind(token)
-    .first<{ id: string; reset_expires_at: number }>();
+    .first<{ id: string; email: string; reset_expires_at: number }>();
   if (!account || Date.now() > account.reset_expires_at) {
     throw new Error("Återställningslänken är ogiltig eller har gått ut");
   }
@@ -138,6 +138,11 @@ export async function resetPassword(env: Env, token: string, newPassword: string
   )
     .bind(hash, salt, account.id)
     .run();
+
+  // Nollställ inloggningsspärren — en användare som just bevisat ägarskap via
+  // återställningslänken och satt ett nytt lösenord ska inte vara kvar utelåst
+  // av tidigare misslyckade försök.
+  await clearAttempts(env, "login", account.email);
 }
 
 export async function startTotpSetup(env: Env, accountId: string): Promise<{ secret: string; authUri: string }> {
