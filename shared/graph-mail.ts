@@ -6,7 +6,11 @@
 // extra scopes (Mail.Send + offline_access) i just detta flöde.
 
 const REDIRECT_URI = "https://politiker.denied.se/api/oauth-mail/microsoft/callback";
-const MAIL_SEND_SCOPE = "openid email profile offline_access Mail.Send";
+// User.Read krävs för GET /me nedan (hämtar avsändaradressen). openid/email/
+// profile ger bara id_token-claims, inte Graph-åtkomst — utan User.Read ger
+// /me 403 och kopplingen kraschar med "Kunde inte hämta din e-postadress".
+// Alla är user-consentable (inget admin-godkännande).
+const MAIL_SEND_SCOPE = "openid email profile offline_access User.Read Mail.Send";
 
 export interface GraphTokens {
   accessToken: string;
