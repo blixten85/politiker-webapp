@@ -4,6 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Queue-consumer, ingen HTTP-yta behövs — exponera inte på *.workers.dev.
+  "workers_dev": false,
   "d1_databases": [
     {
       "binding": "DB",
