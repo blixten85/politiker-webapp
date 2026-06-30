@@ -130,13 +130,14 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
   try {
     const result = await api("/api/signup", {
       method: "POST",
-      body: JSON.stringify({ email: fd.get("email"), password: fd.get("password") }),
+      body: JSON.stringify({ email: fd.get("email"), password: fd.get("password"), turnstileToken: fd.get("cf-turnstile-response") }),
     });
     pendingAccountId = result.accountId;
     document.getElementById("verify-card").hidden = false;
     document.getElementById("signup-msg").textContent = t("msg_signup_success");
   } catch (err) {
     document.getElementById("signup-msg").textContent = err.message;
+    if (window.turnstile) window.turnstile.reset(e.target.querySelector(".cf-turnstile")); // ny token inför nästa försök
   }
 });
 
@@ -196,10 +197,11 @@ document.getElementById("forgot-password-form").addEventListener("submit", async
   const fd = new FormData(e.target);
   const msg = document.getElementById("forgot-password-msg");
   try {
-    await api("/api/request-password-reset", { method: "POST", body: JSON.stringify({ email: fd.get("email") }) });
+    await api("/api/request-password-reset", { method: "POST", body: JSON.stringify({ email: fd.get("email"), turnstileToken: fd.get("cf-turnstile-response") }) });
     msg.textContent = t("msg_reset_link_sent");
   } catch (err) {
     msg.textContent = err.message;
+    if (window.turnstile) window.turnstile.reset(e.target.querySelector(".cf-turnstile"));
   }
 });
 

@@ -44,6 +44,7 @@ import {
 } from "./civic-outreach";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
+import { verifyTurnstile } from "./turnstile";
 import type { Env } from "./db";
 
 function json(data: unknown, status = 200): Response {
@@ -547,7 +548,10 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
       }
 
       if (url.pathname === "/api/signup" && req.method === "POST") {
-        const { email, password } = await req.json<{ email: string; password: string }>();
+        const { email, password, turnstileToken } = await req.json<{ email: string; password: string; turnstileToken?: string }>();
+        if (!(await verifyTurnstile(env.TURNSTILE_SECRET, turnstileToken, req.headers.get("CF-Connecting-IP")))) {
+          return json({ error: "Bekräfta att du inte är en robot och försök igen." }, 400);
+        }
         const result = await signup(env, email, password);
         return json(result);
       }
@@ -574,7 +578,10 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
       }
 
       if (url.pathname === "/api/request-password-reset" && req.method === "POST") {
-        const { email } = await req.json<{ email: string }>();
+        const { email, turnstileToken } = await req.json<{ email: string; turnstileToken?: string }>();
+        if (!(await verifyTurnstile(env.TURNSTILE_SECRET, turnstileToken, req.headers.get("CF-Connecting-IP")))) {
+          return json({ error: "Bekräfta att du inte är en robot och försök igen." }, 400);
+        }
         await requestPasswordReset(env, email);
         return json({ ok: true }); // alltid ok, avslöjar inte om kontot finns
       }
