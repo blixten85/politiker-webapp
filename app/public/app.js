@@ -1132,8 +1132,13 @@ function renderVisitorCountries(countries) {
   }
   for (const { country, n } of countries) {
     const li = document.createElement("li");
-    const flag = countryFlag(country);
-    li.append(`${flag ? flag + " " : ""}${country}`);
+    if (country === "??") {
+      // "Okänt"-hinken (besökare utan upplöst land) — globe istället för flagga.
+      li.append(`🌐 ${t("stats_country_unknown")}`);
+    } else {
+      const flag = countryFlag(country);
+      li.append(`${flag ? flag + " " : ""}${country}`);
+    }
     const count = document.createElement("span");
     count.className = "n";
     count.textContent = n;
@@ -1478,13 +1483,22 @@ async function showApp(me) {
   const tasks = [loadMailCredentials(), loadAreas(), loadSendJobs(), loadApiKeys(), loadOAuthIdentities(), updateCapPreview()];
   await Promise.allSettled(tasks);
   const hash = location.hash;
-  if (hash === "#settings") showSettingsView();
+  // /admin är en egen path bakom Cloudflare Access (sätter Access-cookien som
+  // /api/admin/*-anropen behöver). Öppna admin-vyn direkt när vi laddats där.
+  if (location.pathname === "/admin" && isAdminUser) showAdminView();
+  else if (hash === "#settings") showSettingsView();
   else if (hash === "#admin" && isAdminUser) showAdminView();
   else if (hash === "#write") startWizard();
   else showLandingView();
 }
 
-document.getElementById("admin-btn").addEventListener("click", showAdminView);
+// Full navigering till /admin (inte bara in-page-vy) så Cloudflare Access-
+// grinden framför /admin + /api/admin/* alltid hinner sätta/förnya sin
+// sessionscookie innan panelens API-anrop — annars ger en utgången
+// Access-session en tom admin-flik. SPA:n öppnar admin-vyn när den laddats där.
+document.getElementById("admin-btn").addEventListener("click", () => {
+  location.href = "/admin";
+});
 
 // Hamburger-meny: öppna/stäng panelen. Stänger vid klick på en navigerings-
 // knapp (men inte vid tema-knappen, så man kan växla tema med menyn kvar),

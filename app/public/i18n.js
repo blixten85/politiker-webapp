@@ -299,6 +299,7 @@ registerTranslations("sv", {
   stats_chart_sent: "Skickade mejl",
   stats_countries_title: "Unika besökare per land",
   stats_no_data: "Ingen data ännu",
+  stats_country_unknown: "Okänt",
   stats_leaderboard: "Topplista per konto",
   stat_total_visitors: "Unika besökare",
   stat_total_accounts: "Konton",
