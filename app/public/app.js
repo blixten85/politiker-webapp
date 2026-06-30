@@ -171,8 +171,24 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   }
 });
 
+// Auth-vyn har flera kort (login, glömt lösenord, sätt nytt lösenord). Visa
+// ett i taget som egna "sidor" så det är tydligt vad man fyller i — annars
+// staplas korten på varandra och det syns inte var "glömt lösenord" hamnar.
+function showAuthScreen(which) {
+  document.getElementById("login-card").hidden = which !== "login";
+  document.getElementById("signup-card").hidden = which !== "login";
+  document.getElementById("forgot-password-card").hidden = which !== "forgot";
+  document.getElementById("reset-password-card").hidden = which !== "reset";
+}
+
 document.getElementById("forgot-password-btn").addEventListener("click", () => {
-  document.getElementById("forgot-password-card").hidden = false;
+  document.getElementById("forgot-password-msg").textContent = "";
+  showAuthScreen("forgot");
+});
+document.getElementById("forgot-back-btn").addEventListener("click", () => showAuthScreen("login"));
+document.getElementById("reset-back-btn").addEventListener("click", () => {
+  history.replaceState(null, "", "/"); // släng ?reset-token så refresh inte återöppnar
+  showAuthScreen("login");
 });
 
 document.getElementById("forgot-password-form").addEventListener("submit", async (e) => {
@@ -1554,7 +1570,7 @@ document.addEventListener("languagechange", () => {
 (async function init() {
   const resetToken = new URLSearchParams(location.search).get("reset");
   if (resetToken) {
-    document.getElementById("reset-password-card").hidden = false;
+    showAuthScreen("reset");
   }
 
   try {

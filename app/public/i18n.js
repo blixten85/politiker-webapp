@@ -132,6 +132,7 @@ registerTranslations("sv", {
   placeholder_totp_code: "6-siffrig 2FA-kod",
   btn_login: "Logga in",
   forgot_password_link: "Glömt lösenord?",
+  btn_back: "← Tillbaka",
   forgot_password_title: "Återställ lösenord",
   btn_send_reset_link: "Skicka återställningslänk",
   reset_password_title: "Sätt nytt lösenord",
