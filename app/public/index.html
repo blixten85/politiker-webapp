@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Politikerkontakt — skriv till dina folkvalda</title>
 <link rel="stylesheet" href="/style.css">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 <div class="se-banner" aria-hidden="true"></div>
@@ -81,6 +82,7 @@
       <h2 data-i18n="forgot_password_title">Återställ lösenord</h2>
       <form id="forgot-password-form">
         <input type="email" name="email" autocomplete="username" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADtfk0hF05HrDLLJ" data-action="turnstile-spin-v1"></div>
         <button type="submit" data-i18n="btn_send_reset_link">Skicka återställningslänk</button>
       </form>
       <p id="forgot-password-msg"></p>
@@ -102,6 +104,7 @@
       <form id="signup-form">
         <input type="email" name="email" autocomplete="username" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
         <input type="password" name="password" autocomplete="new-password" data-i18n-placeholder="placeholder_password_min" placeholder="Lösenord (minst 10 tecken)" required minlength="10">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADtfk0hF05HrDLLJ" data-action="turnstile-spin-v1"></div>
         <button type="submit" data-i18n="btn_signup">Skapa konto</button>
       </form>
       <p id="signup-msg"></p>

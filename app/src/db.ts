@@ -24,6 +24,7 @@ export interface Env {
   CIVIC_OUTLOOK_PASSWORD?: string;
   ANTHROPIC_API_KEY?: string;
   VISITOR_SALT?: string;
+  TURNSTILE_SECRET?: string; // Turnstile siteverify-hemlighet (wrangler secret)
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

@@ -13,3 +13,6 @@ SYSTEM_FROM_ADDRESS=anders.eriksson@denied.se
 
 GITHUB_FEEDBACK_TOKEN=<fine-grained PAT med Issues:Write på blixten85/politiker-webapp>
 FEEDBACK_NOTIFY_EMAIL=anders.eriksson@denied.se
+
+# Cloudflare Turnstile siteverify-hemlighet (bot-skydd på signup/reset)
+TURNSTILE_SECRET=
