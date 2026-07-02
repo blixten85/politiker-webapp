@@ -112,7 +112,7 @@ function initI18n() {
 
 registerTranslations("sv", {
   newsletter_title: "Prenumerera på nyhetsbrevet",
-  newsletter_desc: "Få samma medborgarbrev som skickas till politikerna — research, källor och krav — direkt i inkorgen. Inget konto behövs.",
+  newsletter_desc: "Varje kvartal: få samma medborgarbrev som skickas till samtliga politiker i landet — research, källor och krav — direkt i inkorgen. Inget konto behövs.",
   btn_newsletter_subscribe: "Prenumerera",
   msg_newsletter_check_inbox: "Kolla din inkorg — klicka på bekräftelselänken för att aktivera prenumerationen.",
   brand_title: "Politikerkontakt",
@@ -386,7 +386,7 @@ registerTranslations("sv", {
 
 registerTranslations("en", {
   newsletter_title: "Subscribe to the newsletter",
-  newsletter_desc: "Get the same citizen letters that are sent to the politicians — research, sources and demands — straight to your inbox. No account needed.",
+  newsletter_desc: "Every quarter: get the same citizen letter that is sent to every politician in the country — research, sources and demands — straight to your inbox. No account needed.",
   btn_newsletter_subscribe: "Subscribe",
   msg_newsletter_check_inbox: "Check your inbox — click the confirmation link to activate the subscription.",
   brand_title: "Politician Contact",

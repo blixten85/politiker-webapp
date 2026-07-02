@@ -1,8 +1,7 @@
 // Nyhetsbrev: anmälan med dubbel opt-in, bekräftelse och avregistrering.
-// Prenumeranter får campaign-Workerns publicerade medborgarbrev (samma brev
-// som skickas till politikerna) som ett dagligt digest — själva utskicket
-// sker i campaign/src/newsletter-sender.ts, den här modulen hanterar bara
-// listan.
+// Prenumeranter får kvartalsbrevet — samma AI-researchade brev som varje
+// kvartal skickas till samtliga politiker i landet. Själva utskicket sker i
+// campaign/src/newsletter-sender.ts, den här modulen hanterar bara listan.
 
 import { randomId } from "../../shared/crypto";
 import { sendSystemMail } from "./auth";
@@ -53,8 +52,9 @@ export async function subscribe(env: Env, email: string): Promise<void> {
   const subject = "Bekräfta din prenumeration — Politiker-kontakt";
   const html = `<p>Hej!</p>
 <p>Du (eller någon annan) har anmält den här adressen till Politiker-kontakts
-nyhetsbrev. Som prenumerant får du samma medborgarbrev som skickas till
-politikerna — research, källor och krav — direkt i inkorgen.</p>
+nyhetsbrev. Som prenumerant får du varje kvartal samma medborgarbrev som då
+skickas till samtliga politiker i landet — research, källor och krav —
+direkt i inkorgen.</p>
 <p><a href="${confirmUrl}">Bekräfta prenumerationen</a></p>
 <p>Om du inte anmält dig kan du ignorera det här mailet — utan bekräftelse
 skickas inga nyhetsbrev.</p>`;
@@ -110,7 +110,7 @@ export async function confirm(env: Env, id: string | null, token: string | null)
   }
   return htmlPage(
     "Prenumerationen är bekräftad",
-    "<p>Tack! Du får nu samma medborgarbrev som skickas till politikerna. Varje utskick innehåller en avregistreringslänk.</p>",
+    "<p>Tack! Du får nu, en gång per kvartal, samma medborgarbrev som skickas till samtliga politiker i landet. Varje utskick innehåller en avregistreringslänk.</p>",
   );
 }
 
