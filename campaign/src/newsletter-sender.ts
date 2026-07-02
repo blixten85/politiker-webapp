@@ -76,19 +76,27 @@ export async function runNewsletterSender(env: Env): Promise<void> {
   // runNewsletterSender körs FÖRE runQuarterlyDrain i varje cron-slot, så
   // nyhetsbrevet tar aldrig slut på dagskvoten på grund av politiker-kön.
   async function deliver(to: string, subject: string, html: string, unsubUrl: string): Promise<void> {
+    const text = html.replace(/<[^>]+>/g, "");
+    const headers = {
+      "List-Unsubscribe": `<${unsubUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    };
+    // Kanalordning: Cloudflare Email Service -> Resend -> Gmail-SMTP.
+    if (env.EMAIL) {
+      try {
+        await env.EMAIL.send({
+          to,
+          from: { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" },
+          subject, html, text, headers,
+        });
+        return;
+      } catch (e) {
+        console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), provar Resend`);
+      }
+    }
     if (env.RESEND_API_KEY) {
       try {
-        await sendResendMail(env.RESEND_API_KEY, {
-          to,
-          from: NEWSLETTER_FROM,
-          subject,
-          html,
-          text: html.replace(/<[^>]+>/g, ""),
-          headers: {
-            "List-Unsubscribe": `<${unsubUrl}>`,
-            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-          },
-        });
+        await sendResendMail(env.RESEND_API_KEY, { to, from: NEWSLETTER_FROM, subject, html, text, headers });
         return;
       } catch (e) {
         console.warn(`newsletter: Resend misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
