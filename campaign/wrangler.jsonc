@@ -11,21 +11,19 @@
       "database_id": "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
     }
   ],
-  // Cloudflare Email Service — nyhetsbrevs-digest skickas härifrån när
-  // denied.se är onboardad (Dashboard > Compute > Email Service). Koden
-  // faller tillbaka på Gmail-SMTP om sändning via bindingen misslyckas.
-  "send_email": [
-    {
-      "name": "EMAIL",
-      "allowed_sender_addresses": ["nyhetsbrev@denied.se"]
-    }
-  ],
+  // Nyhetsbrev + kvartalsbrev skickas via Resend (RESEND_API_KEY, wrangler
+  // secret; verifierad avsändardomän send.denied.se). Cloudflare Email
+  // Service valdes bort — kräver Workers Paid. Nyhetsbrevet faller tillbaka
+  // på Gmail-SMTP om nyckeln saknas; kvartalsdräneringen väntar tills den finns.
   "triggers": {
     "crons": [
       "0 5 * * *",
       "0 6 * * *",
       "0 7 * * *",
-      "0 8 * * *"
+      "0 8 * * *",
+      // Kvartalsbrevet: research + författande + köning av samtliga politiker,
+      // 06:30 den 1:a i varje kvartal. Prenumeranterna får det 07:00 samma dag.
+      "30 6 1 1,4,7,10 *"
     ]
   },
   "vars": {

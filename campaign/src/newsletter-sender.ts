@@ -1,19 +1,22 @@
 import type { Env } from "./index";
 import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
+import { sendResendMail } from "../../shared/resend";
 
-const NEWSLETTER_FROM = { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" };
+const NEWSLETTER_FROM = "Politiker-kontakt <nyhetsbrev@send.denied.se>";
 
-// Nyhetsbrevsutskick: prenumeranterna får samma medborgarbrev som skickas
-// till politikerna (public_letters, source='campaign' — det publicerade
-// brevet per bevakat ärende). Skickas som ETT dagligt digest per prenumerant
-// med alla nya brev, istället för ett mail per brev — upp till fem ärenden
-// kan generera brev samma dag och ingen vill ha fem separata mail.
+// Nyhetsbrevsutskick: prenumeranterna får KVARTALSBREVET — samma AI-
+// researchade och -författade brev som skickas till samtliga politiker i
+// landet (public_letters, source='quarterly', skapas av quarterly-campaign
+// den 1:a i jan/apr/jul/okt). Nyhetsbrevet går alltså ut kvartalsvis,
+// samma dag som politikerutskicket börjar — inte dagligen; de dagliga
+// kampanjbreven (source='campaign') rör aldrig prenumeranterna.
 //
-// Körs i samma cron-slot som letter-sender (07 UTC), efter politiker-
-// utskicken, och delar samma Gmail-konto och dagliga volymutrymme.
+// Körs i samma cron-slot som letter-sender (07 UTC). Slotten är i praktiken
+// en no-op alla dagar utom kvartalsdagarna (och dagarna efter, tills alla
+// prenumeranter betats av).
 
 const MAX_SUBSCRIBERS_PER_RUN = 50;
-const LETTER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // enqueue:a aldrig äldre brev än en vecka
+const LETTER_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000; // fångar sena bekräftelser utan att skicka gamla kvartalsbrev
 
 const BASE_URL = "https://politiker.denied.se";
 
@@ -26,8 +29,8 @@ function digestHtml(letters: PendingLetter[], sub: Subscriber): string {
     <h2 style="font-size:1.05rem;margin:1.5rem 0 .25rem">${escapeHtml(l.subject)}</h2>
     <pre style="font-family:inherit;white-space:pre-wrap;margin:0">${escapeHtml(l.body)}</pre>`).join("\n<hr>\n");
   return `<p>Hej!</p>
-<p>Här ${letters.length === 1 ? "är dagens medborgarbrev som skickats" : `är dagens ${letters.length} medborgarbrev som skickats`}
-till politikerna via <a href="${BASE_URL}">Politiker-kontakt</a>:</p>
+<p>Här ${letters.length === 1 ? "är kvartalets medborgarbrev som just nu skickas" : `är kvartalets ${letters.length} medborgarbrev som just nu skickas`}
+till samtliga politiker i landet via <a href="${BASE_URL}">Politiker-kontakt</a>:</p>
 ${sections}
 <hr>
 <p style="color:#666;font-size:.85rem">Du får det här för att du prenumererar på
@@ -44,7 +47,7 @@ export async function runNewsletterSender(env: Env): Promise<void> {
     SELECT lower(hex(randomblob(16))), pl.id, ns.id
     FROM public_letters pl
     CROSS JOIN newsletter_subscribers ns
-    WHERE pl.source = 'campaign' AND pl.published_at > ?
+    WHERE pl.source = 'quarterly' AND pl.published_at > ?
       AND ns.confirmed_at IS NOT NULL AND ns.unsubscribed_at IS NULL
   `).bind(cutoff).run();
 
@@ -66,14 +69,16 @@ export async function runNewsletterSender(env: Env): Promise<void> {
     fromAddress: env.GMAIL_EMAIL,
   };
 
-  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM, List-
-  // Unsubscribe-header för en-klicks-avregistrering i mailklienter) — men
-  // falla tillbaka på Gmail-SMTP om bindingen saknas eller domänen ännu
-  // inte är onboardad (E_SENDER_NOT_VERIFIED), så utskicken aldrig stannar.
+  // Föredra Resend (egen avsändardomän med DKIM, List-Unsubscribe-header för
+  // en-klicks-avregistrering i mailklienter) — falla tillbaka på Gmail-SMTP
+  // om nyckeln saknas eller sändningen misslyckas, så utskicken aldrig
+  // stannar. Prenumeranterna har prioritet över kvartalsdräneringen:
+  // runNewsletterSender körs FÖRE runQuarterlyDrain i varje cron-slot, så
+  // nyhetsbrevet tar aldrig slut på dagskvoten på grund av politiker-kön.
   async function deliver(to: string, subject: string, html: string, unsubUrl: string): Promise<void> {
-    if (env.EMAIL) {
+    if (env.RESEND_API_KEY) {
       try {
-        await env.EMAIL.send({
+        await sendResendMail(env.RESEND_API_KEY, {
           to,
           from: NEWSLETTER_FROM,
           subject,
@@ -86,7 +91,7 @@ export async function runNewsletterSender(env: Env): Promise<void> {
         });
         return;
       } catch (e) {
-        console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
+        console.warn(`newsletter: Resend misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
       }
     }
     await sendSmtpMail(smtpConfig, { to, subject, html });

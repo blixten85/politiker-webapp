@@ -1,10 +1,10 @@
 // Nyhetsbrev: anmälan med dubbel opt-in, bekräftelse och avregistrering.
-// Prenumeranter får campaign-Workerns publicerade medborgarbrev (samma brev
-// som skickas till politikerna) som ett dagligt digest — själva utskicket
-// sker i campaign/src/newsletter-sender.ts, den här modulen hanterar bara
-// listan.
+// Prenumeranter får kvartalsbrevet — samma AI-researchade brev som varje
+// kvartal skickas till samtliga politiker i landet. Själva utskicket sker i
+// campaign/src/newsletter-sender.ts, den här modulen hanterar bara listan.
 
 import { randomId } from "../../shared/crypto";
+import { sendResendMail } from "../../shared/resend";
 import { sendSystemMail } from "./auth";
 import type { Env } from "./db";
 
@@ -53,27 +53,28 @@ export async function subscribe(env: Env, email: string): Promise<void> {
   const subject = "Bekräfta din prenumeration — Politiker-kontakt";
   const html = `<p>Hej!</p>
 <p>Du (eller någon annan) har anmält den här adressen till Politiker-kontakts
-nyhetsbrev. Som prenumerant får du samma medborgarbrev som skickas till
-politikerna — research, källor och krav — direkt i inkorgen.</p>
+nyhetsbrev. Som prenumerant får du varje kvartal samma medborgarbrev som då
+skickas till samtliga politiker i landet — research, källor och krav —
+direkt i inkorgen.</p>
 <p><a href="${confirmUrl}">Bekräfta prenumerationen</a></p>
 <p>Om du inte anmält dig kan du ignorera det här mailet — utan bekräftelse
 skickas inga nyhetsbrev.</p>`;
 
-  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM), falla
-  // tillbaka på system-SMTP (iCloud) om bindingen saknas eller domänen
-  // ännu inte är onboardad — anmälan ska aldrig stanna på mailvägen.
-  if (env.EMAIL) {
+  // Föredra Resend (egen avsändardomän med DKIM), falla tillbaka på
+  // system-SMTP (iCloud) om nyckeln saknas eller sändningen misslyckas —
+  // anmälan ska aldrig stanna på mailvägen.
+  if (env.RESEND_API_KEY) {
     try {
-      await env.EMAIL.send({
+      await sendResendMail(env.RESEND_API_KEY, {
         to: email,
-        from: { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" },
+        from: "Politiker-kontakt <nyhetsbrev@send.denied.se>",
         subject,
         html,
         text: html.replace(/<[^>]+>/g, ""),
       });
       return;
     } catch (e) {
-      console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på system-SMTP`);
+      console.warn(`newsletter: Resend misslyckades (${String(e).slice(0, 120)}), faller tillbaka på system-SMTP`);
     }
   }
   await sendSystemMail(env, email, subject, html);
@@ -110,7 +111,7 @@ export async function confirm(env: Env, id: string | null, token: string | null)
   }
   return htmlPage(
     "Prenumerationen är bekräftad",
-    "<p>Tack! Du får nu samma medborgarbrev som skickas till politikerna. Varje utskick innehåller en avregistreringslänk.</p>",
+    "<p>Tack! Du får nu, en gång per kvartal, samma medborgarbrev som skickas till samtliga politiker i landet. Varje utskick innehåller en avregistreringslänk.</p>",
   );
 }
 
