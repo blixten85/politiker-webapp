@@ -50,18 +50,33 @@ export async function subscribe(env: Env, email: string): Promise<void> {
   }
 
   const confirmUrl = `${BASE_URL}/api/newsletter/confirm?id=${id}&token=${token}`;
-  await sendSystemMail(
-    env,
-    email,
-    "Bekräfta din prenumeration — Politiker-kontakt",
-    `<p>Hej!</p>
+  const subject = "Bekräfta din prenumeration — Politiker-kontakt";
+  const html = `<p>Hej!</p>
 <p>Du (eller någon annan) har anmält den här adressen till Politiker-kontakts
 nyhetsbrev. Som prenumerant får du samma medborgarbrev som skickas till
 politikerna — research, källor och krav — direkt i inkorgen.</p>
 <p><a href="${confirmUrl}">Bekräfta prenumerationen</a></p>
 <p>Om du inte anmält dig kan du ignorera det här mailet — utan bekräftelse
-skickas inga nyhetsbrev.</p>`,
-  );
+skickas inga nyhetsbrev.</p>`;
+
+  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM), falla
+  // tillbaka på system-SMTP (iCloud) om bindingen saknas eller domänen
+  // ännu inte är onboardad — anmälan ska aldrig stanna på mailvägen.
+  if (env.EMAIL) {
+    try {
+      await env.EMAIL.send({
+        to: email,
+        from: { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" },
+        subject,
+        html,
+        text: html.replace(/<[^>]+>/g, ""),
+      });
+      return;
+    } catch (e) {
+      console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på system-SMTP`);
+    }
+  }
+  await sendSystemMail(env, email, subject, html);
 }
 
 function htmlPage(title: string, body: string): Response {

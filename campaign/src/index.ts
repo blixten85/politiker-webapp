@@ -4,8 +4,22 @@ import { runLetterSender } from "./letter-sender";
 import { runNewsletterSender } from "./newsletter-sender";
 import { runBounceSweep } from "./bounce-sweep";
 
+// Objekt-API:t för Email Service-bindingen (send({to, from, ...})) finns ännu
+// inte i @cloudflare/workers-types — typa den minimalt själv tills dess.
+export interface EmailSendBinding {
+  send(options: {
+    to: string | string[];
+    from: { email: string; name?: string };
+    subject: string;
+    html?: string;
+    text?: string;
+    headers?: Record<string, string>;
+  }): Promise<{ messageId?: string }>;
+}
+
 export interface Env {
   DB: D1Database;
+  EMAIL?: EmailSendBinding; // Cloudflare Email Service (nyhetsbrev) — valfri tills denied.se är onboardad
   ANTHROPIC_API_KEY: string;
   GMAIL_EMAIL: string;
   GMAIL_PASSWORD: string;

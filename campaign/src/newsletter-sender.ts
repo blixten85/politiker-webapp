@@ -1,6 +1,8 @@
 import type { Env } from "./index";
 import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
 
+const NEWSLETTER_FROM = { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" };
+
 // Nyhetsbrevsutskick: prenumeranterna får samma medborgarbrev som skickas
 // till politikerna (public_letters, source='campaign' — det publicerade
 // brevet per bevakat ärende). Skickas som ETT dagligt digest per prenumerant
@@ -58,11 +60,37 @@ export async function runNewsletterSender(env: Env): Promise<void> {
 
   if (!subscribers.length) { console.log("newsletter: inga väntande utskick"); return; }
 
-  const config = {
+  const smtpConfig = {
     host: "smtp.gmail.com", port: 587,
     user: env.GMAIL_EMAIL, password: env.GMAIL_PASSWORD,
     fromAddress: env.GMAIL_EMAIL,
   };
+
+  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM, List-
+  // Unsubscribe-header för en-klicks-avregistrering i mailklienter) — men
+  // falla tillbaka på Gmail-SMTP om bindingen saknas eller domänen ännu
+  // inte är onboardad (E_SENDER_NOT_VERIFIED), så utskicken aldrig stannar.
+  async function deliver(to: string, subject: string, html: string, unsubUrl: string): Promise<void> {
+    if (env.EMAIL) {
+      try {
+        await env.EMAIL.send({
+          to,
+          from: NEWSLETTER_FROM,
+          subject,
+          html,
+          text: html.replace(/<[^>]+>/g, ""),
+          headers: {
+            "List-Unsubscribe": `<${unsubUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
+        });
+        return;
+      } catch (e) {
+        console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
+      }
+    }
+    await sendSmtpMail(smtpConfig, { to, subject, html });
+  }
 
   let sent = 0, failed = 0;
   for (const sub of subscribers) {
@@ -80,8 +108,9 @@ export async function runNewsletterSender(env: Env): Promise<void> {
       : `Nyhetsbrev: ${letters.length} nya brev till politikerna`;
 
     const now = Date.now();
+    const unsubUrl = `${BASE_URL}/api/newsletter/unsubscribe?id=${sub.id}&token=${sub.token}`;
     try {
-      await sendSmtpMail(config, { to: sub.email, subject, html: digestHtml(letters, sub) });
+      await deliver(sub.email, subject, digestHtml(letters, sub), unsubUrl);
       await env.DB.batch(letters.map(l =>
         env.DB.prepare("UPDATE newsletter_sends SET status='sent', sent_at=? WHERE id=?").bind(now, l.send_id),
       ));
