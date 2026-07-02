@@ -4,6 +4,7 @@
 // campaign/src/newsletter-sender.ts, den här modulen hanterar bara listan.
 
 import { randomId } from "../../shared/crypto";
+import { htmlToText } from "../../shared/html";
 import { sendResendMail } from "../../shared/resend";
 import { sendSystemMail } from "./auth";
 import type { Env } from "./db";
@@ -62,7 +63,7 @@ skickas inga nyhetsbrev.</p>`;
 
   // Kanalordning: Cloudflare Email Service -> Resend -> system-SMTP (iCloud).
   // Faller vidare vid fel — anmälan ska aldrig stanna på mailvägen.
-  const text = html.replace(/<[^>]+>/g, "");
+  const text = htmlToText(html);
   if (env.EMAIL) {
     try {
       await env.EMAIL.send({

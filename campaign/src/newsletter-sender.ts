@@ -1,5 +1,6 @@
 import type { Env } from "./index";
 import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
+import { htmlToText } from "../../shared/html";
 import { sendResendMail } from "../../shared/resend";
 
 const NEWSLETTER_FROM = "Politiker-kontakt <nyhetsbrev@send.denied.se>";
@@ -76,7 +77,7 @@ export async function runNewsletterSender(env: Env): Promise<void> {
   // runNewsletterSender körs FÖRE runQuarterlyDrain i varje cron-slot, så
   // nyhetsbrevet tar aldrig slut på dagskvoten på grund av politiker-kön.
   async function deliver(to: string, subject: string, html: string, unsubUrl: string): Promise<void> {
-    const text = html.replace(/<[^>]+>/g, "");
+    const text = htmlToText(html);
     const headers = {
       "List-Unsubscribe": `<${unsubUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
