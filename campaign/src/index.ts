@@ -4,10 +4,12 @@ import { runLetterSender } from "./letter-sender";
 import { runNewsletterSender } from "./newsletter-sender";
 import { runQuarterlyCampaign, runQuarterlyDrain } from "./quarterly-campaign";
 import { runBounceSweep } from "./bounce-sweep";
+import type { EmailSendBinding } from "../../shared/types";
 
 export interface Env {
   DB: D1Database;
-  RESEND_API_KEY?: string; // Resend (nyhetsbrev + kvartalsbrev) — wrangler secret
+  EMAIL?: EmailSendBinding; // Cloudflare Email Service — primär utskickskanal
+  RESEND_API_KEY?: string; // Resend — fallback (wrangler secret)
   ANTHROPIC_API_KEY: string;
   GMAIL_EMAIL: string;
   GMAIL_PASSWORD: string;

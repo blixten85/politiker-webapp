@@ -12,3 +12,18 @@ export interface SendJobMessage {
   recipientName: string;
   subject?: string;
 }
+// Cloudflare Email Service-bindingen (send_email i wrangler.jsonc). Objekt-
+// API:t (send({to, from, ...})) finns ännu inte i @cloudflare/workers-types —
+// typad minimalt här tills dess. Delad av app (bekräftelsemail) och campaign
+// (nyhetsbrev + kvartalsdränering).
+export interface EmailSendBinding {
+  send(options: {
+    to: string | string[];
+    from: { email: string; name?: string };
+    replyTo?: string;
+    subject: string;
+    html?: string;
+    text?: string;
+    headers?: Record<string, string>;
+  }): Promise<{ messageId?: string }>;
+}

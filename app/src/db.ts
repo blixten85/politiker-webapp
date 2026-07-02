@@ -1,4 +1,5 @@
 import { randomId } from "../../shared/crypto";
+import type { EmailSendBinding } from "../../shared/types";
 
 export interface Env {
   DB: D1Database;
@@ -25,7 +26,8 @@ export interface Env {
   ANTHROPIC_API_KEY?: string;
   VISITOR_SALT?: string;
   TURNSTILE_SECRET?: string; // Turnstile siteverify-hemlighet (wrangler secret)
-  RESEND_API_KEY?: string; // Resend — nyhetsbrevets bekräftelsemail (wrangler secret)
+  EMAIL?: EmailSendBinding; // Cloudflare Email Service — primär kanal för nyhetsbrevsmail
+  RESEND_API_KEY?: string; // Resend — fallback (wrangler secret)
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

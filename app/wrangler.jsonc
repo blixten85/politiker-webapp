@@ -45,8 +45,14 @@
       "bucket_name": "politiker-webapp-attachments"
     }
   ],
-  // Nyhetsbrevets bekräftelsemail skickas via Resend (RESEND_API_KEY, wrangler
-  // secret; avsändardomän send.denied.se) med fallback till system-SMTP.
+  // Nyhetsbrevets bekräftelsemail: Cloudflare Email Service (bindingen nedan)
+  // -> Resend (RESEND_API_KEY) -> system-SMTP, i den ordningen.
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["nyhetsbrev@denied.se"]
+    }
+  ],
   "vars": {
     "SYSTEM_SMTP_HOST": "smtp.mail.me.com",
     "SYSTEM_SMTP_PORT": "587",

@@ -60,17 +60,27 @@ direkt i inkorgen.</p>
 <p>Om du inte anmält dig kan du ignorera det här mailet — utan bekräftelse
 skickas inga nyhetsbrev.</p>`;
 
-  // Föredra Resend (egen avsändardomän med DKIM), falla tillbaka på
-  // system-SMTP (iCloud) om nyckeln saknas eller sändningen misslyckas —
-  // anmälan ska aldrig stanna på mailvägen.
+  // Kanalordning: Cloudflare Email Service -> Resend -> system-SMTP (iCloud).
+  // Faller vidare vid fel — anmälan ska aldrig stanna på mailvägen.
+  const text = html.replace(/<[^>]+>/g, "");
+  if (env.EMAIL) {
+    try {
+      await env.EMAIL.send({
+        to: email,
+        from: { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" },
+        subject, html, text,
+      });
+      return;
+    } catch (e) {
+      console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), provar Resend`);
+    }
+  }
   if (env.RESEND_API_KEY) {
     try {
       await sendResendMail(env.RESEND_API_KEY, {
         to: email,
         from: "Politiker-kontakt <nyhetsbrev@send.denied.se>",
-        subject,
-        html,
-        text: html.replace(/<[^>]+>/g, ""),
+        subject, html, text,
       });
       return;
     } catch (e) {
