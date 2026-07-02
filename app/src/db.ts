@@ -25,20 +25,7 @@ export interface Env {
   ANTHROPIC_API_KEY?: string;
   VISITOR_SALT?: string;
   TURNSTILE_SECRET?: string; // Turnstile siteverify-hemlighet (wrangler secret)
-  EMAIL?: EmailSendBinding; // Cloudflare Email Service (nyhetsbrev) — valfri tills denied.se är onboardad
-}
-
-// Objekt-API:t för Email Service-bindingen (send({to, from, ...})) finns ännu
-// inte i @cloudflare/workers-types — typa den minimalt själv tills dess.
-export interface EmailSendBinding {
-  send(options: {
-    to: string | string[];
-    from: { email: string; name?: string };
-    subject: string;
-    html?: string;
-    text?: string;
-    headers?: Record<string, string>;
-  }): Promise<{ messageId?: string }>;
+  RESEND_API_KEY?: string; // Resend — nyhetsbrevets bekräftelsemail (wrangler secret)
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

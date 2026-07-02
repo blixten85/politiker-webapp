@@ -4,6 +4,7 @@
 // campaign/src/newsletter-sender.ts, den här modulen hanterar bara listan.
 
 import { randomId } from "../../shared/crypto";
+import { sendResendMail } from "../../shared/resend";
 import { sendSystemMail } from "./auth";
 import type { Env } from "./db";
 
@@ -59,21 +60,21 @@ direkt i inkorgen.</p>
 <p>Om du inte anmält dig kan du ignorera det här mailet — utan bekräftelse
 skickas inga nyhetsbrev.</p>`;
 
-  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM), falla
-  // tillbaka på system-SMTP (iCloud) om bindingen saknas eller domänen
-  // ännu inte är onboardad — anmälan ska aldrig stanna på mailvägen.
-  if (env.EMAIL) {
+  // Föredra Resend (egen avsändardomän med DKIM), falla tillbaka på
+  // system-SMTP (iCloud) om nyckeln saknas eller sändningen misslyckas —
+  // anmälan ska aldrig stanna på mailvägen.
+  if (env.RESEND_API_KEY) {
     try {
-      await env.EMAIL.send({
+      await sendResendMail(env.RESEND_API_KEY, {
         to: email,
-        from: { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" },
+        from: "Politiker-kontakt <nyhetsbrev@send.denied.se>",
         subject,
         html,
         text: html.replace(/<[^>]+>/g, ""),
       });
       return;
     } catch (e) {
-      console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på system-SMTP`);
+      console.warn(`newsletter: Resend misslyckades (${String(e).slice(0, 120)}), faller tillbaka på system-SMTP`);
     }
   }
   await sendSystemMail(env, email, subject, html);

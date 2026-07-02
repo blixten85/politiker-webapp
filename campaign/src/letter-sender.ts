@@ -10,7 +10,7 @@ interface PendingRecipient {
 
 export async function runLetterSender(env: Env): Promise<void> {
   // Kvartalsbrevets mottagare (17 000+) dräneras av quarterly-drain via
-  // Email Service — de skulle kväva Gmail-kvoten och blockera de dagliga
+  // Resend — de skulle kväva Gmail-kvoten och blockera de dagliga
   // breven i månader om de gick den här vägen.
   const { results } = await env.DB.prepare(`
     SELECT cr.id, cr.politician_email, cr.politician_name, cld.subject, cld.html_body

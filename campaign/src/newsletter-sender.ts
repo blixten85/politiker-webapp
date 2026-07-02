@@ -1,7 +1,8 @@
 import type { Env } from "./index";
 import { sendSmtpMail, escapeHtml } from "../../shared/smtp";
+import { sendResendMail } from "../../shared/resend";
 
-const NEWSLETTER_FROM = { email: "nyhetsbrev@denied.se", name: "Politiker-kontakt" };
+const NEWSLETTER_FROM = "Politiker-kontakt <nyhetsbrev@send.denied.se>";
 
 // Nyhetsbrevsutskick: prenumeranterna får KVARTALSBREVET — samma AI-
 // researchade och -författade brev som skickas till samtliga politiker i
@@ -68,14 +69,16 @@ export async function runNewsletterSender(env: Env): Promise<void> {
     fromAddress: env.GMAIL_EMAIL,
   };
 
-  // Föredra Cloudflare Email Service (egen avsändardomän, DKIM, List-
-  // Unsubscribe-header för en-klicks-avregistrering i mailklienter) — men
-  // falla tillbaka på Gmail-SMTP om bindingen saknas eller domänen ännu
-  // inte är onboardad (E_SENDER_NOT_VERIFIED), så utskicken aldrig stannar.
+  // Föredra Resend (egen avsändardomän med DKIM, List-Unsubscribe-header för
+  // en-klicks-avregistrering i mailklienter) — falla tillbaka på Gmail-SMTP
+  // om nyckeln saknas eller sändningen misslyckas, så utskicken aldrig
+  // stannar. Prenumeranterna har prioritet över kvartalsdräneringen:
+  // runNewsletterSender körs FÖRE runQuarterlyDrain i varje cron-slot, så
+  // nyhetsbrevet tar aldrig slut på dagskvoten på grund av politiker-kön.
   async function deliver(to: string, subject: string, html: string, unsubUrl: string): Promise<void> {
-    if (env.EMAIL) {
+    if (env.RESEND_API_KEY) {
       try {
-        await env.EMAIL.send({
+        await sendResendMail(env.RESEND_API_KEY, {
           to,
           from: NEWSLETTER_FROM,
           subject,
@@ -88,7 +91,7 @@ export async function runNewsletterSender(env: Env): Promise<void> {
         });
         return;
       } catch (e) {
-        console.warn(`newsletter: Email Service misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
+        console.warn(`newsletter: Resend misslyckades (${String(e).slice(0, 120)}), faller tillbaka på SMTP`);
       }
     }
     await sendSmtpMail(smtpConfig, { to, subject, html });

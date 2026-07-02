@@ -45,14 +45,8 @@
       "bucket_name": "politiker-webapp-attachments"
     }
   ],
-  // Cloudflare Email Service — nyhetsbrevets bekräftelsemail skickas härifrån
-  // när denied.se är onboardad; koden faller tillbaka på system-SMTP annars.
-  "send_email": [
-    {
-      "name": "EMAIL",
-      "allowed_sender_addresses": ["nyhetsbrev@denied.se"]
-    }
-  ],
+  // Nyhetsbrevets bekräftelsemail skickas via Resend (RESEND_API_KEY, wrangler
+  // secret; avsändardomän send.denied.se) med fallback till system-SMTP.
   "vars": {
     "SYSTEM_SMTP_HOST": "smtp.mail.me.com",
     "SYSTEM_SMTP_PORT": "587",

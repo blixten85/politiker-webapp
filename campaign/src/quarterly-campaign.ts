@@ -1,5 +1,6 @@
 import type { Env } from "./index";
 import { callAnthropic, ANTHROPIC_SONNET } from "../../shared/anthropic";
+import { sendResendMail, ResendQuotaError } from "../../shared/resend";
 
 // Kvartalsbrevet: EN gång per kvartal researchas och författas ETT brev
 // (utifrån kvartalets socialt relevanta bevakade ärenden) som skickas till
@@ -9,7 +10,7 @@ import { callAnthropic, ANTHROPIC_SONNET } from "../../shared/anthropic";
 //
 // Skiljer sig från det dagliga kampanjflödet (letter-generator), som skickar
 // personaliserade brev till ett litet urval per ärende. Kvartalsbrevet är ett
-// gemensamt brev till alla, och dräneras via Cloudflare Email Service
+// gemensamt brev till alla, och dräneras via Resend
 // (quarterly-drain) istället för Gmail — 17 000+ mottagare ryms inte i en
 // Gmail-kvot.
 
@@ -100,14 +101,19 @@ Svara med EXAKT detta format:
   console.log(`quarterly: brev "${subject}" skapat, ${res.meta.changes} mottagare köade`);
 }
 
-// Dränerar kvartalsbrevets mottagare via Cloudflare Email Service — körs i
-// varje cron-slot (4 ggr/dag) så 17 000+ mottagare betas av på ~2 veckor.
-// Gmail-vägen (letter-sender) rör aldrig kvartalsutkast: utan EMAIL-binding
-// väntar kön orörd istället för att kvävas i Gmail-kvoten.
+// Dränerar kvartalsbrevets mottagare via Resend — körs i varje cron-slot
+// (4 ggr/dag). Gmail-vägen (letter-sender) rör aldrig kvartalsutkast: utan
+// RESEND_API_KEY väntar kön orörd istället för att kvävas i Gmail-kvoten.
+//
+// Takten styrs i praktiken av Resend-planens dagskvot: free (100/dag) tar
+// ~6 månader för hela landet — uppgradera till Pro (50 000/mån) under
+// kvartalsmånaden så är kön dränerad på nån dag. 429 pausar snällt tills
+// nästa slot, oavsett plan. Prenumeranterna påverkas inte: nyhetsbrevet
+// dräneras alltid FÖRE den här kön i varje slot.
 const DRAIN_PER_RUN = 300;
 
 export async function runQuarterlyDrain(env: Env): Promise<void> {
-  if (!env.EMAIL) return;
+  if (!env.RESEND_API_KEY) return;
 
   const { results } = await env.DB.prepare(`
     SELECT cr.id, cr.politician_email, cld.subject, cld.html_body
@@ -123,9 +129,9 @@ export async function runQuarterlyDrain(env: Env): Promise<void> {
   for (const rec of results) {
     const now = Date.now();
     try {
-      await env.EMAIL.send({
+      await sendResendMail(env.RESEND_API_KEY, {
         to: rec.politician_email,
-        from: { email: "kampanj@denied.se", name: env.SENDER_NAME },
+        from: `${env.SENDER_NAME} <kampanj@send.denied.se>`,
         replyTo: env.GMAIL_EMAIL, // svar ska nå en riktig, läst inkorg
         subject: rec.subject,
         html: `<pre style="font-family:inherit;white-space:pre-wrap">${rec.html_body.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`,
@@ -134,15 +140,16 @@ export async function runQuarterlyDrain(env: Env): Promise<void> {
       await env.DB.prepare("UPDATE campaign_recipients SET status='sent', sent_at=? WHERE id=?").bind(now, rec.id).run();
       sent++;
     } catch (e) {
-      const msg = String(e).slice(0, 200);
-      // Kvot-/tillfälliga fel: lämna som pending så nästa slot försöker igen.
-      if (/RATE_LIMIT|DAILY_LIMIT|INTERNAL_SERVER/.test(msg)) {
-        console.warn(`quarterly-drain: pausar (${msg})`);
+      // Kvot-/rate-fel (429): lämna som pending så nästa slot försöker igen.
+      if (e instanceof ResendQuotaError) {
+        console.warn(`quarterly-drain: pausar på kvot (${e.message.slice(0, 120)})`);
         break;
       }
-      await env.DB.prepare("UPDATE campaign_recipients SET status='failed', error=? WHERE id=?").bind(msg, rec.id).run();
+      await env.DB.prepare("UPDATE campaign_recipients SET status='failed', error=? WHERE id=?").bind(String(e).slice(0, 200), rec.id).run();
       failed++;
     }
+    // Resend rate-limitar på 2 anrop/sekund — pacea utskicken.
+    await new Promise(r => setTimeout(r, 600));
   }
   console.log(`quarterly-drain: ${sent} skickade, ${failed} misslyckade`);
 }
