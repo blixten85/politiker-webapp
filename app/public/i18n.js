@@ -111,6 +111,10 @@ function initI18n() {
 }
 
 registerTranslations("sv", {
+  newsletter_title: "Prenumerera på nyhetsbrevet",
+  newsletter_desc: "Få samma medborgarbrev som skickas till politikerna — research, källor och krav — direkt i inkorgen. Inget konto behövs.",
+  btn_newsletter_subscribe: "Prenumerera",
+  msg_newsletter_check_inbox: "Kolla din inkorg — klicka på bekräftelselänken för att aktivera prenumerationen.",
   brand_title: "Politikerkontakt",
   brand_tagline: "Skriv till kommun-, region- och riksdagspolitiker — via ditt eget mailkonto.",
   nav_faq: "FAQ",
@@ -381,6 +385,10 @@ registerTranslations("sv", {
 });
 
 registerTranslations("en", {
+  newsletter_title: "Subscribe to the newsletter",
+  newsletter_desc: "Get the same citizen letters that are sent to the politicians — research, sources and demands — straight to your inbox. No account needed.",
+  btn_newsletter_subscribe: "Subscribe",
+  msg_newsletter_check_inbox: "Check your inbox — click the confirmation link to activate the subscription.",
   brand_title: "Politician Contact",
   brand_tagline: "Write to your municipal, regional and parliamentary representatives — using your own email account.",
   nav_faq: "FAQ",

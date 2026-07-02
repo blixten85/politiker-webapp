@@ -118,6 +118,17 @@
       </form>
       <p id="verify-msg"></p>
     </div>
+
+    <div class="card" id="newsletter-card">
+      <h2 data-i18n="newsletter_title">Prenumerera på nyhetsbrevet</h2>
+      <p data-i18n="newsletter_desc">Få samma medborgarbrev som skickas till politikerna — research, källor och krav — direkt i inkorgen. Inget konto behövs.</p>
+      <form id="newsletter-form">
+        <input type="email" name="email" autocomplete="email" data-i18n-placeholder="placeholder_email" placeholder="E-post" required>
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADtfk0hF05HrDLLJ" data-action="turnstile-spin-v1"></div>
+        <button type="submit" data-i18n="btn_newsletter_subscribe">Prenumerera</button>
+      </form>
+      <p id="newsletter-msg"></p>
+    </div>
   </section>
 
   <section id="app-view" hidden>

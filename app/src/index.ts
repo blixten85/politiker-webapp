@@ -42,6 +42,7 @@ import {
   getApprovedUnsentDraft,
   redactApproveToken,
 } from "./civic-outreach";
+import { subscribe as subscribeNewsletter, confirm as confirmNewsletter, unsubscribe as unsubscribeNewsletter } from "./newsletter";
 import { getMicrosoftMailAuthorizeUrl } from "../../shared/graph-mail";
 import { randomId } from "../../shared/crypto";
 import { verifyTurnstile } from "./turnstile";
@@ -601,6 +602,26 @@ async function handleRequest(req: Request, env: Env, url: URL): Promise<Response
           isAdmin: !!account.is_admin,
           totpEnabled: !!account.totp_enabled,
         });
+      }
+
+      // Nyhetsbrev: anmälan (Turnstile-skyddad, dubbel opt-in) samt
+      // bekräftelse-/avregistreringslänkar från mailen. Kräver INTE
+      // inloggning — prenumeranter behöver inget konto.
+      if (url.pathname === "/api/newsletter/subscribe" && req.method === "POST") {
+        const { email, turnstileToken } = await req.json<{ email: string; turnstileToken?: string }>();
+        if (!(await verifyTurnstile(env.TURNSTILE_SECRET, turnstileToken, req.headers.get("CF-Connecting-IP")))) {
+          return json({ error: "Bekräfta att du inte är en robot och försök igen." }, 400);
+        }
+        await subscribeNewsletter(env, email);
+        return json({ ok: true }); // alltid ok, avslöjar inte om adressen redan prenumererar
+      }
+
+      if (url.pathname === "/api/newsletter/confirm" && req.method === "GET") {
+        return confirmNewsletter(env, url.searchParams.get("id"), url.searchParams.get("token"));
+      }
+
+      if (url.pathname === "/api/newsletter/unsubscribe" && req.method === "GET") {
+        return unsubscribeNewsletter(env, url.searchParams.get("id"), url.searchParams.get("token"));
       }
 
       // Feedback/felrapportering kräver INTE inloggning — fel kan inträffa

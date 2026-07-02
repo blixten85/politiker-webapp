@@ -219,6 +219,20 @@ document.getElementById("reset-password-form").addEventListener("submit", async 
   }
 });
 
+document.getElementById("newsletter-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const msg = document.getElementById("newsletter-msg");
+  try {
+    await api("/api/newsletter/subscribe", { method: "POST", body: JSON.stringify({ email: fd.get("email"), turnstileToken: fd.get("cf-turnstile-response") }) });
+    msg.textContent = t("msg_newsletter_check_inbox");
+    e.target.reset();
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+  if (window.turnstile) window.turnstile.reset(e.target.querySelector(".cf-turnstile")); // ny token inför nästa försök
+});
+
 document.getElementById("logout-btn").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" });
   location.reload();
