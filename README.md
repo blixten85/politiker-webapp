@@ -34,6 +34,7 @@ skrapningslogiken.
 - **Admin-panel**: konton, feedback, statistik (med diagram), export (CSV/JSON) per sektion eller allt i ett — samt en separat, fristående export av politiker-listan
 - **Felrapportering**: oväntade JS-fel loggas till konsolen; användaren kan rapportera via kontaktformuläret
 - **Autonom kampanj-Worker** (`campaign/`): cron-driven Worker (05–09 UTC dagligen) som självständigt hämtar nyheter från SVT, Aftonbladet, Expressen och Riksdagen, filtrerar socialt relevanta ärenden med Claude, genererar personaliserade medborgarbrev och skickar dem via Gmail till kommunpolitiker, regionpolitiker och riksdagsledamöter — utan mänsklig inblandning. Inkluderar bounce-sweep (kontaktar kommunpolitiker som inte nåtts på 90 dagar). Klientfel rapporteras automatiskt som GitHub-issues direkt från app-Workern (gratis via GitHub API, ingen LLM)
+- **Nyhetsbrev**: vem som helst kan prenumerera (dubbel opt-in, Turnstile-skyddat, inget konto behövs) och får då samma medborgarbrev som kampanj-Workern skickar till politikerna — som ett dagligt digest med avregistreringslänk i varje utskick. Hela kedjan nyhetsbevakning → research → brev → utskick till politiker + prenumeranter är automatiserad
 
 ## Struktur
 
