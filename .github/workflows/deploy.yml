@@ -1,0 +1,150 @@
+name: Deploy
+
+# Auto-deploy till Cloudflare. Repot har flera fristående Workers (var sin
+# wrangler.jsonc); bara de vars kod ändrats deployas. shared/ triggar de Workers
+# som importerar den (app, sender, campaign — alla tre).
+#
+# HUR DEPLOYEN TRIGGAS: bot-auto-merge görs av github-actions[bot] med
+# GITHUB_TOKEN, vars push/pull_request-events INTE triggar andra workflows
+# (GitHubs loopskydd). Undantaget är repository_dispatch/workflow_dispatch — dem
+# FÅR GITHUB_TOKEN fyra. Därför fyrar Bot Auto-Merge en
+# `repository_dispatch: deploy-main` så fort mergen landat, vilket når hit direkt
+# utan PAT. Människo-merges/direkta pushar fångas av push:[main] (riktig
+# användartoken, inte suppressad). En gles schema-cron är sista skyddsnät.
+#
+# EXAKT-EN-GÅNG: en flyttbar git-tagg `deployed` är vattenmärke för senast
+# deployade commit. Varje körning deployar diffen deployed..HEAD och flyttar
+# taggen först när deployen lyckats — inga dubbla eller missade deployer.
+#
+# Secrets (Repo → Settings → Secrets → Actions) — MÅSTE läggas till, annars failar
+# deployen:
+#   CLOUDFLARE_API_TOKEN     — Workers Scripts:Edit + binding-resurserna (D1/KV/Queues)
+#   CLOUDFLARE_ACCOUNT_ID    — kontots ID
+#
+# wrangler deploy rör INTE secrets satta via `wrangler secret put` (t.ex.
+# MAIL_CRED_KEY) — bara kod, vars och bindings uppdateras.
+
+on:
+  # Människo-merges och direkta pushar till main (riktig användartoken triggar
+  # push; bot-auto-merges gör det INTE — de fångas av repository_dispatch nedan).
+  push:
+    branches: [main]
+  # Bot-auto-merges: Bot Auto-Merge fyrar detta så fort mergen faktiskt landat.
+  # Enda vägen GITHUB_TOKEN når hit direkt (utan PAT) — se toppkommentaren.
+  repository_dispatch:
+    types: [deploy-main]
+  # Sista skyddsnät om ovanstående missas (GitHub-cron är opålitlig på publika
+  # repon, så detta är backup — inte primärvägen).
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      worker:
+        description: "Vilken worker att deploya (eller 'all')"
+        type: choice
+        default: all
+        options: [all, app, sender, campaign]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+# mark-jobbet pushar `deployed`-taggen -> kräver contents: write (repot har
+# read-only GITHUB_TOKEN som default, annars 403 på tag-push).
+permissions:
+  contents: write
+
+jobs:
+  # Vilka Workers ska deployas? Manuell körning -> den valda. Övriga event -> de
+  # vars filer ändrats sedan `deployed`-taggen (shared/ -> alla som importerar den).
+  select:
+    runs-on: ubuntu-latest
+    outputs:
+      workers: ${{ steps.pick.outputs.workers }}
+      head: ${{ steps.pick.outputs.head }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          ref: main   # deploya alltid main-HEAD, oavsett vilket event som fyrade
+          fetch-depth: 0
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          CHOICE: ${{ github.event.inputs.worker }}
+        run: |
+          set -euo pipefail
+          echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$CHOICE" = "all" ]; then
+              echo 'workers=["app","sender","campaign"]' >> "$GITHUB_OUTPUT"
+            else
+              echo "workers=[\"$CHOICE\"]" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+
+          # Övriga event: diff mot vattenmärket. Saknas taggen -> bara senaste commit.
+          if git rev-parse -q --verify refs/tags/deployed >/dev/null; then
+            BASE=$(git rev-parse refs/tags/deployed)
+          else
+            BASE=$(git rev-parse HEAD^ || git rev-parse HEAD)
+          fi
+          CHANGED=$(git diff --name-only "$BASE"..HEAD || true)
+          echo "Ändrade filer sedan $BASE:"; echo "$CHANGED"
+
+          python3 - "$CHANGED" <<'PY' >> "$GITHUB_OUTPUT"
+          import json, sys
+          changed = sys.argv[1].splitlines()
+          workers = set()
+          shared_consumers = {"app", "sender", "campaign"}
+          for f in changed:
+              top = f.split("/", 1)[0]
+              if top in {"app", "sender", "campaign"}:
+                  workers.add(top)
+              elif top == "shared":
+                  workers |= shared_consumers
+          print("workers=" + json.dumps(sorted(workers)))
+          PY
+
+  deploy:
+    needs: select
+    if: needs.select.outputs.workers != '[]' && needs.select.outputs.workers != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        worker: ${{ fromJSON(needs.select.outputs.workers) }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          ref: main   # deploya alltid main-HEAD, oavsett vilket event som fyrade
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.worker }}/package-lock.json
+      - name: Install
+        working-directory: ${{ matrix.worker }}
+        run: npm ci
+      - name: Deploy ${{ matrix.worker }}
+        working-directory: ${{ matrix.worker }}
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # Flytta vattenmärket till deployad HEAD — inte vid manuell körning, och bara om
+  # ingen deploy failade (skippad deploy = inga worker-ändringar = OK att avancera).
+  mark:
+    needs: [select, deploy]
+    if: always() && github.event_name != 'workflow_dispatch' && needs.select.result == 'success' && needs.deploy.result != 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: |
+          git tag -f deployed "${{ needs.select.outputs.head }}"
+          git push -f origin refs/tags/deployed
