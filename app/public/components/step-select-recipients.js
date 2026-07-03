@@ -6,7 +6,7 @@
 // Rent presentationslager: tar emot redan summerad data + en toggle-
 // callback, äger ingen egen state.
 
-const TYPE_ORDER = ["eu", "riksdag", "regering", "region", "kommun"];
+const TYPE_ORDER = ["eu", "riksdag", "regering", "region", "kommun", "kyrka"];
 
 export function renderAreaTypeCards(container, { areasByType, selectedAreas, onToggleType, t }) {
   container.innerHTML = "";
