@@ -25,7 +25,7 @@ import {
   getCeiling,
   MICROSOFT_GRAPH_DAILY_LIMIT,
 } from "./mail-credentials";
-import { listAreas, listParties, listRoles, searchPoliticiansInAreas, deleteAccount } from "./db";
+import { listAreas, listParties, listRoles, searchPoliticiansInAreas, getRecipientsForAreas, deleteAccount } from "./db";
 import { createAndEnqueueSendJob, getSendJobsForAccount } from "./send";
 import { submitFeedback, reportClientError } from "./feedback";
 import { processAttachments, type AttachmentInput } from "./attachments";
@@ -247,6 +247,29 @@ const AUTHED_ROUTES: RouteDef[] = [
       } catch (err) {
         return json({ error: err instanceof Error ? err.message : "Okänt fel" }, 502);
       }
+    } },
+  { method: "POST", rx: /^\/api\/recipients\/count$/, h: async (c) => {
+      // Exakt (deduperat) mottagarantal för förhandsvisningen — samma filter
+      // som /api/send. Rollfiltret är globalt/kanoniskt och kan inte längre
+      // beräknas roll×område på klienten, så antalet räknas här.
+      const input = await c.req
+        .json<{
+          areaNames?: string[];
+          excludeParties?: string[];
+          excludeEmails?: string[];
+          includeRoles?: string[];
+          includeEmails?: string[];
+        }>()
+        .catch(() => ({}) as Record<string, never>);
+      const recipients = await getRecipientsForAreas(
+        c.env.DB,
+        input.areaNames ?? [],
+        input.excludeParties ?? [],
+        input.excludeEmails ?? [],
+        input.includeRoles ?? [],
+        input.includeEmails ?? [],
+      );
+      return json({ count: recipients.length });
     } },
   { method: "POST", rx: /^\/api\/send$/, h: async (c) => {
       const input = await c.req.json<{

@@ -146,6 +146,17 @@
         <div id="area-type-cards"></div>
         <p class="hint" id="recipient-count-preview"></p>
 
+        <div id="name-search-block">
+          <h3 data-i18n="name_search_label">Sök en politiker på namn</h3>
+          <p class="hint" data-i18n="name_search_hint">Hitta en enskild politiker och lägg till eller uteslut hen — funkar oavsett vilka områden du valt.</p>
+          <input type="text" id="exclude-search" data-i18n-placeholder="placeholder_name_search" placeholder="Skriv ett namn…">
+          <div id="exclude-search-results"></div>
+          <p class="hint" data-i18n="included_list_title">Tillagda enskilt:</p>
+          <ul id="included-list"></ul>
+          <p class="hint" data-i18n="excluded_list_title">Exkluderade:</p>
+          <ul id="excluded-list"></ul>
+        </div>
+
         <details id="advanced-details">
           <summary data-i18n="advanced_section_title">Avancerat: enskilda områden, befattning, parti</summary>
 
@@ -159,14 +170,8 @@
           </details>
 
           <details id="exclude-details">
-            <summary data-i18n="exclude_section_title">Enskilda politiker — lägg till eller exkludera</summary>
+            <summary data-i18n="party_exclude_section_title">Uteslut ett helt parti</summary>
             <div id="party-exclude-list"></div>
-            <input type="text" id="exclude-search" data-i18n-placeholder="placeholder_exclude_search" placeholder="Sök enskild politiker...">
-            <div id="exclude-search-results"></div>
-            <p class="hint" data-i18n="included_list_title">Tillagda enskilt:</p>
-            <ul id="included-list"></ul>
-            <p class="hint" data-i18n="excluded_list_title">Exkluderade:</p>
-            <ul id="excluded-list"></ul>
           </details>
         </details>
 

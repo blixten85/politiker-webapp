@@ -698,17 +698,48 @@ document.getElementById("exclude-search").addEventListener("input", (e) => {
   }, 300);
 });
 
+function recipientFilterPayload() {
+  return {
+    areaNames: [...selectedAreas],
+    excludeParties: [...excludedParties],
+    excludeEmails: [...excludedRecipients.keys()],
+    includeRoles: [...includedRoles],
+    includeEmails: [...includedRecipients.keys()],
+  };
+}
+
+// Exakt (server-deduperat) antal via /api/recipients/count. Rollfiltret är
+// numera globalt/kanoniskt och går inte att beräkna roll×område på klienten, så
+// den exakta siffran hämtas från servern. Debouncad — skrivs över den snabba
+// ungefärliga siffran nedan.
+let exactCountTimer = null;
+async function fetchExactRecipientCount() {
+  const { count } = await api("/api/recipients/count", { method: "POST", body: JSON.stringify(recipientFilterPayload()) });
+  return count;
+}
+function scheduleExactCount() {
+  clearTimeout(exactCountTimer);
+  exactCountTimer = setTimeout(async () => {
+    try {
+      const count = await fetchExactRecipientCount();
+      document.getElementById("recipient-count-preview").textContent = t("msg_recipient_count_preview", { count });
+    } catch {
+      /* nätfel: behåll den ungefärliga siffran */
+    }
+  }, 350);
+}
+
 function updateRecipientCountPreview() {
-  // Ungefärlig förhandsvisning — servern räknar exakt (och dedupar) vid skicka.
-  // Oberoende filter: poolen finns bara om minst ett område eller en
-  // befattning är valt (annars riktar vi inte oavsiktligt till hela landet).
+  // Snabb ungefärlig siffra för direkt återkoppling; scheduleExactCount()
+  // korrigerar till serverns exakta antal strax efter.
   const hasPoolIntent = selectedAreas.size > 0 || includedRoles.size > 0;
   let pool = 0;
   if (hasPoolIntent) {
     if (includedRoles.size > 0) {
-      // Befattning är global: tomt område = den rollen i alla områden.
+      // Roller är globala (utan per-område-uppdelning) — summera valda rollers
+      // rikstäckande antal som en grov övre gräns; servern rättar exakt.
       for (const r of allRoles) {
-        if (includedRoles.has(r.role_key) && (selectedAreas.size === 0 || selectedAreas.has(r.area_name))) pool += r.count;
+        if (includedRoles.has(r.role_key)) pool += r.count;
       }
     } else {
       for (const a of allAreas) {
@@ -724,6 +755,7 @@ function updateRecipientCountPreview() {
   // Enskilt "rikta till" läggs till; enskilt exkluderade dras av.
   const finalCount = Math.max(0, pool + includedRecipients.size - excludedRecipients.size);
   document.getElementById("recipient-count-preview").textContent = t("msg_recipient_count_preview", { count: finalCount });
+  scheduleExactCount();
   return finalCount;
 }
 
@@ -1461,7 +1493,12 @@ function goToStep(n) {
 }
 
 async function renderReviewStep() {
-  const recipientCount = updateRecipientCountPreview();
+  let recipientCount = updateRecipientCountPreview();
+  try {
+    recipientCount = await fetchExactRecipientCount(); // exakt antal på sammanfattningssteget
+  } catch {
+    /* nätfel: behåll den ungefärliga siffran */
+  }
 
   const typesSet = new Set();
   for (const a of allAreas) {

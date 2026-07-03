@@ -1,4 +1,5 @@
 import { randomId } from "../../shared/crypto";
+import { canonicalRole } from "./roles";
 import type { EmailSendBinding } from "../../shared/types";
 
 export interface Env {
@@ -134,35 +135,38 @@ export async function listParties(db: D1Database) {
   return results;
 }
 
-// Distinkta befattningar per område — bara rader där befattning faktiskt
-// är känd. Används för att låta användaren begränsa till t.ex. bara
-// "Ordförande" inom valda områden.
-// Skrapad befattningstext varierar i skiftläge/whitespace mellan källor
-// ("Ordförande"/"ordförande"/"ORDFÖRANDE") — grupperar på en normaliserad
-// nyckel (lower+trim) så samma roll inte listas separat flera gånger.
-// OBS: slår INTE ihop olika STAVNINGAR/förkortningar av samma roll (t.ex.
-// "v ordf" vs "Vice ordförande") — det kräver en handgjord synonymtabell,
-// inte gjort här. Visar den vanligaste skrivningen per normaliserad grupp.
+// Distinkta befattningar (globalt) för mottagarfiltret — bara rader där
+// befattning faktiskt är känd. Varje skrapad variant slås ihop till en kanonisk
+// baskategori (se roles.ts): "Ordf"/"1:e vice ordförande"/… → "Ordförande" osv.
+// Returnerar en post per baskategori med totalantal, sorterad efter antal.
 export async function listRoles(db: D1Database) {
   const { results } = await db
     .prepare(
-      `SELECT area_type, area_name, role, LOWER(TRIM(role)) as role_key, COUNT(*) as count
-       FROM politicians WHERE role IS NOT NULL AND TRIM(role) != ''
-       GROUP BY area_type, area_name, role ORDER BY area_type, area_name, role_key, count DESC`,
+      `SELECT role, COUNT(*) as count FROM politicians
+       WHERE role IS NOT NULL AND TRIM(role) != '' GROUP BY role`,
     )
-    .all<{ area_type: string; area_name: string; role: string; role_key: string; count: number }>();
+    .all<{ role: string; count: number }>();
 
-  const merged = new Map<string, { area_type: string; area_name: string; role: string; role_key: string; count: number }>();
+  const merged = new Map<string, { role_key: string; role: string; count: number }>();
   for (const row of results) {
-    const key = `${row.area_type}|${row.area_name}|${row.role_key}`;
+    const { key, label } = canonicalRole(row.role);
     const existing = merged.get(key);
-    if (existing) {
-      existing.count += row.count;
-    } else {
-      merged.set(key, { ...row });
-    }
+    if (existing) existing.count += row.count;
+    else merged.set(key, { role_key: key, role: label, count: row.count });
   }
-  return [...merged.values()];
+  return [...merged.values()].sort((a, b) => b.count - a.count);
+}
+
+// Vilka RÅA rollsträngar som mappar till de valda kanoniska nycklarna. Håller
+// canonicalRole som enda sanningskälla (ingen dubblerad SQL-synonymlogik) och
+// låter ändå urvalet ske med ett effektivt `role IN (...)` i SQL.
+async function rawRolesForCanonicalKeys(db: D1Database, canonicalKeys: string[]): Promise<string[]> {
+  if (canonicalKeys.length === 0) return [];
+  const wanted = new Set(canonicalKeys);
+  const { results } = await db
+    .prepare("SELECT DISTINCT role FROM politicians WHERE role IS NOT NULL AND TRIM(role) != ''")
+    .all<{ role: string }>();
+  return results.filter((r) => wanted.has(canonicalRole(r.role).key)).map((r) => r.role);
 }
 
 // En sökträff = EN person (grupperad på e-post — samma adress = samma person;
@@ -237,28 +241,32 @@ export async function getRecipientsForAreas(
 
   const hasPoolIntent = areaNames.length > 0 || includeRoles.length > 0;
   if (hasPoolIntent) {
-    let sql = `SELECT name, email, area_name FROM politicians WHERE 1=1`;
-    const params: unknown[] = [];
-    if (areaNames.length > 0) {
-      sql += ` AND area_name IN (${areaNames.map(() => "?").join(",")})`;
-      params.push(...areaNames);
+    // includeRoles = kanoniska baskategori-nycklar (se listRoles). Översätt till
+    // de råa rollsträngar de omfattar och matcha på dem. Är rollfilter satt men
+    // inget matchar -> tom pool (men enskilt utvalda nedan gäller ändå).
+    const rawRoles = includeRoles.length > 0 ? await rawRolesForCanonicalKeys(db, includeRoles) : [];
+    const roleFilterExcludesAll = includeRoles.length > 0 && rawRoles.length === 0;
+    if (!roleFilterExcludesAll) {
+      let sql = `SELECT name, email, area_name FROM politicians WHERE 1=1`;
+      const params: unknown[] = [];
+      if (areaNames.length > 0) {
+        sql += ` AND area_name IN (${areaNames.map(() => "?").join(",")})`;
+        params.push(...areaNames);
+      }
+      if (rawRoles.length > 0) {
+        sql += ` AND role IN (${rawRoles.map(() => "?").join(",")})`;
+        params.push(...rawRoles);
+      }
+      if (excludeParties.length > 0) {
+        sql += ` AND (party IS NULL OR party NOT IN (${excludeParties.map(() => "?").join(",")}))`;
+        params.push(...excludeParties);
+      }
+      const { results } = await db
+        .prepare(sql)
+        .bind(...params)
+        .all<{ name: string; email: string; area_name: string }>();
+      for (const r of results) byEmail.set(r.email, r);
     }
-    if (includeRoles.length > 0) {
-      // includeRoles innehåller normaliserade nycklar (lower+trim, se
-      // listRoles) — matcha mot samma normalisering av den lagrade kolumnen,
-      // annars missas mottagare vars roll har annat skiftläge än det valda.
-      sql += ` AND LOWER(TRIM(role)) IN (${includeRoles.map(() => "?").join(",")})`;
-      params.push(...includeRoles);
-    }
-    if (excludeParties.length > 0) {
-      sql += ` AND (party IS NULL OR party NOT IN (${excludeParties.map(() => "?").join(",")}))`;
-      params.push(...excludeParties);
-    }
-    const { results } = await db
-      .prepare(sql)
-      .bind(...params)
-      .all<{ name: string; email: string; area_name: string }>();
-    for (const r of results) byEmail.set(r.email, r);
   }
 
   if (includeEmails.length > 0) {
