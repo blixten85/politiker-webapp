@@ -13,6 +13,7 @@ personaliserade brev — utan att plattformen själv blir avsändare. Live på
 - **Regeringen**: 11 departement (registratorsadresser — inga personliga mailadresser till statsråd finns/publiceras)
 - **Region**: alla 21 regioner
 - **Kommun**: alla 290 kommuner
+- **Svenska kyrkan**: kyrkovalda i kyrkostyrelsen, kyrkomötets presidium och Uppsala stiftsstyrelse (de organ som publicerar personliga mailadresser), med nomineringsgrupp
 
 För kommun/region är parti och befattning (t.ex. "Ordförande") tillagt
 där det går att fastställa — antingen direkt vid skrapning (mailto/troman/
@@ -24,7 +25,7 @@ skrapningslogiken.
 
 - **Konto**: e-post+lösenord eller OAuth-inloggning (Google, GitHub, Microsoft), TOTP 2FA, glömt lösenord, länka fler inloggningssätt till samma konto efteråt
 - **Mailkoppling**: Gmail/Outlook/iCloud/Yahoo/generisk SMTP, eller Microsoft Graph utan lösenord — med ett hårdkodat säkerhetstak (10% under leverantörens kända gräns) som användaren själv kan sänka ytterligare
-- **3-stegs wizard** (mottagare → brev → granska): de fem nivåerna (EU/riksdag/regering/region/kommun) väljs via stora kort med levande mottagarantal (exakt, server-deduperat via `/api/recipients/count`). En framträdande **namnsökning** högst upp låter användaren hitta en enskild politiker och rikta till eller utesluta hen. Detaljerad filtrering (enskilda områden, befattning, parti-uteslutning) ligger bakom en hopfällbar "Avancerat"-sektion — stora grupper (>30 områden) hopfällda från start, sökning forcerar alltid utfällt. Befattningar grupperas kanoniskt (allt ordförande-aktigt inkl. vice → "Ordförande"; Ledamot/Ersättare/Gruppledare) så samma roll inte listas per stavningsvariant — nivå väljs genom att kombinera befattning med områdesfiltret.
+- **3-stegs wizard** (mottagare → brev → granska): nivåerna (EU/riksdag/regering/region/kommun/Svenska kyrkan) väljs via stora kort med levande mottagarantal (exakt, server-deduperat via `/api/recipients/count`). En framträdande **namnsökning** högst upp låter användaren hitta en enskild politiker och rikta till eller utesluta hen. Detaljerad filtrering (enskilda områden, befattning, parti-uteslutning) ligger bakom en hopfällbar "Avancerat"-sektion — stora grupper (>30 områden) hopfällda från start, sökning forcerar alltid utfällt. Befattningar grupperas kanoniskt (allt ordförande-aktigt inkl. vice → "Ordförande"; Ledamot/Ersättare/Gruppledare) så samma roll inte listas per stavningsvariant — nivå väljs genom att kombinera befattning med områdesfiltret.
 - **AI-brevutkast** (valfritt): beskriv ett ämne (eller låt AI:n själv hitta ett aktuellt) — researchar via riktig websökning och föreslår ett utkast som användaren läser igenom, redigerar och skickar under eget namn, inget skickas automatiskt
 - **Brev**: HTML/textredigerare, ämnesrad (full åäö/UTF-8-stöd), bilagor (PDF/txt/doc/docx, automatisk konvertering till brevtext)
 - **Rate limiting per mailkonto**: en Durable Object per mailkoppling ger sann delad sändningstakt mellan parallella utskick mot samma konto — väntar in en ledig "token" istället för att riskera leverantörens spärr. Olika mailkonton (även under samma användarkonto) har helt oberoende takter och blockerar aldrig varandra.
