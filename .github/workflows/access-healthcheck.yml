@@ -1,0 +1,44 @@
+name: Access-hälsokontroll (admin-API)
+
+# Verifierar att Cloudflare Access-service-token faktiskt släpper igenom
+# mot /api/admin/* — inte en fullständig inloggningstest (appens egen
+# session-baserade is_admin-koll ligger bakom Access och kräver ett riktigt
+# konto), bara att Access-lagret är korrekt konfigurerat och når fram till
+# appen. Ett svar som är JSON (oavsett 401 "Inte inloggad" eller 200) betyder
+# att Access släppte igenom; en Access-inloggningssida (HTML) betyder att
+# service-token eller Access-policyn är trasig.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Anropa /api/admin/accounts med service-token
+        run: |
+          set -euo pipefail
+          # Ingen -f: appens egen session-koll svarar normalt 401 ("Inte
+          # inloggad") även när Access släppt igenom — det räknas som OK
+          # här. Bara en icke-JSON-kropp (Access egen inloggningssida) är
+          # ett verkligt fel.
+          response=$(curl -sS -w '\n%{http_code}' \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            -H "Accept: application/json" \
+            https://politiker.denied.se/api/admin/accounts)
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+
+          if ! echo "$body" | jq -e . > /dev/null 2>&1; then
+            echo "::error::Svaret (HTTP $status) var inte giltig JSON — Access-service-token eller policy verkar trasig."
+            echo "$body" | head -c 500
+            exit 1
+          fi
+
+          echo "Access-lagret svarade med JSON (HTTP $status) — service-token fungerar."
