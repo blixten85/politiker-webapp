@@ -133,16 +133,18 @@ export async function resetPassword(env: Env, token: string, newPassword: string
   }
 
   const { hash, salt } = await hashPassword(newPassword);
+
+  // Nollställ inloggningsspärren FÖRE token-/lösenordsuppdateringen (CodeRabbit-
+  // fynd): om clearAttempts skulle kasta efter att UPDATE lyckats hade
+  // användaren redan bytt lösenord men återstått utelåst med en nu ogiltig
+  // återställningslänk — omöjlig att lösa själv.
+  await clearAttempts(env, "login", account.email);
+
   await env.DB.prepare(
     "UPDATE accounts SET password_hash = ?, password_salt = ?, password_set_by_user = 1, reset_token = NULL, reset_expires_at = NULL WHERE id = ?",
   )
     .bind(hash, salt, account.id)
     .run();
-
-  // Nollställ inloggningsspärren — en användare som just bevisat ägarskap via
-  // återställningslänken och satt ett nytt lösenord ska inte vara kvar utelåst
-  // av tidigare misslyckade försök.
-  await clearAttempts(env, "login", account.email);
 }
 
 export async function startTotpSetup(env: Env, accountId: string): Promise<{ secret: string; authUri: string }> {
