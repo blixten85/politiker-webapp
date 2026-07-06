@@ -5,13 +5,13 @@
 
 ## Summary
 
-The commonly-documented trigger pattern — run the action on `issue_comment` /
-`pull_request_review` events when the body contains a mention string like
-`@claude` — has no built-in protection against **self-triggering or
-bot-triggering**. The action posts its result as a comment. If that comment (or
-a comment from another bot such as CodeRabbit/Copilot) contains the trigger
-string, the workflow fires again, starting another **full agentic session**.
-Each iteration is billed.
+The commonly documented trigger pattern — run the action on `issue_comment` /
+`pull_request_review` / `pull_request_review_comment` events when the body
+contains a mention string like `@claude` — has no built-in protection against
+**self-triggering or bot-triggering**. The action posts its result as a
+comment. If that comment (or a comment from another bot such as
+CodeRabbit/Copilot) contains the trigger string, the workflow fires again,
+starting another **full agentic session**. Each iteration is billed.
 
 With the Anthropic Console **auto-reload / auto-renew** balance feature enabled,
 this turned a \$20 top-up into roughly **1500 SEK (~\$140) in 6 hours** before it
@@ -57,10 +57,18 @@ Trigger loop:
 
 The action should make this footgun hard to hit:
 
-1. **Ignore events authored by itself and by bots by default** — i.e. skip when
-   `github.event.comment.user.type == 'Bot'`, when the author is the GitHub App
-   identity the action posts as, or `github-actions[bot]`. Today the only
-   guard is whatever `if:` the user writes by hand.
+1. **Ignore events authored by itself and by bots by default** — a single
+   `github.event.comment.user.type == 'Bot'` check only covers comment-based
+   triggers (`issue_comment`/`pull_request_review_comment`); the
+   `pull_request_review` payload carries the author under `review.user`
+   instead, so the same guard needs to check both paths (or normalize to a
+   single `github.actor` check, which is identical across all three event
+   types) to actually cover everything the reproduction above triggers on.
+   `github.actor` should also be checked against the GitHub App identity the
+   action posts as, `github-actions[bot]`, or another known bot login —
+   `user.type == 'Bot'` alone misses GitHub Apps that post with
+   `type: 'User'`. Today the only guard is whatever `if:` the user writes by
+   hand.
 2. **Document the loop risk prominently** in the README next to the trigger
    example, with a recommended author/bot exclusion in the `if:` condition.
 3. **Optional built-in recursion/rate guard** — e.g. refuse to run if the same
@@ -77,13 +85,15 @@ The action should make this footgun hard to hit:
 
 ## Suggested mitigations for users (please add to docs)
 
-- Restrict the `if:` to a trusted human author and exclude bots, e.g.
-  `github.event.comment.user.login == '<owner>' && github.event.comment.user.type != 'Bot'`.
+- Restrict the `if:` to a trusted human author, e.g. `github.actor == '<owner>'`
+  — an exact match against a known human login already excludes bots, so a
+  separate `user.type != 'Bot'` check is redundant here (it matters for the
+  broader "ignore any bot" guard in point 1 above, not for a single named-user allowlist).
 - Disable Console auto-reload, or set a hard monthly spend cap.
 - Treat `@claude`-on-comment workflows as privileged automation, not a
   convenience to enable broadly.
 
 ## What we did
 
-Removed the workflow entirely as the immediate fix. Filing this so the loop
-risk is addressed in the action/docs so others don't hit it.
+Removed the workflow entirely as the immediate fix. Filing this to get the
+loop risk addressed upstream (action/docs), preventing others from hitting it.
