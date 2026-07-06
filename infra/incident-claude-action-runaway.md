@@ -57,12 +57,18 @@ Trigger loop:
 
 The action should make this footgun hard to hit:
 
-1. **Ignore events authored by itself and by bots by default** — i.e. skip when
-   `github.event.comment.user.type == 'Bot'`, or when `github.actor` matches
-   the GitHub App identity the action posts as, `github-actions[bot]`, or
-   another known bot login (`user.type == 'Bot'` alone misses GitHub Apps
-   that post with `type: 'User'`). Today the only guard is whatever `if:`
-   the user writes by hand.
+1. **Ignore events authored by itself and by bots by default** — a single
+   `github.event.comment.user.type == 'Bot'` check only covers comment-based
+   triggers (`issue_comment`/`pull_request_review_comment`); the
+   `pull_request_review` payload carries the author under `review.user`
+   instead, so the same guard needs to check both paths (or normalize to a
+   single `github.actor` check, which is identical across all three event
+   types) to actually cover everything the reproduction above triggers on.
+   `github.actor` should also be checked against the GitHub App identity the
+   action posts as, `github-actions[bot]`, or another known bot login —
+   `user.type == 'Bot'` alone misses GitHub Apps that post with
+   `type: 'User'`. Today the only guard is whatever `if:` the user writes by
+   hand.
 2. **Document the loop risk prominently** in the README next to the trigger
    example, with a recommended author/bot exclusion in the `if:` condition.
 3. **Optional built-in recursion/rate guard** — e.g. refuse to run if the same
