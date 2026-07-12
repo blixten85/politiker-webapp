@@ -13,7 +13,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="$HOME/.appdata/.config/.env"
+ENV_FILE="$HOME/.claude/credentials.env"
 SERVICE_DIR="/etc/systemd/system"
 CURRENT_USER="$(id -un)"
 WR="npx --yes wrangler"
