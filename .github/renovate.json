@@ -11,7 +11,7 @@
   "timezone": "Europe/Stockholm",
   "labels": ["dependencies", "renovate"],
   "rangeStrategy": "bump",
-  "lockFileMaintenance": { "enabled": true, "schedule": ["after 5am and before 5:30am on sunday"] },
+  "lockFileMaintenance": { "enabled": true, "schedule": ["after 1am and before 1:30am on saturday"] },
   "vulnerabilityAlerts": { "enabled": true, "labels": ["security"] },
   "packageRules": [
     { "description": "Group all patch/minor updates into one PR per run (reduces CodeRabbit review-count load under the shared 5/hour quota); auto-merge the bundle on green CI + review", "matchUpdateTypes": ["minor", "patch"], "groupName": "non-major dependencies", "automerge": true },
