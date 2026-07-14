@@ -97,6 +97,42 @@ npx wrangler dev --remote
 
 `MAIL_CRED_KEY` måste vara **samma värde** i app och sender (app krypterar, sender dekrypterar).
 
+### Felspårning (Sentry)
+
+Alla tre Workers (`app`, `sender`, `campaign`) skickar fel och loggar till
+Sentry via `@sentry/cloudflare` (`Sentry.withSentry(...)` runt varje export).
+DSN:en ligger som en vanlig `var` i respektive `wrangler.jsonc` (den är inte
+hemlig — bara ett skrivmål).
+
+**Source maps** laddas upp efter varje deploy (`postdeploy`-hook i
+`package.json`) så Sentry visar riktig TS-kod i stacktraces istället för
+bundlat/minifierat JS. Detta kräver att följande miljövariabler finns
+tillgängliga när `sentry:sourcemaps`-scriptet körs:
+
+- `SENTRY_ORG=anders-gh`
+- `SENTRY_PROJECT=politiker-webapp`
+- `SENTRY_AUTH_TOKEN` — en Sentry-auktoriseringstoken med rätt att skapa releases/ladda upp source maps
+
+**Viktigt — två olika platser för `SENTRY_AUTH_TOKEN`:**
+- En `SENTRY_AUTH_TOKEN` **secret** är redan satt på Worker-nivå (`wrangler secret put`)
+  för app/sender/campaign — den är tillgänglig för koden **vid körning** (runtime), inte
+  under byggsteget.
+- Eftersom detta repo deployas via **Cloudflare Workers Builds** (inte GitHub
+  Actions, inte lokal `npm run deploy` i normalfallet) körs `sentry:sourcemaps`
+  som en del av **byggsteget** på Cloudflare, i en helt separat miljö från
+  Worker-runtimen. Workers Builds-projektinställningarna (Dashboard → Workers
+  & Pages → respektive Worker → Settings → Build) måste därför ha
+  `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` och `SENTRY_PROJECT` satta som
+  **build-time-miljövariabler**, annars körs `sentry-cli` utan autentisering
+  och source maps-uppladdningen misslyckas tyst/hörs bara i byggloggen.
+  Detta sätts manuellt av operatören — inte automatiserat här.
+- Vi kunde inte verifiera exakt vilket byggkommando Workers Builds kör för
+  dessa tre projekt via API (token saknade rättigheter för
+  build-configuration-endpointen) — om `npm run deploy` inte är det
+  konfigurerade byggkommandot kommer `postdeploy`-hooken (och därmed
+  source maps-uppladdningen) inte att triggas automatiskt. Verifiera detta
+  i Dashboardens bygginställningar per Worker.
+
 ## Status
 
 Live på politiker.denied.se. Inloggning med e-post, Google, GitHub och

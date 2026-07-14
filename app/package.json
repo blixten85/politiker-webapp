@@ -4,15 +4,19 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --remote",
-    "deploy": "wrangler deploy",
-    "secret:set-mail-key": "wrangler secret put MAIL_CRED_KEY"
+    "deploy": "wrangler deploy --outdir dist",
+    "secret:set-mail-key": "wrangler secret put MAIL_CRED_KEY",
+    "sentry:sourcemaps": "_SENTRY_RELEASE=$(npx sentry-cli releases propose-version) && npx sentry-cli releases new $_SENTRY_RELEASE --org=anders-gh --project=politiker-webapp && npx sentry-cli sourcemaps upload --org=anders-gh --project=politiker-webapp --release=$_SENTRY_RELEASE dist",
+    "postdeploy": "npm run sentry:sourcemaps"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260702.1",
+    "@sentry/cli": "^3.6.0",
     "typescript": "6.0.3",
     "wrangler": "4.107.0"
   },
   "dependencies": {
+    "@sentry/cloudflare": "^10.65.0",
     "mammoth": "^1.12.0",
     "unpdf": "^1.6.2"
   }

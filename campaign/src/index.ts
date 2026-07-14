@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/cloudflare";
 import { runMonitor } from "./monitor";
 import { runLetterGenerator } from "./letter-generator";
 import { runLetterSender } from "./letter-sender";
@@ -16,6 +17,7 @@ export interface Env {
   GITHUB_FEEDBACK_TOKEN: string;
   SENDER_NAME: string;
   GITHUB_REPO: string;
+  SENTRY_DSN?: string;
 }
 
 // Cron-tider (UTC):
@@ -36,24 +38,31 @@ export interface Env {
 
 const QUARTERLY_CRON = "30 6 1 1,4,7,10 *";
 
-export default {
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    const hour = new Date(event.scheduledTime).getUTCHours();
-    ctx.waitUntil(
-      (async () => {
-        if (event.cron === QUARTERLY_CRON) { await runQuarterlyCampaign(env); return; }
-        switch (hour) {
-          case 5:  await runMonitor(env);        break;
-          case 6:  await runLetterGenerator(env); break;
-          case 7:  await runLetterSender(env);    break;
-          case 8:  await runBounceSweep(env);     break;
-        }
-        // Prenumeranterna har prioritet: nyhetsbrevet dräneras FÖRE
-        // politiker-kön i varje slot, så kvartalsdräneringen aldrig hinner
-        // äta upp Resends dagskvot före ett nyhetsbrevsutskick.
-        await runNewsletterSender(env);
-        await runQuarterlyDrain(env);
-      })()
-    );
-  },
-};
+export default Sentry.withSentry(
+  (env: Env) => ({
+    dsn: env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
+    enableLogs: true,
+  }),
+  {
+    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+      const hour = new Date(event.scheduledTime).getUTCHours();
+      ctx.waitUntil(
+        (async () => {
+          if (event.cron === QUARTERLY_CRON) { await runQuarterlyCampaign(env); return; }
+          switch (hour) {
+            case 5:  await runMonitor(env);        break;
+            case 6:  await runLetterGenerator(env); break;
+            case 7:  await runLetterSender(env);    break;
+            case 8:  await runBounceSweep(env);     break;
+          }
+          // Prenumeranterna har prioritet: nyhetsbrevet dräneras FÖRE
+          // politiker-kön i varje slot, så kvartalsdräneringen aldrig hinner
+          // äta upp Resends dagskvot före ett nyhetsbrevsutskick.
+          await runNewsletterSender(env);
+          await runQuarterlyDrain(env);
+        })()
+      );
+    },
+  } satisfies ExportedHandler<Env>,
+);
