@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directories:
+      - "/app"
+      - "/sender"
+      - "/campaign"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "03:00"
+      timezone: "Europe/Stockholm"
+    groups:
+      npm-patch-minor:
+        update-types: ["minor", "patch"]
+    ignore:
+      # wrangler kräver @cloudflare/workers-types ^4.x som peer dependency —
+      # håll tillbaka major-uppdateringar tills wrangler själv stöder v5
+      - dependency-name: "@cloudflare/workers-types"
+        versions: [">=5.0.0"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "04:00"
+      timezone: "Europe/Stockholm"
+    groups:
+      actions-patch-minor:
+        update-types: ["minor", "patch"]
