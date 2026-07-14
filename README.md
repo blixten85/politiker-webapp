@@ -56,7 +56,7 @@ cd politiker-webapp
 bash infra/setup.sh
 ```
 
-**Första körningen** skapar `~/.appdata/.config/.env` (genererar `MAIL_CRED_KEY`
+**Första körningen** skapar `~/.claude/credentials.env` (genererar `MAIL_CRED_KEY`
 automatiskt) och avslutar så du kan fylla i dina värden. Minst:
 
 - `SYSTEM_SMTP_PASSWORD` — SMTP-konto för verifierings-/notismail
