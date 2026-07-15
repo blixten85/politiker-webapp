@@ -41,6 +41,8 @@ const QUARTERLY_CRON = "30 6 1 1,4,7,10 *";
 export default Sentry.withSentry(
   (env: Env) => ({
     dsn: env.SENTRY_DSN,
+    // 100% under Sentrys trial-period (för max insikt) — sänk till 0.1-0.2
+    // när trialen tar slut för att undvika kvot-/kostnadsproblem.
     tracesSampleRate: 1.0,
     enableLogs: true,
   }),
@@ -49,18 +51,26 @@ export default Sentry.withSentry(
       const hour = new Date(event.scheduledTime).getUTCHours();
       ctx.waitUntil(
         (async () => {
-          if (event.cron === QUARTERLY_CRON) { await runQuarterlyCampaign(env); return; }
-          switch (hour) {
-            case 5:  await runMonitor(env);        break;
-            case 6:  await runLetterGenerator(env); break;
-            case 7:  await runLetterSender(env);    break;
-            case 8:  await runBounceSweep(env);     break;
+          try {
+            if (event.cron === QUARTERLY_CRON) { await runQuarterlyCampaign(env); return; }
+            switch (hour) {
+              case 5:  await runMonitor(env);        break;
+              case 6:  await runLetterGenerator(env); break;
+              case 7:  await runLetterSender(env);    break;
+              case 8:  await runBounceSweep(env);     break;
+            }
+            // Prenumeranterna har prioritet: nyhetsbrevet dräneras FÖRE
+            // politiker-kön i varje slot, så kvartalsdräneringen aldrig hinner
+            // äta upp Resends dagskvot före ett nyhetsbrevsutskick.
+            await runNewsletterSender(env);
+            await runQuarterlyDrain(env);
+          } catch (e) {
+            // withSentry() wrappar bara scheduled() själv — den asynkrona
+            // tasken inuti waitUntil() ligger utanför dess try/catch, så fel
+            // här måste fångas och rapporteras manuellt.
+            Sentry.captureException(e);
+            throw e;
           }
-          // Prenumeranterna har prioritet: nyhetsbrevet dräneras FÖRE
-          // politiker-kön i varje slot, så kvartalsdräneringen aldrig hinner
-          // äta upp Resends dagskvot före ett nyhetsbrevsutskick.
-          await runNewsletterSender(env);
-          await runQuarterlyDrain(env);
         })()
       );
     },

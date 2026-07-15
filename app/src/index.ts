@@ -66,6 +66,8 @@ function setSessionCookie(token: string): string {
 export default Sentry.withSentry(
   (env: Env) => ({
     dsn: env.SENTRY_DSN,
+    // 100% under Sentrys trial-period (för max insikt) — sänk till 0.1-0.2
+    // när trialen tar slut för att undvika kvot-/kostnadsproblem.
     tracesSampleRate: 1.0,
     enableLogs: true,
   }),

@@ -132,6 +132,11 @@ tillgängliga när `sentry:sourcemaps`-scriptet körs:
   konfigurerade byggkommandot kommer `postdeploy`-hooken (och därmed
   source maps-uppladdningen) inte att triggas automatiskt. Verifiera detta
   i Dashboardens bygginställningar per Worker.
+- `sentry:sourcemaps`-scriptet i `package.json` använder bash-syntax
+  (`_SENTRY_RELEASE=$(...) && ...`) och fungerar inte i Windows cmd.exe.
+  Detta är avsiktligt: scriptet körs bara i Cloudflare Workers Builds
+  (Linux) och lokalt av utvecklare via bash/WSL — inget Windows cmd.exe-stöd
+  behövs.
 
 ## Status
 
