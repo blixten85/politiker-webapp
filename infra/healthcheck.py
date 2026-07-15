@@ -24,7 +24,7 @@ APP_WORKER = "politiker-webapp-app"
 SENDER_WORKER = "politiker-webapp-sender"
 DOMAIN = "politiker.denied.se"
 
-ENV_FILE = os.path.expanduser("~/.appdata/.config/.env")
+ENV_FILE = os.path.expanduser("~/.claude/credentials.env")
 
 
 def load_env():

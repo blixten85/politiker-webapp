@@ -6,7 +6,7 @@
 #
 # Usage: az-graph-api.sh <METHOD> <path-efter-/v1.0> [data-fil]
 set -euo pipefail
-source ~/.appdata/.config/.env
+source ~/.claude/credentials.env
 
 METHOD="$1"
 API_PATH="$2"

@@ -2,7 +2,7 @@
 # Wrapper för alla Cloudflare API-anrop i politiker-webapp-projektet.
 # Usage: cf-api.sh <METHOD> <path-efter-/client/v4> [data-fil]
 set -euo pipefail
-source ~/.appdata/.config/.env
+source ~/.claude/credentials.env
 
 METHOD="$1"
 API_PATH="$2"

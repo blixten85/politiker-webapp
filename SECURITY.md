@@ -19,4 +19,4 @@ You should receive a response within 48 hours. If the issue is confirmed, we wil
 - Always use environment variables / Wrangler secrets — never commit credentials
 - Användarnas SMTP-lösenord krypteras (AES-GCM) innan de lagras i D1 — nyckeln finns aldrig i koden
 - Kontolösenord hashas med PBKDF2, aldrig i klartext
-- Keep dependencies updated (Dependabot + Renovate enabled)
+- Keep dependencies updated (Dependabot enabled)

@@ -13,7 +13,7 @@ logging.basicConfig(
 )
 log = logging.getLogger()
 
-ENV_FILE = os.path.expanduser("~/.appdata/.config/.env")
+ENV_FILE = os.path.expanduser("~/.claude/credentials.env")
 CF_ACCOUNT_ID = "b74f8c0c6a92f3006483840cf27372fd"
 CF_DB_ID = "e9ecf94f-fa71-4004-a5b8-f9317eb4d4e9"
 
