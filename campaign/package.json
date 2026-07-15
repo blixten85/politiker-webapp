@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy --outdir dist",
+    "versions:upload": "wrangler versions upload --outdir dist",
     "typecheck": "tsc --noEmit",
     "sentry:sourcemaps": "_SENTRY_RELEASE=$(npx sentry-cli releases propose-version) && npx sentry-cli releases new $_SENTRY_RELEASE --org=anders-gh --project=politiker-webapp && npx sentry-cli sourcemaps upload --org=anders-gh --project=politiker-webapp --release=$_SENTRY_RELEASE dist",
-    "postdeploy": "npm run sentry:sourcemaps"
+    "postdeploy": "npm run sentry:sourcemaps",
+    "postversions:upload": "npm run sentry:sourcemaps"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260702.1",
