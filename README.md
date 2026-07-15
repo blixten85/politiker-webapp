@@ -81,7 +81,7 @@ om du vill ändra dem.
 > som publicerar hela kontaktdatabasen som färdig SQL:
 >
 > ```bash
-> wrangler d1 execute politiker_webapp --remote \
+> wrangler d1 execute politiker_webapp --remote --yes \
 >   --file ../politiker-kontakter/data/politiker.sql
 > ```
 
