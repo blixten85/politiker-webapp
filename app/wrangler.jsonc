@@ -6,6 +6,10 @@
   // Krävs av @sentry/cloudflare (använder node:async_hooks) — utan denna flagga
   // kraschar deploy med "No such module 'node:async_hooks'" (bekräftat i praktiken).
   "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   // Exponera inte på *.workers.dev — appen nås bara via politiker.denied.se
   // (custom domain). Stänger workers.dev-attackytan (Security Center-fynd).
   "workers_dev": false,
