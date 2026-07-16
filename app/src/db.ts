@@ -30,6 +30,7 @@ export interface Env {
   EMAIL?: EmailSendBinding; // Cloudflare Email Service — primär kanal för nyhetsbrevsmail
   RESEND_API_KEY?: string; // Resend — fallback (wrangler secret)
   SENTRY_DSN?: string;
+  SENTRY_TRACES_SAMPLE_RATE?: string;
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {

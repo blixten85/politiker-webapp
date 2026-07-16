@@ -16,6 +16,7 @@ interface Env {
   OAUTH_MICROSOFT_CLIENT_ID?: string;
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
   SENTRY_DSN?: string;
+  SENTRY_TRACES_SAMPLE_RATE?: string;
 }
 
 interface CredentialRow {
@@ -83,9 +84,7 @@ function sleep(ms: number): Promise<void> {
 export default Sentry.withSentry<Env, SendJobMessage>(
   (env: Env) => ({
     dsn: env.SENTRY_DSN,
-    // 100% under Sentrys trial-period (för max insikt) — sänk till 0.1-0.2
-    // när trialen tar slut för att undvika kvot-/kostnadsproblem.
-    tracesSampleRate: 1.0,
+    tracesSampleRate: parseFloat(env.SENTRY_TRACES_SAMPLE_RATE ?? "") || 0.1,
     enableLogs: true,
   }),
   {

@@ -18,6 +18,7 @@ export interface Env {
   SENDER_NAME: string;
   GITHUB_REPO: string;
   SENTRY_DSN?: string;
+  SENTRY_TRACES_SAMPLE_RATE?: string;
 }
 
 // Cron-tider (UTC):
@@ -41,9 +42,7 @@ const QUARTERLY_CRON = "30 6 1 1,4,7,10 *";
 export default Sentry.withSentry(
   (env: Env) => ({
     dsn: env.SENTRY_DSN,
-    // 100% under Sentrys trial-period (för max insikt) — sänk till 0.1-0.2
-    // när trialen tar slut för att undvika kvot-/kostnadsproblem.
-    tracesSampleRate: 1.0,
+    tracesSampleRate: parseFloat(env.SENTRY_TRACES_SAMPLE_RATE ?? "") || 0.1,
     enableLogs: true,
   }),
   {
