@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/cloudflare";
 import { decryptSecret, encryptSecret, randomId } from "../../shared/crypto";
 import { sendSmtpMail, SmtpError } from "../../shared/smtp";
 import { sendGraphMail, refreshMicrosoftToken } from "../../shared/graph-mail";
@@ -14,6 +15,7 @@ interface Env {
   RATE_LIMITER: DurableObjectNamespace;
   OAUTH_MICROSOFT_CLIENT_ID?: string;
   OAUTH_MICROSOFT_CLIENT_SECRET?: string;
+  SENTRY_DSN?: string;
 }
 
 interface CredentialRow {
@@ -78,21 +80,30 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export default {
-  async queue(batch: MessageBatch<SendJobMessage>, env: Env): Promise<void> {
-    // Gruppera per send_job så kretsbrytaren räknar per jobb, inte per hela batchen
-    const byJob = new Map<string, SendJobMessage[]>();
-    for (const msg of batch.messages) {
-      const arr = byJob.get(msg.body.sendJobId) ?? [];
-      arr.push(msg.body);
-      byJob.set(msg.body.sendJobId, arr);
-    }
+export default Sentry.withSentry<Env, SendJobMessage>(
+  (env: Env) => ({
+    dsn: env.SENTRY_DSN,
+    // 100% under Sentrys trial-period (för max insikt) — sänk till 0.1-0.2
+    // när trialen tar slut för att undvika kvot-/kostnadsproblem.
+    tracesSampleRate: 1.0,
+    enableLogs: true,
+  }),
+  {
+    async queue(batch: MessageBatch<SendJobMessage>, env: Env): Promise<void> {
+      // Gruppera per send_job så kretsbrytaren räknar per jobb, inte per hela batchen
+      const byJob = new Map<string, SendJobMessage[]>();
+      for (const msg of batch.messages) {
+        const arr = byJob.get(msg.body.sendJobId) ?? [];
+        arr.push(msg.body);
+        byJob.set(msg.body.sendJobId, arr);
+      }
 
-    for (const [sendJobId, messages] of byJob) {
-      await processJobMessages(env, sendJobId, messages, batch);
-    }
-  },
-};
+      for (const [sendJobId, messages] of byJob) {
+        await processJobMessages(env, sendJobId, messages, batch);
+      }
+    },
+  } satisfies ExportedHandler<Env, SendJobMessage>,
+);
 
 async function processJobMessages(
   env: Env,

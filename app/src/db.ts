@@ -29,6 +29,7 @@ export interface Env {
   TURNSTILE_SECRET?: string; // Turnstile siteverify-hemlighet (wrangler secret)
   EMAIL?: EmailSendBinding; // Cloudflare Email Service — primär kanal för nyhetsbrevsmail
   RESEND_API_KEY?: string; // Resend — fallback (wrangler secret)
+  SENTRY_DSN?: string;
 }
 
 export async function getAccountByEmail(db: D1Database, email: string) {
