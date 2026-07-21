@@ -2,65 +2,66 @@
 
 > This directory is machine-managed by cubic. Edit wiki content through [cubic wiki settings](https://www.cubic.dev/wiki/blixten85/politiker-webapp) and custom instructions.
 
-Wiki version: 1
-Source commit: fee08e206f9f0f4d4f4380c056fe40118a051b32
+Wiki version: 2
+Source commit: 9398b6ea099b526f0a65595bfb9efa424db1d8e2
 Source branch: main
-Generated: 2026-07-20T09:27:34.581Z
+Generated: 2026-07-21T07:05:56.306Z
 
 ## Contents
 
 ### Overview
 
-- [Introduction & Project Overview](01-overview/01-intro.md)
-- [Getting Started & Setup](01-overview/02-getting-started.md)
-- [Non-profit Association Guidelines](01-overview/03-association.md)
+- [Introduction & Project Overview](01-overview/01-page-intro.md)
+- [Getting Started & Local Development](01-overview/02-page-getting-started.md)
+- [Non-profit Association Guidelines](01-overview/03-page-association.md)
 
 ### System Architecture
 
-- [System Architecture Overview](02-architecture/01-architecture.md)
-- [Cloudflare Workers Ecosystem](02-architecture/02-workers.md)
-- [Security & Data Protection](02-architecture/03-security.md)
+- [System Architecture Overview](02-architecture/01-page-architecture-overview.md)
+- [Cloudflare Workers Ecosystem](02-architecture/02-page-workers-ecosystem.md)
+- [Security Architecture & Cryptography](02-architecture/03-page-security.md)
 
 ### Core Features
 
-- [Authentication & OAuth](03-core-features/01-auth.md)
-- [Two-Factor Authentication (TOTP)](03-core-features/02-totp.md)
-- [Mail Account Linking & MS Graph](03-core-features/03-mail-linking.md)
-- [Three-Step Contact Wizard](03-core-features/04-wizard.md)
-- [Multilingual Interface (i18n)](03-core-features/05-i18n.md)
-- [API Keys & Programmatic Access](03-core-features/06-api-keys.md)
-
-### Frontend Components
-
-- [Frontend Architecture](04-frontend/01-frontend-arch.md)
-- [Wizard Web Components](04-frontend/02-ui-components.md)
-
-### Backend Systems
-
-- [App API & Routing](05-backend/01-app-api.md)
-- [Sender Worker & Mail Queues](05-backend/02-sender-worker.md)
-- [Autonomous Campaign Worker](05-backend/03-campaign-worker.md)
-- [Admin Panel & Statistics](05-backend/04-admin-panel.md)
-- [Rate Limiting & Durable Objects](05-backend/05-rate-limiting.md)
+- [User Authentication & Session Management](03-core-features/01-page-auth.md)
+- [OAuth & Social Login Integrations](03-core-features/02-page-oauth.md)
+- [Two-Factor Authentication (TOTP)](03-core-features/03-page-totp.md)
+- [Mail Account Linking](03-core-features/04-page-mail-linking.md)
+- [Three-Step Contact Wizard](03-core-features/05-page-wizard.md)
+- [Multilingual Interface (i18n)](03-core-features/06-page-i18n.md)
+- [API Keys & Programmatic Access](03-core-features/07-page-api-keys.md)
 
 ### Data Management/Flow
 
-- [Database Schema & D1](06-data-management/01-database.md)
-- [Session Management with KV](06-data-management/02-kv-storage.md)
-- [Document & Attachment Parsing](06-data-management/03-attachment-parsing.md)
+- [Database Schema & D1 Configuration](04-data-management/01-page-database.md)
+- [Session Management & KV Storage](04-data-management/02-page-kv-sessions.md)
+- [Attachment Parsing & Handling](04-data-management/03-page-document-parsing.md)
+
+### Frontend Components
+
+- [Frontend Architecture](05-frontend/01-page-frontend-arch.md)
+- [Wizard UI Components](05-frontend/02-page-ui-components.md)
+
+### Backend Systems
+
+- [App API & Routing](06-backend/01-page-app-api.md)
+- [Sender Worker & Mail Queues](06-backend/02-page-sender-worker.md)
+- [Rate Limiting & Durable Objects](06-backend/03-page-rate-limiting.md)
+- [Admin Panel & Statistics](06-backend/04-page-admin-panel.md)
+- [Client Error Reporting & Feedback](06-backend/05-page-error-reporting.md)
 
 ### Model Integration
 
-- [AI Letter Drafting with Claude](07-model-integration/01-claude-drafts.md)
-- [Autonomous AI News Analysis](07-model-integration/02-campaign-ai.md)
+- [AI Letter Drafting with Claude](07-model-integration/01-page-ai-drafting.md)
+- [Autonomous Campaign AI](07-model-integration/02-page-campaign-ai.md)
 
 ### Deployment/Infrastructure
 
-- [Cloudflare Infrastructure Provisioning](08-deployment/01-cloudflare-infra.md)
-- [Monitoring, Healthchecks & Sentry](08-deployment/02-monitoring.md)
-- [Gmail Bounce Processing](08-deployment/03-bounce-processing.md)
+- [Cloudflare Infrastructure Provisioning](08-infrastructure/01-page-infra-provisioning.md)
+- [Healthchecks & Uptime Monitoring](08-infrastructure/02-page-monitoring.md)
+- [Bounce Processing](08-infrastructure/03-page-bounce-processing.md)
 
 ### Extensibility and Customization
 
-- [Local Development & Wrangler](09-extensibility/01-local-dev.md)
-- [Testing Strategy & Plans](09-extensibility/02-testing.md)
+- [Testing Strategy & CI/CD](09-extensibility/01-page-testing.md)
+- [Extending the Platform & Contribution Guidelines](09-extensibility/02-page-extending.md)
