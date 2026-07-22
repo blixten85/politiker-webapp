@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260702.1",
-    "@sentry/cli": "3.6.0",
+    "@sentry/cli": "3.6.1",
     "typescript": "6.0.3",
-    "wrangler": "4.111.0"
+    "wrangler": "4.113.0"
   },
   "dependencies": {
-    "@sentry/cloudflare": "10.65.0"
+    "@sentry/cloudflare": "10.67.0"
   }
 }
