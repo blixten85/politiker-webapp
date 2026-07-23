@@ -1,0 +1,40 @@
+app/public/app.js
+  s_96cd0bd017048c::t_684abad136b0cd 1609
+app/public/i18n.js
+  s_96cd0bd017048c::t_2820cc9087c287 2054
+  s_96cd0bd017048c::t_66ba50c526d55a 1355
+  s_96cd0bd017048c::t_d6c7c50191b716 2753
+  s_96cd0bd017048c::t_bdd417ba4e17d4 2520
+  s_96cd0bd017048c::t_a12b4486c287c1 2287
+  s_96cd0bd017048c::t_de6594e9ecc5c7 656
+  s_96cd0bd017048c::t_93f47687b97800 1122
+  s_96cd0bd017048c::t_fdb251beb77499 2986
+  s_96cd0bd017048c::t_4a3a413e9cb274 1821
+  s_96cd0bd017048c::t_cc830a0fd3b9ec 3685
+  s_96cd0bd017048c::t_25e47df0d11276 124
+  s_96cd0bd017048c::t_830e23545c5994 889
+  s_96cd0bd017048c::t_52bb42f96de928 3452
+  s_96cd0bd017048c::t_18f1bcda4dfc0c 4151
+  s_96cd0bd017048c::t_2514285de2d181 1588
+  s_96cd0bd017048c::t_274b791e8ac998 3219
+  s_96cd0bd017048c::t_e4982014f1c207 404
+  s_96cd0bd017048c::t_f213319f00b435 3918
+app/public/index.html
+  s_96cd0bd017048c::t_038c42b6751868 38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "36e900fd7351a52ec20e92f0e0bb0c844a571ed8",
+  "prompts": {},
+  "sessions": {
+    "s_96cd0bd017048c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32b91534-72ef-4e62-b9d0-d326b1a5c276",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Anders Eriksson <36226327+blixten85@users.noreply.github.com>"
+    }
+  }
+}
