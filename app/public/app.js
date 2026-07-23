@@ -1606,7 +1606,7 @@ menuToggle.addEventListener("click", (e) => {
   setMenuOpen(menuPanel.hidden);
 });
 menuPanel.addEventListener("click", (e) => {
-  const btn = e.target.closest("button");
+  const btn = e.target.closest("button, a");
   if (btn && btn.id !== "theme-toggle") setMenuOpen(false);
 });
 document.addEventListener("click", (e) => {
