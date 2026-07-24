@@ -16,6 +16,3 @@ FEEDBACK_NOTIFY_EMAIL=anders.eriksson@denied.se
 
 # Cloudflare Turnstile siteverify-hemlighet (bot-skydd på signup/reset)
 TURNSTILE_SECRET=
-
-# Microsoft OAuth-klient-ID. Sätts med `wrangler secret put OAUTH_MICROSOFT_CLIENT_ID` i produktion.
-OAUTH_MICROSOFT_CLIENT_ID=<Microsoft OAuth client ID>
