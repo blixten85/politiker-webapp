@@ -56,7 +56,6 @@
     }
   ],
   "vars": {
-    "OAUTH_MICROSOFT_CLIENT_ID": "dd6d7bb1-3a2d-46ad-8d4f-12fe09691414",
     // Sentry DSN är inte hemlig (bara ett skrivmål) — säkert att committa.
     "SENTRY_DSN": "https://eeef6e74a0ab6e9e0e00eb9ba5e88376@o4511717224480768.ingest.de.sentry.io/4511733213888592"
   }
