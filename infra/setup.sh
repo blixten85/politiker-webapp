@@ -87,6 +87,7 @@ GMAIL_PASSWORD="$(_get GMAIL_PASSWORD)"
 OAUTH_GOOGLE_CLIENT_SECRET="$(_get OAUTH_GOOGLE_CLIENT_SECRET)"
 OAUTH_GITHUB_CLIENT_SECRET="$(_get OAUTH_GITHUB_CLIENT_SECRET)"
 OAUTH_MICROSOFT_CLIENT_SECRET="$(_get OAUTH_MICROSOFT_CLIENT_SECRET)"
+SENTRY_DSN="$(_get SENTRY_DSN || true)"
 CUSTOM_DOMAIN="$(_get CUSTOM_DOMAIN)"
 [ -n "$SYSTEM_SMTP_PASSWORD" ] || warn "SYSTEM_SMTP_PASSWORD är tom — verifieringsmail kommer inte fungera."
 ok ".env inläst"
@@ -185,11 +186,13 @@ put_secret app GITHUB_FEEDBACK_TOKEN "$GITHUB_FEEDBACK_TOKEN"
 put_secret app OAUTH_GOOGLE_CLIENT_SECRET "$OAUTH_GOOGLE_CLIENT_SECRET"
 put_secret app OAUTH_GITHUB_CLIENT_SECRET "$OAUTH_GITHUB_CLIENT_SECRET"
 put_secret app OAUTH_MICROSOFT_CLIENT_SECRET "$OAUTH_MICROSOFT_CLIENT_SECRET"
+put_secret app SENTRY_DSN "$SENTRY_DSN"
 ( cd "$REPO_DIR/app" && $WR deploy >/dev/null ) && ok "  Deployade app"
 
 # sender
 put_secret sender MAIL_CRED_KEY "$MAIL_CRED_KEY"
 put_secret sender OAUTH_MICROSOFT_CLIENT_SECRET "$OAUTH_MICROSOFT_CLIENT_SECRET"
+put_secret sender SENTRY_DSN "$SENTRY_DSN"
 ( cd "$REPO_DIR/sender" && $WR deploy >/dev/null ) && ok "  Deployade sender"
 
 # campaign (bara om kampanj-creds finns)
@@ -198,6 +201,7 @@ if [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$GMAIL_EMAIL" ] && [ -n "$GMAIL_PASSWORD
   put_secret campaign GMAIL_EMAIL "$GMAIL_EMAIL"
   put_secret campaign GMAIL_PASSWORD "$GMAIL_PASSWORD"
   put_secret campaign GITHUB_FEEDBACK_TOKEN "$GITHUB_FEEDBACK_TOKEN"
+  put_secret campaign SENTRY_DSN "$SENTRY_DSN"
   ( cd "$REPO_DIR/campaign" && $WR deploy >/dev/null ) && ok "  Deployade campaign"
 else
   warn "  Hoppar över campaign (ANTHROPIC_API_KEY/GMAIL_* saknas)"

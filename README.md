@@ -101,8 +101,8 @@ npx wrangler dev --remote
 
 Alla tre Workers (`app`, `sender`, `campaign`) skickar fel och loggar till
 Sentry via `@sentry/cloudflare` (`Sentry.withSentry(...)` runt varje export).
-DSN:en ligger som en vanlig `var` i respektive `wrangler.jsonc` (den är inte
-hemlig — bara ett skrivmål).
+DSN:en läses från Worker-secreten `SENTRY_DSN`. Sätt den via `infra/setup.sh`
+eller med `wrangler secret put SENTRY_DSN` i respektive Worker-katalog.
 
 **Source maps** laddas upp efter varje deploy (`postdeploy`-hook i
 `package.json`) så Sentry visar riktig TS-kod i stacktraces istället för

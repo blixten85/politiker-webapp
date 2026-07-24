@@ -41,8 +41,6 @@
   },
   "vars": {
     "SENDER_NAME": "Anders Eriksson",
-    "GITHUB_REPO": "blixten85/politiker-webapp",
-    // Sentry DSN är inte hemlig (bara ett skrivmål) — säkert att committa.
-    "SENTRY_DSN": "https://eeef6e74a0ab6e9e0e00eb9ba5e88376@o4511717224480768.ingest.de.sentry.io/4511733213888592"
+    "GITHUB_REPO": "blixten85/politiker-webapp"
   }
 }
