@@ -71,7 +71,6 @@
     "FEEDBACK_NOTIFY_EMAIL": "politiker@denied.se",
     "ISSUE_FIXER_INBOX": "steedpower3@gmail.com",
     "OAUTH_GOOGLE_CLIENT_ID": "1051427827429-nu6si4bq993a4onm8spk7bf94gctgr18.apps.googleusercontent.com",
-    "OAUTH_GITHUB_CLIENT_ID": "Ov23liGUkGlc3orVREOY",
     "OAUTH_MICROSOFT_CLIENT_ID": "dd6d7bb1-3a2d-46ad-8d4f-12fe09691414",
     // Sentry DSN är inte hemlig (bara ett skrivmål) — säkert att committa.
     "SENTRY_DSN": "https://eeef6e74a0ab6e9e0e00eb9ba5e88376@o4511717224480768.ingest.de.sentry.io/4511733213888592"

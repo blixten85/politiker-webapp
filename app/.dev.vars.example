@@ -12,6 +12,7 @@ SYSTEM_SMTP_PASSWORD=<app-specifikt lösenord>
 SYSTEM_FROM_ADDRESS=anders.eriksson@denied.se
 
 GITHUB_FEEDBACK_TOKEN=<fine-grained PAT med Issues:Write på blixten85/politiker-webapp>
+OAUTH_GITHUB_CLIENT_ID=<GitHub OAuth-appens klient-ID>
 FEEDBACK_NOTIFY_EMAIL=anders.eriksson@denied.se
 
 # Cloudflare Turnstile siteverify-hemlighet (bot-skydd på signup/reset)
