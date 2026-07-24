@@ -16,3 +16,6 @@ FEEDBACK_NOTIFY_EMAIL=anders.eriksson@denied.se
 
 # Cloudflare Turnstile siteverify-hemlighet (bot-skydd på signup/reset)
 TURNSTILE_SECRET=
+
+# Sentry DSN (valfritt; sätts som Worker-secret i produktion)
+SENTRY_DSN=
